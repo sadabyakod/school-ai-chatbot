@@ -59,7 +59,7 @@ jobs:
           --name $APP_NAME \
           --resource-group ${{ secrets.AZURE_RESOURCE_GROUP_NAME }} \
           --plan $PLAN_NAME \
-          --runtime "DOTNETCORE|9.0"
+          --runtime "dotnet:9"
         
         echo "Setting app configuration..."
         az webapp config appsettings set \
