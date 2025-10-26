@@ -23,22 +23,13 @@ jobs:
     
     - name: Deploy Azure Infrastructure
       id: deploy
-      run: |
-        # Deploy using Azure CLI (more reliable)
-        az deployment group create \
-          --resource-group ${{ secrets.AZURE_RESOURCE_GROUP_NAME }} \
-          --template-file ./infra/azure-app-service-sql-simple.bicep \
-          --parameters \
-            appName=school-ai-chatbot \
-            location="West US 2" \
-            sqlAdminLogin=sqladmin \
-            sqlAdminPassword="${{ secrets.SQL_ADMIN_PASSWORD }}" \
-            jwtSecretKey="${{ secrets.JWT_SECRET_KEY }}" \
-            openAiApiKey="${{ secrets.OPENAI_API_KEY }}" \
-          --query "properties.outputs.appServiceName.value" \
-          --output tsv > app_name.txt
-        
-        echo "appServiceName=$(cat app_name.txt)" >> $GITHUB_OUTPUT
+      uses: azure/arm-deploy@v1
+      with:
+        subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        resourceGroupName: ${{ secrets.AZURE_RESOURCE_GROUP_NAME }}
+        template: ./infra/azure-free-simple.bicep
+        parameters: appName=school-ai-chatbot location="East US" jwtSecretKey=${{ secrets.JWT_SECRET_KEY }} openAiApiKey=${{ secrets.OPENAI_API_KEY }}
+        failOnStdErr: false
 
   # Application deployment
   build-and-deploy:

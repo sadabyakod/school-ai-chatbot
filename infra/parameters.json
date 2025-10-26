@@ -1,0 +1,29 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "appName": {
+      "value": "school-ai-chatbot"
+    },
+    "location": {
+      "value": "West US 2"
+    },
+    "sqlAdminLogin": {
+      "value": "sqladmin"
+    },
+    "sqlAdminPassword": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/placeholder/resourceGroups/placeholder/providers/Microsoft.KeyVault/vaults/placeholder"
+        },
+        "secretName": "placeholder"
+      }
+    },
+    "jwtSecretKey": {
+      "value": "placeholder"
+    },
+    "openAiApiKey": {
+      "value": "placeholder"
+    }
+  }
+}
