@@ -7,15 +7,15 @@ metadata:
 infra:
   provider: bicep
   path: infra
-  module: main-free
+  module: standard-app-service
 services:
-  frontend:
-    project: ./school-ai-frontend
-    language: js
-    host: containerapp
-    docker:
-      path: ./Dockerfile
-      context: ./
+  # frontend:
+  #   project: ./school-ai-frontend
+  #   language: js
+  #   host: containerapp
+  #   docker:
+  #     path: ./Dockerfile
+  #     context: ./
   backend:
     project: ./SchoolAiChatbotBackend
     language: dotnet
