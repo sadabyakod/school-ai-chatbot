@@ -29,18 +29,37 @@ jobs:
         PLAN_NAME="school-ai-chatbot-plan-${{ github.run_id }}"
         
         echo "Creating App Service Plan: $PLAN_NAME"
-        az appservice plan create \
-          --name $PLAN_NAME \
-          --resource-group ${{ secrets.AZURE_RESOURCE_GROUP_NAME }} \
-          --location "East US" \
-          --sku B1
+        # Try different regions to find one with quota availability
+        PLAN_CREATED=false
+        for region in "West US 2" "Central US" "East US 2" "West Europe" "Southeast Asia"; do
+          echo "Trying region: $region"
+          if az appservice plan create \
+            --name $PLAN_NAME \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP_NAME }} \
+            --location "$region" \
+            --sku B1; then
+            echo "Successfully created plan in $region"
+            REGION_USED="$region"
+            PLAN_CREATED=true
+            break
+          else
+            echo "Failed in $region, trying next region..."
+          fi
+        done
         
-        echo "Creating App Service: $APP_NAME"  
+        if [ "$PLAN_CREATED" != "true" ]; then
+          echo "ERROR: Could not create App Service Plan in any region due to quota limits"
+          echo "Please request quota increase for Basic VMs in one of these regions:"
+          echo "- West US 2, Central US, East US 2, West Europe, Southeast Asia"
+          exit 1
+        fi
+        
+        echo "Creating App Service: $APP_NAME in region: ${REGION_USED:-East US}"  
         az webapp create \
           --name $APP_NAME \
           --resource-group ${{ secrets.AZURE_RESOURCE_GROUP_NAME }} \
           --plan $PLAN_NAME \
-          --runtime "DOTNETCORE|6.0"
+          --runtime "DOTNETCORE|9.0"
         
         echo "Setting app configuration..."
         az webapp config appsettings set \
