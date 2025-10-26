@@ -3,7 +3,6 @@ name: Deploy .NET API to Azure App Service with SQL Database
 on:
   push:
     branches: [ main ]
-    paths: [ 'SchoolAiChatbotBackend/**', 'infra/**' ]
   workflow_dispatch:
 
 jobs:
