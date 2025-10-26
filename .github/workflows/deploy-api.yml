@@ -21,32 +21,30 @@ jobs:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
         enable-AzPSSession: true
     
-    - name: Create or Use App Service Plan
+    - name: Create App Service and Plan
+      id: deploy
       run: |
-        # Use unique name with run ID to avoid conflicts
+        # Create unique names for this deployment
+        APP_NAME="school-ai-chatbot-app-${{ github.run_id }}"
         PLAN_NAME="school-ai-chatbot-plan-${{ github.run_id }}"
         
-        # Try to create the plan, or use existing one if it fails
+        echo "Creating App Service Plan: $PLAN_NAME"
         az appservice plan create \
           --name $PLAN_NAME \
           --resource-group ${{ secrets.AZURE_RESOURCE_GROUP_NAME }} \
           --location "East US" \
-          --sku FREE || echo "Plan may already exist, continuing..."
+          --sku FREE
         
-        echo "PLAN_NAME=$PLAN_NAME" >> $GITHUB_ENV
-    
-    - name: Create App Service
-      id: deploy
-      run: |
+        echo "Creating App Service: $APP_NAME"  
         az webapp create \
-          --name school-ai-chatbot-app-${{ github.run_id }} \
+          --name $APP_NAME \
           --resource-group ${{ secrets.AZURE_RESOURCE_GROUP_NAME }} \
           --plan $PLAN_NAME \
           --runtime "DOTNETCORE|6.0"
         
-        # Set app settings
+        echo "Setting app configuration..."
         az webapp config appsettings set \
-          --name school-ai-chatbot-app-${{ github.run_id }} \
+          --name $APP_NAME \
           --resource-group ${{ secrets.AZURE_RESOURCE_GROUP_NAME }} \
           --settings \
             ASPNETCORE_ENVIRONMENT=Production \
@@ -54,7 +52,8 @@ jobs:
             JWT__SecretKey="${{ secrets.JWT_SECRET_KEY }}" \
             ConnectionStrings__DefaultConnection="InMemory"
         
-        echo "appServiceName=school-ai-chatbot-app-${{ github.run_id }}" >> $GITHUB_OUTPUT
+        echo "appServiceName=$APP_NAME" >> $GITHUB_OUTPUT
+        echo "App Service URL: https://$APP_NAME.azurewebsites.net"
 
   # Application deployment
   build-and-deploy:
