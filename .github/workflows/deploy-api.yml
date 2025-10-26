@@ -21,13 +21,19 @@ jobs:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
         enable-AzPSSession: true
     
-    - name: Create App Service Plan
+    - name: Create or Use App Service Plan
       run: |
+        # Use unique name with run ID to avoid conflicts
+        PLAN_NAME="school-ai-chatbot-plan-${{ github.run_id }}"
+        
+        # Try to create the plan, or use existing one if it fails
         az appservice plan create \
-          --name school-ai-chatbot-plan \
+          --name $PLAN_NAME \
           --resource-group ${{ secrets.AZURE_RESOURCE_GROUP_NAME }} \
           --location "East US" \
-          --sku FREE
+          --sku FREE || echo "Plan may already exist, continuing..."
+        
+        echo "PLAN_NAME=$PLAN_NAME" >> $GITHUB_ENV
     
     - name: Create App Service
       id: deploy
@@ -35,7 +41,7 @@ jobs:
         az webapp create \
           --name school-ai-chatbot-app-${{ github.run_id }} \
           --resource-group ${{ secrets.AZURE_RESOURCE_GROUP_NAME }} \
-          --plan school-ai-chatbot-plan \
+          --plan $PLAN_NAME \
           --runtime "DOTNETCORE|6.0"
         
         # Set app settings
