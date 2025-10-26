@@ -33,7 +33,7 @@ jobs:
           --name $PLAN_NAME \
           --resource-group ${{ secrets.AZURE_RESOURCE_GROUP_NAME }} \
           --location "East US" \
-          --sku FREE
+          --sku B1
         
         echo "Creating App Service: $APP_NAME"  
         az webapp create \
