@@ -30,7 +30,7 @@ jobs:
         template: ./infra/azure-app-service-sql.bicep
         parameters: >
           appName=school-ai-chatbot
-          location="East US"
+          location="West US 2"
           sqlAdminLogin=sqladmin
           sqlAdminPassword=${{ secrets.SQL_ADMIN_PASSWORD }}
           jwtSecretKey=${{ secrets.JWT_SECRET_KEY }}

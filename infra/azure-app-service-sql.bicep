@@ -2,7 +2,7 @@
 param appName string = 'school-ai-chatbot'
 
 @description('Location for all resources')
-param location string = resourceGroup().location
+param location string = 'West US 2'
 
 @description('SQL Server administrator login')
 param sqlAdminLogin string = 'sqladmin'
@@ -26,15 +26,15 @@ var sqlServerName = '${appName}-sql-${resourceSuffix}'
 var sqlDatabaseName = '${appName}-db'
 var appServicePlanName = '${appName}-plan-${resourceSuffix}'
 
-// App Service Plan (Free Tier)
+// App Service Plan (Basic Tier - More reliable)
 resource appServicePlan 'Microsoft.Web/serverfarms@2022-09-01' = {
   name: appServicePlanName
   location: location
   sku: {
-    name: 'F1'  // Free tier
-    tier: 'Free'
-    size: 'F1'
-    family: 'F'
+    name: 'B1'  // Basic tier - $13/month but more reliable
+    tier: 'Basic'
+    size: 'B1'
+    family: 'B'
     capacity: 1
   }
   properties: {
