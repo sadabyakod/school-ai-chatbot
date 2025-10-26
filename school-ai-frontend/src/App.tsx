@@ -2,7 +2,7 @@ import ChatBot from './ChatBot';
 import FileUpload from './FileUpload';
 import Faqs from './Faqs';
 import Analytics from './Analytics';
-import React, { useState } from "react";
+import { useState } from "react";
 
 const PAGES = [
   { name: 'Chat', component: (token: string) => <ChatBot token={token} /> },

@@ -1,0 +1,12 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "OPENAI_API_KEY": "your-openai-key-here",
+    "JWT_SECRET": "your-super-secret-jwt-key-minimum-32-characters-long"
+  },
+  "Host": {
+    "CORS": "*"
+  }
+}

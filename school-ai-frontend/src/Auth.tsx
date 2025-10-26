@@ -1,7 +1,6 @@
-import React, { useState } from "react";
-import { API_URL } from "./api";
+import React from "react";
 
-const Auth: React.FC<{ onAuth: (token: string) => void }> = ({ onAuth }) => {
+const Auth: React.FC<{ onAuth: (token: string) => void }> = () => {
   // Authentication temporarily disabled
   return (
     <div className="max-w-md mx-auto mt-8 bg-white p-6 rounded shadow">

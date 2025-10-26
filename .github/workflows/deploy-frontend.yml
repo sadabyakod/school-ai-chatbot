@@ -1,0 +1,60 @@
+name: Deploy Frontend to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'school-ai-frontend/**'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    name: Build and Deploy Frontend
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+        lfs: false
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: school-ai-frontend/package-lock.json
+    
+    - name: Set Backend API URL
+      id: get-api-url
+      run: |
+        # Use the known backend URL from previous deployments
+        API_URL="school-ai-chatbot-app-18819978817.azurewebsites.net"
+        echo "API_URL=https://$API_URL/api" >> $GITHUB_OUTPUT
+        echo "Using API URL: https://$API_URL/api"
+    
+    - name: Install dependencies
+      working-directory: ./school-ai-frontend
+      run: npm ci
+    
+    - name: Create production environment file
+      working-directory: ./school-ai-frontend
+      run: |
+        echo "VITE_API_URL=${{ steps.get-api-url.outputs.API_URL }}" > .env.production
+        cat .env.production
+    
+    - name: Build React App
+      working-directory: ./school-ai-frontend
+      run: npm run build
+    
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./school-ai-frontend/dist
+        
+    - name: Output Deployment URL
+      run: |
+        echo "🚀 Frontend deployed successfully!"
+        echo "📱 Your app is live at: https://sadabyakod.github.io/school-ai-chatbot/"
+        echo "🔗 API Backend: ${{ steps.get-api-url.outputs.API_URL }}"
