@@ -27,8 +27,7 @@ jobs:
           --name school-ai-chatbot-plan \
           --resource-group ${{ secrets.AZURE_RESOURCE_GROUP_NAME }} \
           --location "East US" \
-          --sku FREE \
-          --is-linux false
+          --sku FREE
     
     - name: Create App Service
       id: deploy
@@ -37,7 +36,7 @@ jobs:
           --name school-ai-chatbot-app-${{ github.run_id }} \
           --resource-group ${{ secrets.AZURE_RESOURCE_GROUP_NAME }} \
           --plan school-ai-chatbot-plan \
-          --runtime "DOTNET|6.0"
+          --runtime "DOTNETCORE|6.0"
         
         # Set app settings
         az webapp config appsettings set \
