@@ -20,16 +20,37 @@ jobs:
       uses: azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
+        enable-AzPSSession: true
     
-    - name: Deploy Azure Infrastructure
+    - name: Create App Service Plan
+      run: |
+        az appservice plan create \
+          --name school-ai-chatbot-plan \
+          --resource-group ${{ secrets.AZURE_RESOURCE_GROUP_NAME }} \
+          --location "East US" \
+          --sku FREE \
+          --is-linux false
+    
+    - name: Create App Service
       id: deploy
-      uses: azure/arm-deploy@v1
-      with:
-        subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        resourceGroupName: ${{ secrets.AZURE_RESOURCE_GROUP_NAME }}
-        template: ./infra/azure-free-simple.bicep
-        parameters: appName=school-ai-chatbot location="East US" jwtSecretKey=${{ secrets.JWT_SECRET_KEY }} openAiApiKey=${{ secrets.OPENAI_API_KEY }}
-        failOnStdErr: false
+      run: |
+        az webapp create \
+          --name school-ai-chatbot-app-${{ github.run_id }} \
+          --resource-group ${{ secrets.AZURE_RESOURCE_GROUP_NAME }} \
+          --plan school-ai-chatbot-plan \
+          --runtime "DOTNET|6.0"
+        
+        # Set app settings
+        az webapp config appsettings set \
+          --name school-ai-chatbot-app-${{ github.run_id }} \
+          --resource-group ${{ secrets.AZURE_RESOURCE_GROUP_NAME }} \
+          --settings \
+            ASPNETCORE_ENVIRONMENT=Production \
+            OpenAI__ApiKey="${{ secrets.OPENAI_API_KEY }}" \
+            JWT__SecretKey="${{ secrets.JWT_SECRET_KEY }}" \
+            ConnectionStrings__DefaultConnection="InMemory"
+        
+        echo "appServiceName=school-ai-chatbot-app-${{ github.run_id }}" >> $GITHUB_OUTPUT
 
   # Application deployment
   build-and-deploy:
