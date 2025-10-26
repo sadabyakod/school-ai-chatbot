@@ -1,0 +1,73 @@
+name: Deploy .NET API to Azure App Service with SQL Database
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'SchoolAiChatbotBackend/**', 'infra/**' ]
+  workflow_dispatch:
+
+jobs:
+  # Infrastructure deployment
+  deploy-infrastructure:
+    runs-on: ubuntu-latest
+    outputs:
+      app-service-name: ${{ steps.deploy.outputs.appServiceName }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Deploy Azure Infrastructure
+      id: deploy
+      uses: azure/arm-deploy@v1
+      with:
+        subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        resourceGroupName: ${{ secrets.AZURE_RESOURCE_GROUP_NAME }}
+        template: ./infra/azure-app-service-sql.bicep
+        parameters: >
+          appName=school-ai-chatbot
+          location="East US"
+          sqlAdminLogin=sqladmin
+          sqlAdminPassword=${{ secrets.SQL_ADMIN_PASSWORD }}
+          jwtSecretKey=${{ secrets.JWT_SECRET_KEY }}
+          openAiApiKey=${{ secrets.OPENAI_API_KEY }}
+
+  # Application deployment
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    needs: deploy-infrastructure
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '9.0.x'
+    
+    - name: Copy Production Program.cs
+      run: cp SchoolAiChatbotBackend/Program.Production.cs SchoolAiChatbotBackend/Program.cs
+    
+    - name: Restore dependencies
+      run: dotnet restore SchoolAiChatbotBackend/SchoolAiChatbotBackend.csproj
+    
+    - name: Build
+      run: dotnet build SchoolAiChatbotBackend/SchoolAiChatbotBackend.csproj --no-restore --configuration Release
+    
+    - name: Publish
+      run: dotnet publish SchoolAiChatbotBackend/SchoolAiChatbotBackend.csproj --no-build --configuration Release --output ./publish
+    
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Deploy to Azure App Service
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: ${{ needs.deploy-infrastructure.outputs.app-service-name }}
+        package: ./publish

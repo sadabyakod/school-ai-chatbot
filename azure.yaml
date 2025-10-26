@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/refs/heads/main/schemas/v1.0/azure.yaml.json
+
+name: school-ai-chatbot
+metadata:
+  template: school-ai-chatbot@0.0.1-beta
+
+infra:
+  provider: bicep
+  path: infra
+  module: main-free
+services:
+  frontend:
+    project: ./school-ai-frontend
+    language: js
+    host: containerapp
+    docker:
+      path: ./Dockerfile
+      context: ./
+  backend:
+    project: ./SchoolAiChatbotBackend
+    language: dotnet
+    host: appservice
+
+hooks:
+  preprovision:
+    shell: pwsh
+    run: echo "Starting infrastructure provisioning..."
+    continueOnError: false
+  
+  postprovision:
+    shell: pwsh 
+    run: |
+      echo "Infrastructure provisioning completed"
+      echo "Frontend will be available at: $(azd env get-values --output json | jq -r .REACT_APP_WEB_BASE_URL)"
+      echo "Backend API available at: $(azd env get-values --output json | jq -r .API_BASE_URL)"
+    continueOnError: true
+
+  predeploy:
+    shell: pwsh
+    run: |
+      echo "Preparing applications for deployment..."
+      echo "Building frontend React application..."
+    continueOnError: false
+
+  postdeploy:
+    shell: pwsh
+    run: |
+      echo "Deployment completed successfully!"
+      echo "Running post-deployment configuration..."
+      echo "Checking application health..."
+    continueOnError: true

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "appName": {
+      "value": "school-ai-chatbot"
+    },
+    "location": {
+      "value": "East US"
+    },
+    "sqlAdminLogin": {
+      "value": "sqladmin"
+    },
+    "sqlAdminPassword": {
+      "value": "YourSecurePassword123!"
+    },
+    "jwtSecretKey": {
+      "value": "your-super-secret-jwt-key-minimum-32-characters-long-for-production"
+    },
+    "openAiApiKey": {
+      "value": ""
+    }
+  }
+}
