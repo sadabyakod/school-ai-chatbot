@@ -27,10 +27,12 @@ jobs:
       with:
         subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         resourceGroupName: ${{ secrets.AZURE_RESOURCE_GROUP_NAME }}
-        template: ./infra/azure-app-service-free.bicep
+        template: ./infra/azure-app-service-sql.bicep
         parameters: >
           appName=school-ai-chatbot
           location="West US 2"
+          sqlAdminLogin=sqladmin
+          sqlAdminPassword=${{ secrets.SQL_ADMIN_PASSWORD }}
           jwtSecretKey=${{ secrets.JWT_SECRET_KEY }}
           openAiApiKey=${{ secrets.OPENAI_API_KEY }}
 
