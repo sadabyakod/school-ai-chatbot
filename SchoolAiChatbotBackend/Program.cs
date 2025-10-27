@@ -142,6 +142,42 @@ app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Ensure database is created and seeded
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    context.Database.EnsureCreated();
+    
+    // Seed data if database is empty
+    if (!context.Faqs.Any())
+    {
+        context.Faqs.AddRange(
+            new SchoolAiChatbotBackend.Models.Faq
+            {
+                Question = "What are the school hours?",
+                Answer = "School hours are Monday-Friday 8:00 AM to 3:00 PM.",
+                Category = "General",
+                CreatedAt = DateTime.UtcNow
+            },
+            new SchoolAiChatbotBackend.Models.Faq
+            {
+                Question = "How do I contact the school?", 
+                Answer = "You can contact us at (555) 123-4567 or email info@school.edu",
+                Category = "Contact",
+                CreatedAt = DateTime.UtcNow
+            },
+            new SchoolAiChatbotBackend.Models.Faq
+            {
+                Question = "What is the homework policy?",
+                Answer = "Homework should take approximately 10 minutes per grade level (e.g., 3rd grade = 30 minutes).",
+                Category = "Academic", 
+                CreatedAt = DateTime.UtcNow
+            }
+        );
+        context.SaveChanges();
+    }
+}
+
 // Add health check endpoint
 app.MapGet("/health", () => new { status = "healthy", timestamp = DateTime.UtcNow });
 app.MapGet("/api/health", () => new { status = "healthy", timestamp = DateTime.UtcNow, api = "v1" });
