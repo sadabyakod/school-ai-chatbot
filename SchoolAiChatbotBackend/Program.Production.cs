@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-// using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-// using SchoolAiChatbotBackend.Data;
+using SchoolAiChatbotBackend.Data;
 using System.Text;
 using Microsoft.OpenApi.Models;
 using System.Text.Json;
@@ -34,29 +34,29 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "School AI Chatbot API", Version = "v1" });
 });
 
-// Configure EF Core provider selection - temporarily commented out for debugging
-// var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-// var dbProvider = builder.Configuration["DatabaseProvider"] ?? "SqlServer";
+// Configure EF Core provider selection
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var dbProvider = builder.Configuration["DatabaseProvider"] ?? "SqlServer";
 
-// if (string.IsNullOrEmpty(connectionString))
-// {
-//     // Use in-memory database if no connection string is provided (e.g., in Azure without DB)
-//     builder.Services.AddDbContext<AppDbContext>(options =>
-//         options.UseInMemoryDatabase("SchoolAiDb"));
-// }
-// else if (dbProvider == "MySql")
-// {
-//     builder.Services.AddDbContext<AppDbContext>(options =>
-//         options.UseMySql(
-//             connectionString,
-//             new MySqlServerVersion(new Version(8, 0, 36)) // Adjust MySQL version as needed
-//         ));
-// }
-// else
-// {
-//     builder.Services.AddDbContext<AppDbContext>(options =>
-//         options.UseSqlServer(connectionString));
-// }
+if (string.IsNullOrEmpty(connectionString))
+{
+    // Fallback to Azure SQL Server connection string if not configured
+    connectionString = "Server=school-chatbot-sql-10271900.database.windows.net;Database=SchoolAiChatbotDb;User Id=schooladmin;Password=SchoolAI123!@#;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+}
+
+if (dbProvider == "MySql")
+{
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseMySql(
+            connectionString,
+            new MySqlServerVersion(new Version(8, 0, 36)) // Adjust MySQL version as needed
+        ));
+}
+else
+{
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseSqlServer(connectionString));
+}
 
 
 // Configure JWT authentication with robust key handling
@@ -193,41 +193,50 @@ app.UseCors("AllowFrontend");
 // app.UseAuthorization();
 
 // Ensure database is created and seeded
-// Temporarily comment out database seeding for debugging
-// using (var scope = app.Services.CreateScope())
-// {
-//     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-//     context.Database.EnsureCreated();
-//     
-//     // Seed data if database is empty
-//     if (!context.Faqs.Any())
-//     {
-//         context.Faqs.AddRange(
-//             new SchoolAiChatbotBackend.Models.Faq
-//             {
-//                 Question = "What are the school hours?",
-//                 Answer = "School hours are Monday-Friday 8:00 AM to 3:00 PM.",
-//                 Category = "General",
-//                 CreatedAt = DateTime.UtcNow
-//             },
-//             new SchoolAiChatbotBackend.Models.Faq
-//             {
-//                 Question = "How do I contact the school?", 
-//                 Answer = "You can contact us at (555) 123-4567 or email info@school.edu",
-//                 Category = "Contact",
-//                 CreatedAt = DateTime.UtcNow
-//             },
-//             new SchoolAiChatbotBackend.Models.Faq
-//             {
-//                 Question = "What is the homework policy?",
-//                 Answer = "Homework should take approximately 10 minutes per grade level (e.g., 3rd grade = 30 minutes).",
-//                 Category = "Academic", 
-//                 CreatedAt = DateTime.UtcNow
-//             }
-//         );
-//         context.SaveChanges();
-//     }
-// }
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    
+    try
+    {
+        // Apply any pending migrations
+        context.Database.Migrate();
+        
+        // Seed data if database is empty
+        if (!context.Faqs.Any())
+        {
+            context.Faqs.AddRange(
+                new SchoolAiChatbotBackend.Models.Faq
+                {
+                    Question = "What are the school hours?",
+                    Answer = "School hours are Monday-Friday 8:00 AM to 3:00 PM.",
+                    Category = "General",
+                    CreatedAt = DateTime.UtcNow
+                },
+                new SchoolAiChatbotBackend.Models.Faq
+                {
+                    Question = "How do I contact the school?", 
+                    Answer = "You can contact us at (555) 123-4567 or email info@school.edu",
+                    Category = "Contact",
+                    CreatedAt = DateTime.UtcNow
+                },
+                new SchoolAiChatbotBackend.Models.Faq
+                {
+                    Question = "What is the homework policy?",
+                    Answer = "Homework should take approximately 10 minutes per grade level (e.g., 3rd grade = 30 minutes).",
+                    Category = "Academic", 
+                    CreatedAt = DateTime.UtcNow
+                }
+            );
+            context.SaveChanges();
+        }
+    }
+    catch (Exception ex)
+    {
+        // Log database connection errors but don't crash the app
+        Console.WriteLine($"Database initialization error: {ex.Message}");
+    }
+}
 
 // Add comprehensive diagnostic endpoints
 app.MapGet("/health", () => "healthy");
