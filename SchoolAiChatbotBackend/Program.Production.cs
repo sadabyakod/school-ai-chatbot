@@ -261,6 +261,34 @@ app.MapGet("/api/test-services", (IServiceProvider services) =>
     });
 });
 
+// Test database connection
+app.MapGet("/api/test-database", async (AppDbContext context) => 
+{
+    try 
+    {
+        var canConnect = await context.Database.CanConnectAsync();
+        var hasPendingMigrations = (await context.Database.GetPendingMigrationsAsync()).Any();
+        var appliedMigrations = await context.Database.GetAppliedMigrationsAsync();
+        var faqCount = await context.Faqs.CountAsync();
+        
+        return Results.Json(new { 
+            canConnect = canConnect,
+            hasPendingMigrations = hasPendingMigrations,
+            appliedMigrations = appliedMigrations.ToList(),
+            faqCount = faqCount,
+            timestamp = DateTime.UtcNow
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new { 
+            error = ex.Message,
+            stackTrace = ex.StackTrace,
+            timestamp = DateTime.UtcNow
+        });
+    }
+});
+
 // Test configuration access without injection
 app.MapGet("/api/test-config", () => 
 {
