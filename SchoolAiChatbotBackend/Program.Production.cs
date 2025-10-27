@@ -154,8 +154,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
-app.UseAuthentication();
-app.UseAuthorization();
+// Temporarily disable authentication to debug 500 errors
+// app.UseAuthentication();
+// app.UseAuthorization();
 
 // Ensure database is created and seeded
 // Temporarily comment out database seeding for debugging
