@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_NAME: 'school-ai-backend'    # Set this to your app name
-  AZURE_WEBAPP_PACKAGE_PATH: './SchoolAiChatbotBackend'      # Set this to the path to your web app project
-  DOTNET_VERSION: '9.0.x'                 # Set this to the dot net version to use
+  AZURE_WEBAPP_NAME: 'school-ai-backend-app'    # Update this to match your actual app name
+  AZURE_WEBAPP_PACKAGE_PATH: './SchoolAiChatbotBackend'
+  DOTNET_VERSION: '9.0.x'
 
 jobs:
   build-and-deploy:
