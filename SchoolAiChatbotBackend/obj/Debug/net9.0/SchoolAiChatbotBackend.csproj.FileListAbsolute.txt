@@ -168,3 +168,13 @@ c:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.
 c:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.genruntimeconfig.cache
 c:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\SchoolAiChatbotBackend.pdb
 c:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\ref\SchoolAiChatbotBackend.dll
+C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\web.config
+C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\appsettings.Production.json
+C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\appsettings.Development.json
+C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\appsettings.json
+C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\appsettings.Production.json
+C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\SchoolAiChatbotBackend.deps.json
+C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\SchoolAiChatbotBackend.runtimeconfig.json
+C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\SchoolAiChatbotBackend.staticwebassets.endpoints.json
+C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.InMemory.dll
+C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.sourcelink.json

@@ -261,21 +261,25 @@ app.MapGet("/api/test-services", (IServiceProvider services) =>
     });
 });
 
-// Test database connection
-app.MapGet("/api/test-database", async (AppDbContext context) => 
+// Test database connection without DI
+app.MapGet("/api/test-database", (IServiceProvider services) => 
 {
     try 
     {
-        var canConnect = await context.Database.CanConnectAsync();
-        var hasPendingMigrations = (await context.Database.GetPendingMigrationsAsync()).Any();
-        var appliedMigrations = await context.Database.GetAppliedMigrationsAsync();
-        var faqCount = await context.Faqs.CountAsync();
+        var context = services.GetService<AppDbContext>();
+        if (context == null)
+        {
+            return Results.Json(new { 
+                error = "AppDbContext not registered in DI container",
+                timestamp = DateTime.UtcNow
+            });
+        }
         
+        var canConnect = context.Database.CanConnect();
         return Results.Json(new { 
+            hasDbContext = true,
             canConnect = canConnect,
-            hasPendingMigrations = hasPendingMigrations,
-            appliedMigrations = appliedMigrations.ToList(),
-            faqCount = faqCount,
+            connectionString = context.Database.GetConnectionString(),
             timestamp = DateTime.UtcNow
         });
     }
@@ -283,7 +287,7 @@ app.MapGet("/api/test-database", async (AppDbContext context) =>
     {
         return Results.Json(new { 
             error = ex.Message,
-            stackTrace = ex.StackTrace,
+            innerException = ex.InnerException?.Message,
             timestamp = DateTime.UtcNow
         });
     }
