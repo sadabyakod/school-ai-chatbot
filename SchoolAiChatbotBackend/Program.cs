@@ -145,41 +145,20 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // Ensure database is created and seeded
-// Temporarily comment out database seeding for debugging
-// using (var scope = app.Services.CreateScope())
-// {
-//     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-//     context.Database.EnsureCreated();
-//     
-//     // Seed data if database is empty
-//     if (!context.Faqs.Any())
-//     {
-//         context.Faqs.AddRange(
-//             new SchoolAiChatbotBackend.Models.Faq
-//             {
-//                 Question = "What are the school hours?",
-//                 Answer = "School hours are Monday-Friday 8:00 AM to 3:00 PM.",
-//                 Category = "General",
-//                 CreatedAt = DateTime.UtcNow
-//             },
-//             new SchoolAiChatbotBackend.Models.Faq
-//             {
-//                 Question = "How do I contact the school?", 
-//                 Answer = "You can contact us at (555) 123-4567 or email info@school.edu",
-//                 Category = "Contact",
-//                 CreatedAt = DateTime.UtcNow
-//             },
-//             new SchoolAiChatbotBackend.Models.Faq
-//             {
-//                 Question = "What is the homework policy?",
-//                 Answer = "Homework should take approximately 10 minutes per grade level (e.g., 3rd grade = 30 minutes).",
-//                 Category = "Academic", 
-//                 CreatedAt = DateTime.UtcNow
-//             }
-//         );
-//         context.SaveChanges();
-//     }
-// }
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        await DatabaseSeeder.SeedAsync(scope.ServiceProvider);
+        var logger = app.Services.GetRequiredService<ILogger<Program>>();
+        logger.LogInformation("Database seeding completed successfully");
+    }
+    catch (Exception ex)
+    {
+        var logger = app.Services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Error during database seeding");
+    }
+}
 
 // Add simple health check endpoints that don't depend on any services
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
