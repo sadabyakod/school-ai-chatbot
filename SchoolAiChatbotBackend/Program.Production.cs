@@ -195,10 +195,10 @@ app.UseAuthorization();
 // }
 
 // Add simple health check endpoints that don't depend on any services
-app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
-app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow, api = "v1" }));
-app.MapGet("/api/ping", () => Results.Ok("pong"));
-app.MapGet("/", () => Results.Ok(new { message = "School AI Chatbot Backend is running", version = "1.0.0", timestamp = DateTime.UtcNow }));
+app.MapGet("/health", () => "healthy");
+app.MapGet("/api/health", () => "api-healthy");
+app.MapGet("/api/ping", () => "pong");
+app.MapGet("/", () => "School AI Chatbot Backend is running");
 
 app.MapControllers();
 
