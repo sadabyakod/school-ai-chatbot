@@ -133,6 +133,11 @@ app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Add health check endpoint
+app.MapGet("/health", () => new { status = "healthy", timestamp = DateTime.UtcNow });
+app.MapGet("/api/health", () => new { status = "healthy", timestamp = DateTime.UtcNow, api = "v1" });
+
 app.MapControllers();
 
 app.Run();
