@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 // using SchoolAiChatbotBackend.Data;
 using System.Text;
 using Microsoft.OpenApi.Models;
+using System.Text.Json;
 // using SchoolAiChatbotBackend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -199,6 +200,9 @@ app.MapGet("/health", () => "healthy");
 app.MapGet("/api/health", () => "api-healthy");
 app.MapGet("/api/ping", () => "pong");
 app.MapGet("/", () => "School AI Chatbot Backend is running");
+
+// Add a simple JSON test endpoint
+app.MapGet("/api/test-json", () => Results.Json(new { message = "JSON test works", timestamp = DateTime.UtcNow }));
 
 app.MapControllers();
 
