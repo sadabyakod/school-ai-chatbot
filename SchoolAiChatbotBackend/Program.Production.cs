@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
+// using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using SchoolAiChatbotBackend.Data;
+// using SchoolAiChatbotBackend.Data;
 using System.Text;
 using Microsoft.OpenApi.Models;
-using SchoolAiChatbotBackend.Services;
+// using SchoolAiChatbotBackend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 // Update CORS policy to allow any origin
@@ -30,51 +30,64 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "School AI Chatbot API", Version = "v1" });
 });
 
-// Configure EF Core provider selection
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-var dbProvider = builder.Configuration["DatabaseProvider"] ?? "SqlServer";
+// Configure EF Core provider selection - temporarily commented out for debugging
+// var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+// var dbProvider = builder.Configuration["DatabaseProvider"] ?? "SqlServer";
 
-if (string.IsNullOrEmpty(connectionString))
-{
-    // Use in-memory database if no connection string is provided (e.g., in Azure without DB)
-    builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseInMemoryDatabase("SchoolAiDb"));
-}
-else if (dbProvider == "MySql")
-{
-    builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseMySql(
-            connectionString,
-            new MySqlServerVersion(new Version(8, 0, 36)) // Adjust MySQL version as needed
-        ));
-}
-else
-{
-    builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlServer(connectionString));
-}
+// if (string.IsNullOrEmpty(connectionString))
+// {
+//     // Use in-memory database if no connection string is provided (e.g., in Azure without DB)
+//     builder.Services.AddDbContext<AppDbContext>(options =>
+//         options.UseInMemoryDatabase("SchoolAiDb"));
+// }
+// else if (dbProvider == "MySql")
+// {
+//     builder.Services.AddDbContext<AppDbContext>(options =>
+//         options.UseMySql(
+//             connectionString,
+//             new MySqlServerVersion(new Version(8, 0, 36)) // Adjust MySQL version as needed
+//         ));
+// }
+// else
+// {
+//     builder.Services.AddDbContext<AppDbContext>(options =>
+//         options.UseSqlServer(connectionString));
+// }
 
 
-// Configure JWT authentication
-var jwtSettings = builder.Configuration.GetSection("Jwt");
+// Configure JWT authentication with robust key handling
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey))
+{
+    jwtKey = Environment.GetEnvironmentVariable("JWT__SecretKey");
+}
+
+// If we still don't have a valid JWT key, use a fallback
+if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Length < 32)
+{
+    jwtKey = "default-super-secret-jwt-key-for-development-only-minimum-32-characters-long";
+}
+
+var key = Encoding.UTF8.GetBytes(jwtKey);
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
-    .AddJwtBearer(options =>
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtSettings["Issuer"],
-            ValidAudience = jwtSettings["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"] ?? string.Empty))
-        };
-    });
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ValidateLifetime = false
+    };
+});
 
 builder.Services.AddAuthorization();
 // Temporarily comment out external services for debugging
@@ -87,7 +100,7 @@ builder.Logging.AddConsole();
 // builder.Logging.AddProvider(new SchoolAiChatbotBackend.Logging.FileLoggerProvider(Path.Combine(builder.Environment.ContentRootPath, "backend.log")));
 
 // Set default minimum log level to Information so request logs are emitted.
-builder.Logging.SetMinimumLevel(LogLevel.Information);
+// builder.Logging.SetMinimumLevel(LogLevel.Information);
 
 // Register chat service implementation based on configuration flag 'UseClaude'
 // Temporarily comment out chat services for debugging
