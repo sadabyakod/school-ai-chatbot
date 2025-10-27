@@ -125,6 +125,37 @@ builder.Logging.AddConsole();
 
 var app = builder.Build();
 
+// Enable detailed error pages for debugging 500 errors
+app.UseDeveloperExceptionPage();
+
+// Add global exception handling middleware
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (Exception ex)
+    {
+        var logger = app.Services.GetService<ILoggerFactory>()?.CreateLogger("GlobalExceptionHandler");
+        logger?.LogError(ex, "Unhandled exception in request {Method} {Path}", context.Request.Method, context.Request.Path);
+        
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json";
+        
+        var errorDetails = new
+        {
+            error = "Internal Server Error",
+            message = ex.Message,
+            type = ex.GetType().Name,
+            stackTrace = ex.StackTrace?.Split('\n').Take(10).ToArray(),
+            timestamp = DateTime.UtcNow
+        };
+        
+        await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(errorDetails));
+    }
+});
+
 // Log the connection string we're using so it's easy to verify at runtime
 var connStr = builder.Configuration.GetConnectionString("DefaultConnection");
 // var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
@@ -195,14 +226,42 @@ app.UseCors("AllowFrontend");
 //     }
 // }
 
-// Add simple health check endpoints that don't depend on any services
+// Add comprehensive diagnostic endpoints
 app.MapGet("/health", () => "healthy");
 app.MapGet("/api/health", () => "api-healthy");
 app.MapGet("/api/ping", () => "pong");
 app.MapGet("/", () => "School AI Chatbot Backend is running");
 
-// Add a simple JSON test endpoint
+// Test JSON serialization
 app.MapGet("/api/test-json", () => Results.Json(new { message = "JSON test works", timestamp = DateTime.UtcNow }));
+
+// Test service provider
+app.MapGet("/api/test-services", (IServiceProvider services) => 
+{
+    var loggerFactory = services.GetService<ILoggerFactory>();
+    var configuration = services.GetService<IConfiguration>();
+    
+    return Results.Json(new { 
+        hasLoggerFactory = loggerFactory != null,
+        hasConfiguration = configuration != null,
+        serviceCount = services.GetType().Name,
+        timestamp = DateTime.UtcNow
+    });
+});
+
+// Test configuration access without injection
+app.MapGet("/api/test-config", () => 
+{
+    var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Unknown";
+    var hasJwt = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("JWT__SecretKey"));
+    
+    return Results.Json(new { 
+        environment = env,
+        hasJwtEnvVar = hasJwt,
+        timestamp = DateTime.UtcNow,
+        message = "Config test without injection"
+    });
+});
 
 app.MapControllers();
 
