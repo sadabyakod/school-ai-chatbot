@@ -130,25 +130,24 @@ var connStr = builder.Configuration.GetConnectionString("DefaultConnection");
 // startupLogger.LogInformation("Using DB connection: {Conn}", connStr);
 
 // Add middleware to log incoming requests early in the pipeline so we capture all hits.
-app.Use(async (context, next) =>
-{
-    var logger = app.Services.GetRequiredService<ILogger<Program>>();
-    var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-    var origin = context.Request.Headers["Origin"].ToString();
-    var referer = context.Request.Headers["Referer"].ToString();
-    var userAgent = context.Request.Headers["User-Agent"].ToString();
+// Temporarily commented out to debug 500 errors
+// app.Use(async (context, next) =>
+// {
+//     var logger = app.Services.GetRequiredService<ILogger<Program>>();
+//     var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+//     var origin = context.Request.Headers["Origin"].ToString();
+//     var referer = context.Request.Headers["Referer"].ToString();
+//     var userAgent = context.Request.Headers["User-Agent"].ToString();
 
-    logger.LogInformation("Frontend hit: {Method} {Path} from {RemoteIp} Origin={Origin} Referer={Referer} UA={UserAgent}",
-        context.Request.Method, context.Request.Path, ip, origin, referer, userAgent);
+//     logger.LogInformation("Frontend hit: {Method} {Path} from {RemoteIp} Origin={Origin} Referer={Referer} UA={UserAgent}",
+//         context.Request.Method, context.Request.Path, ip, origin, referer, userAgent);
 
-    await next();
-});
+//     await next();
+// });
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Enable Swagger in all environments for debugging
+app.UseSwagger();
+app.UseSwaggerUI();
 
 
 
