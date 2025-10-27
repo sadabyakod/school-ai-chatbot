@@ -50,8 +50,9 @@ namespace SchoolAiChatbotBackend.Controllers
             var ua = Request.Headers["User-Agent"].ToString();
             _logger.LogInformation("POST /api/chat from {RemoteIp} Origin={Origin} Referer={Referer} UA={UserAgent} MessageLength={Len}", ip, origin, referer, ua, request.Message?.Length ?? 0);
 
-            var reply = await _chatService.GetChatCompletionAsync(request.Message, request.Language ?? "en");
-            return Ok(new ChatResponse { Reply = reply, Language = request.Language });
+            // Temporarily return mock response while services are disabled
+            var reply = $"Thank you for your message: '{request.Message}'. The AI chat service will be available soon!";
+            return Ok(new ChatResponse { Reply = reply, Language = request.Language ?? "en" });
         }
 
         [HttpPost("ask")]
@@ -73,19 +74,20 @@ namespace SchoolAiChatbotBackend.Controllers
 
             _logger.LogInformation("Received question: {Question}", request.Question);
 
-            // 1) Get embedding for the question
-            var embedding = await _chatService.GetEmbeddingAsync(request.Question);
+            // Temporarily return mock response while services are disabled
+            // // 1) Get embedding for the question
+            // var embedding = await _chatService.GetEmbeddingAsync(request.Question);
 
-            // 2) Query Pinecone for similar vectors (optional school filter)
-            var topK = request.TopK ?? 5;
-            var pineconeIds = await _pineconeService.QuerySimilarVectorsAsync(embedding, topK);
+            // // 2) Query Pinecone for similar vectors (optional school filter)
+            // var topK = request.TopK ?? 5;
+            // var pineconeIds = await _pineconeService.QuerySimilarVectorsAsync(embedding, topK);
 
-            // 3) Fetch matching syllabus chunks from DB
+            // // 3) Fetch matching syllabus chunks from DB
             var chunks = new List<Models.SyllabusChunk>();
-            if (pineconeIds != null && pineconeIds.Any())
-            {
-                chunks = _dbContext.SyllabusChunks.Where(s => pineconeIds.Contains(s.PineconeVectorId)).Take(topK).ToList();
-            }
+            // if (pineconeIds != null && pineconeIds.Any())
+            // {
+            //     chunks = _dbContext.SyllabusChunks.Where(s => pineconeIds.Contains(s.PineconeVectorId)).Take(topK).ToList();
+            // }
 
             // 4) Build prompt using retrieved context
             var contextText = string.Empty;
@@ -109,7 +111,8 @@ namespace SchoolAiChatbotBackend.Controllers
 
             // 5) Call OpenAI completion with the prompt
             var language = request.Language ?? "en";
-            var answer = await _chatService.GetChatCompletionAsync(prompt, language);
+            // Temporarily return mock response while services are disabled
+            var answer = $"Thank you for your question: '{request.Question}'. The AI-powered FAQ system will be available soon! For now, please check our basic FAQ section.";
 
             // 6) Return structured result
             return Ok(new
