@@ -88,9 +88,20 @@ if (string.IsNullOrWhiteSpace(jwtKey))
 }
 if (string.IsNullOrWhiteSpace(jwtKey))
 {
-    jwtKey = "default-super-secret-jwt-key-for-development-only";
+    jwtKey = Environment.GetEnvironmentVariable("JWT__SecretKey");
 }
-var key = Encoding.ASCII.GetBytes(jwtKey);
+if (string.IsNullOrWhiteSpace(jwtKey))
+{
+    jwtKey = "default-super-secret-jwt-key-for-development-only-minimum-32-characters-long";
+}
+
+// Ensure minimum key length for JWT (must be at least 256 bits / 32 characters)
+if (jwtKey.Length < 32)
+{
+    jwtKey = "default-super-secret-jwt-key-for-development-only-minimum-32-characters-long";
+}
+
+var key = Encoding.UTF8.GetBytes(jwtKey);
 
 builder.Services.AddAuthentication(x =>
 {
