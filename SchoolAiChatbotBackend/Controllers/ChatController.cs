@@ -13,19 +13,20 @@ namespace SchoolAiChatbotBackend.Controllers
     [Route("api/[controller]")]
     public class ChatController : ControllerBase
     {
-        private readonly IChatService _chatService;
-        private readonly FaqEmbeddingService _faqEmbeddingService;
-        private readonly SchoolAiChatbotBackend.Services.PineconeService _pineconeService;
-        private readonly SchoolAiChatbotBackend.Data.AppDbContext _dbContext;
+        // Temporarily simplified - no external service dependencies
+        // private readonly IChatService _chatService;
+        // private readonly FaqEmbeddingService _faqEmbeddingService;
+        // private readonly SchoolAiChatbotBackend.Services.PineconeService _pineconeService;
+        // private readonly SchoolAiChatbotBackend.Data.AppDbContext _dbContext;
         private readonly ILogger<ChatController> _logger;
 
-        public ChatController(ILogger<ChatController> logger, IChatService chatService, FaqEmbeddingService faqService, SchoolAiChatbotBackend.Services.PineconeService pineconeService, SchoolAiChatbotBackend.Data.AppDbContext dbContext)
+        public ChatController(ILogger<ChatController> logger)
         {
             _logger = logger;
-            _chatService = chatService;
-            _faqEmbeddingService = faqService;
-            _pineconeService = pineconeService;
-            _dbContext = dbContext;
+            // _chatService = chatService;
+            // _faqEmbeddingService = faqService;
+            // _pineconeService = pineconeService;
+            // _dbContext = dbContext;
         }
 
         [HttpPost]
