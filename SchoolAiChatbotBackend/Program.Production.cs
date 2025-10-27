@@ -78,6 +78,7 @@ app.MapGet("/health", () => "healthy");
 app.MapGet("/api/ping", () => "pong");
 app.MapGet("/", () => "School AI Chatbot Backend is running");
 
-app.MapControllers();
+// Temporarily disable controllers
+// app.MapControllers();
 
 app.Run();
