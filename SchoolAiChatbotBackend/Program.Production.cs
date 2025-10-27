@@ -1,7 +1,7 @@
-using Microsoft.EntityFrameworkCore;
+// using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using SchoolAiChatbotBackend.Data;
-using SchoolAiChatbotBackend.Services;
+// using SchoolAiChatbotBackend.Data;
+// using SchoolAiChatbotBackend.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
