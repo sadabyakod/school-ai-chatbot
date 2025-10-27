@@ -58,26 +58,27 @@ builder.Services.AddCors(options =>
 });
 
 // Configure Database
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+// Temporarily commented out for debugging
+// var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-if (string.IsNullOrEmpty(connectionString))
-{
-    // For local development, use in-memory database
-    builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseInMemoryDatabase("SchoolAiChatbot"));
-}
-else
-{
-    // For production, use Azure SQL Database
-    builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlServer(connectionString, sqlOptions =>
-        {
-            sqlOptions.EnableRetryOnFailure(
-                maxRetryCount: 5,
-                maxRetryDelay: TimeSpan.FromSeconds(30),
-                errorNumbersToAdd: null);
-        }));
-}
+// if (string.IsNullOrEmpty(connectionString))
+// {
+//     // For local development, use in-memory database
+//     builder.Services.AddDbContext<AppDbContext>(options =>
+//         options.UseInMemoryDatabase("SchoolAiChatbot"));
+// }
+// else
+// {
+//     // For production, use Azure SQL Database
+//     builder.Services.AddDbContext<AppDbContext>(options =>
+//         options.UseSqlServer(connectionString, sqlOptions =>
+//         {
+//             sqlOptions.EnableRetryOnFailure(
+//                 maxRetryCount: 5,
+//                 maxRetryDelay: TimeSpan.FromSeconds(30),
+//                 errorNumbersToAdd: null);
+//         }));
+// }
 
 // Configure JWT Authentication
 // Prefer explicit Jwt:Key, fall back to environment variable JWT__SecretKey, then to a safe default.
@@ -272,4 +273,4 @@ app.Run();
 
     // context.Faqs.AddRange(faqs);
     // await context.SaveChangesAsync();
-}
+// }
