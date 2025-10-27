@@ -1,4 +1,4 @@
-name: Deploy .NET Core to Azure Web App
+﻿name: Deploy .NET Core to Azure Web App
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_NAME: 'school-ai-chatbot-app-18820031328'    # Using working app name
+  AZURE_WEBAPP_NAME: 'app-wlanqwy7vuwmu'    # Using actual deployed app name
   AZURE_WEBAPP_PACKAGE_PATH: './SchoolAiChatbotBackend'
   DOTNET_VERSION: '9.0.x'
 
@@ -29,6 +29,9 @@ jobs:
         key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
         restore-keys: |
           ${{ runner.os }}-nuget-
+    
+    - name: Copy Production Program.cs
+      run: cp SchoolAiChatbotBackend/Program.Production.cs SchoolAiChatbotBackend/Program.cs
           
     - name: Build with dotnet
       run: dotnet build ${{ env.AZURE_WEBAPP_PACKAGE_PATH }} --configuration Release
@@ -36,9 +39,13 @@ jobs:
     - name: Publish with dotnet
       run: dotnet publish ${{ env.AZURE_WEBAPP_PACKAGE_PATH }} --configuration Release --output ./myapp
       
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        
     - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v2
       with:
         app-name: ${{ env.AZURE_WEBAPP_NAME }}
-        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
         package: './myapp'
