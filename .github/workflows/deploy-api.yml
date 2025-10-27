@@ -67,9 +67,10 @@ jobs:
           --resource-group ${{ secrets.AZURE_RESOURCE_GROUP_NAME }} \
           --settings \
             ASPNETCORE_ENVIRONMENT=Production \
+            DatabaseProvider=MySql \
             OpenAI__ApiKey="${{ secrets.OPENAI_API_KEY }}" \
             JWT__SecretKey="${{ secrets.JWT_SECRET_KEY }}" \
-            ConnectionStrings__DefaultConnection="InMemory"
+            "ConnectionStrings__DefaultConnection=Server=school-ai-mysql-server.mysql.database.azure.com;Database=flexibleserverdb;User Id=adminuser;Password=${{ secrets.MYSQL_PASSWORD }};SslMode=Required;"
         
         echo "appServiceName=$APP_NAME" >> $GITHUB_OUTPUT
         echo "App Service URL: https://$APP_NAME.azurewebsites.net"
