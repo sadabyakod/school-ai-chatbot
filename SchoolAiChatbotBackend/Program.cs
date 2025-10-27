@@ -77,42 +77,44 @@ builder.Services.AddAuthentication(options =>
     });
 
 builder.Services.AddAuthorization();
-builder.Services.AddScoped<SchoolAiChatbotBackend.Services.JwtService>();
-builder.Services.AddScoped<SchoolAiChatbotBackend.Services.PineconeService>();
-builder.Services.AddScoped<SchoolAiChatbotBackend.Services.FaqEmbeddingService>();
+// Temporarily comment out external services for debugging
+// builder.Services.AddScoped<SchoolAiChatbotBackend.Services.JwtService>();
+// builder.Services.AddScoped<SchoolAiChatbotBackend.Services.PineconeService>();
+// builder.Services.AddScoped<SchoolAiChatbotBackend.Services.FaqEmbeddingService>();
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 // Also add a simple file logger to persist logs to backend.log for debugging
-builder.Logging.AddProvider(new SchoolAiChatbotBackend.Logging.FileLoggerProvider(Path.Combine(builder.Environment.ContentRootPath, "backend.log")));
+// builder.Logging.AddProvider(new SchoolAiChatbotBackend.Logging.FileLoggerProvider(Path.Combine(builder.Environment.ContentRootPath, "backend.log")));
 
 // Set default minimum log level to Information so request logs are emitted.
 builder.Logging.SetMinimumLevel(LogLevel.Information);
 
 // Register chat service implementation based on configuration flag 'UseClaude'
-builder.Services.AddScoped<IChatService>(provider =>
-{
-    var config = provider.GetRequiredService<IConfiguration>();
-    var useClaude = bool.TryParse(config["UseClaude"], out var enabled) && enabled;
-    if (useClaude)
-    {
-        return provider.GetRequiredService<ClaudeChatService>();
-    }
-    else
-    {
-        var apiKey = config["OpenAI:ApiKey"] ?? "YOUR_OPENAI_API_KEY";
-        return new OpenAiChatService(apiKey);
-    }
-});
-
-// Ensure ClaudeChatService is available for DI if requested
-builder.Services.AddScoped<ClaudeChatService>();
+// Temporarily comment out chat services for debugging
+// builder.Services.AddScoped<IChatService>(provider =>
+// {
+//     var config = provider.GetRequiredService<IConfiguration>();
+//     var useClaude = bool.TryParse(config["UseClaude"], out var enabled) && enabled;
+//     if (useClaude)
+//     {
+//         return provider.GetRequiredService<ClaudeChatService>();
+//     }
+//     else
+//     {
+//         var apiKey = config["OpenAI:ApiKey"] ?? "YOUR_OPENAI_API_KEY";
+//         return new OpenAiChatService(apiKey);
+//     }
+// });
+// 
+// // Ensure ClaudeChatService is available for DI if requested
+// builder.Services.AddScoped<ClaudeChatService>();
 
 var app = builder.Build();
 
 // Log the connection string we're using so it's easy to verify at runtime
 var connStr = builder.Configuration.GetConnectionString("DefaultConnection");
-var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
-startupLogger.LogInformation("Using DB connection: {Conn}", connStr);
+// var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
+// startupLogger.LogInformation("Using DB connection: {Conn}", connStr);
 
 // Add middleware to log incoming requests early in the pipeline so we capture all hits.
 app.Use(async (context, next) =>
@@ -143,40 +145,41 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // Ensure database is created and seeded
-using (var scope = app.Services.CreateScope())
-{
-    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    context.Database.EnsureCreated();
-    
-    // Seed data if database is empty
-    if (!context.Faqs.Any())
-    {
-        context.Faqs.AddRange(
-            new SchoolAiChatbotBackend.Models.Faq
-            {
-                Question = "What are the school hours?",
-                Answer = "School hours are Monday-Friday 8:00 AM to 3:00 PM.",
-                Category = "General",
-                CreatedAt = DateTime.UtcNow
-            },
-            new SchoolAiChatbotBackend.Models.Faq
-            {
-                Question = "How do I contact the school?", 
-                Answer = "You can contact us at (555) 123-4567 or email info@school.edu",
-                Category = "Contact",
-                CreatedAt = DateTime.UtcNow
-            },
-            new SchoolAiChatbotBackend.Models.Faq
-            {
-                Question = "What is the homework policy?",
-                Answer = "Homework should take approximately 10 minutes per grade level (e.g., 3rd grade = 30 minutes).",
-                Category = "Academic", 
-                CreatedAt = DateTime.UtcNow
-            }
-        );
-        context.SaveChanges();
-    }
-}
+// Temporarily comment out database seeding for debugging
+// using (var scope = app.Services.CreateScope())
+// {
+//     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+//     context.Database.EnsureCreated();
+//     
+//     // Seed data if database is empty
+//     if (!context.Faqs.Any())
+//     {
+//         context.Faqs.AddRange(
+//             new SchoolAiChatbotBackend.Models.Faq
+//             {
+//                 Question = "What are the school hours?",
+//                 Answer = "School hours are Monday-Friday 8:00 AM to 3:00 PM.",
+//                 Category = "General",
+//                 CreatedAt = DateTime.UtcNow
+//             },
+//             new SchoolAiChatbotBackend.Models.Faq
+//             {
+//                 Question = "How do I contact the school?", 
+//                 Answer = "You can contact us at (555) 123-4567 or email info@school.edu",
+//                 Category = "Contact",
+//                 CreatedAt = DateTime.UtcNow
+//             },
+//             new SchoolAiChatbotBackend.Models.Faq
+//             {
+//                 Question = "What is the homework policy?",
+//                 Answer = "Homework should take approximately 10 minutes per grade level (e.g., 3rd grade = 30 minutes).",
+//                 Category = "Academic", 
+//                 CreatedAt = DateTime.UtcNow
+//             }
+//         );
+//         context.SaveChanges();
+//     }
+// }
 
 // Add health check endpoint
 app.MapGet("/health", () => new { status = "healthy", timestamp = DateTime.UtcNow });
