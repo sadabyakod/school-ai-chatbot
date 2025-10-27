@@ -80,7 +80,16 @@ else
 }
 
 // Configure JWT Authentication
-var jwtKey = builder.Configuration["Jwt:Key"] ?? "default-super-secret-jwt-key-for-development-only";
+// Prefer explicit Jwt:Key, fall back to environment variable JWT__SecretKey, then to a safe default.
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey))
+{
+    jwtKey = builder.Configuration["JWT__SecretKey"];
+}
+if (string.IsNullOrWhiteSpace(jwtKey))
+{
+    jwtKey = "default-super-secret-jwt-key-for-development-only";
+}
 var key = Encoding.ASCII.GetBytes(jwtKey);
 
 builder.Services.AddAuthentication(x =>
