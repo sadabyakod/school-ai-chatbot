@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SchoolAiChatbotBackend")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e85a5ee386c51f964ce01fe81fc487590c821ab9")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8871cadfba9b1012fb628503424983dd1a2f35c3")]
 [assembly: System.Reflection.AssemblyProductAttribute("SchoolAiChatbotBackend")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SchoolAiChatbotBackend")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

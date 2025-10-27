@@ -8,6 +8,7 @@ infra:
   provider: bicep
   path: infra
   module: standard-app-service
+  parameters: standard-app-service
 services:
   # frontend:
   #   project: ./school-ai-frontend

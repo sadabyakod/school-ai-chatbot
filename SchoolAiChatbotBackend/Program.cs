@@ -31,19 +31,27 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // Configure EF Core provider selection
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 var dbProvider = builder.Configuration["DatabaseProvider"] ?? "SqlServer";
-if (dbProvider == "MySql")
+
+if (string.IsNullOrEmpty(connectionString))
+{
+    // Use in-memory database if no connection string is provided (e.g., in Azure without DB)
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseInMemoryDatabase("SchoolAiDb"));
+}
+else if (dbProvider == "MySql")
 {
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseMySql(
-            builder.Configuration.GetConnectionString("DefaultConnection"),
+            connectionString,
             new MySqlServerVersion(new Version(8, 0, 36)) // Adjust MySQL version as needed
         ));
 }
 else
 {
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+        options.UseSqlServer(connectionString));
 }
 
 
