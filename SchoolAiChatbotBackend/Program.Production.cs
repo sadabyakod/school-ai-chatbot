@@ -76,7 +76,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         {
             mysqlOptions.EnableRetryOnFailure(
                 maxRetryCount: 5,
-                maxRetryDelay: TimeSpan.FromSeconds(30));
+                maxRetryDelay: TimeSpan.FromSeconds(30),
+                errorNumbersToAdd: null);
         }));
 
 // Configure JWT Authentication
