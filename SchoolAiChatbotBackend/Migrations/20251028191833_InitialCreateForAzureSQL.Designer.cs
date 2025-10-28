@@ -12,8 +12,8 @@ using SchoolAiChatbotBackend.Data;
 namespace SchoolAiChatbotBackend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251023201105_AddSyllabusChunksTable")]
-    partial class AddSyllabusChunksTable
+    [Migration("20251028191833_InitialCreateForAzureSQL")]
+    partial class InitialCreateForAzureSQL
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -129,6 +129,13 @@ namespace SchoolAiChatbotBackend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Question")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -159,6 +166,10 @@ namespace SchoolAiChatbotBackend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Events")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -175,7 +186,15 @@ namespace SchoolAiChatbotBackend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Timetable")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Website")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -208,9 +227,6 @@ namespace SchoolAiChatbotBackend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("SchoolId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Source")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -224,8 +240,6 @@ namespace SchoolAiChatbotBackend.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SchoolId");
-
                     b.HasIndex("UploadedFileId");
 
                     b.ToTable("SyllabusChunks");
@@ -238,6 +252,9 @@ namespace SchoolAiChatbotBackend.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -320,19 +337,11 @@ namespace SchoolAiChatbotBackend.Migrations
 
             modelBuilder.Entity("SchoolAiChatbotBackend.Models.SyllabusChunk", b =>
                 {
-                    b.HasOne("SchoolAiChatbotBackend.Models.School", "School")
-                        .WithMany()
-                        .HasForeignKey("SchoolId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("SchoolAiChatbotBackend.Data.UploadedFile", "UploadedFile")
                         .WithMany()
                         .HasForeignKey("UploadedFileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("School");
 
                     b.Navigation("UploadedFile");
                 });

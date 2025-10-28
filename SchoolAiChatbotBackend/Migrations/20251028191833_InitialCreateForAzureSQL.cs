@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace SchoolAiChatbotBackend.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class InitialCreateForAzureSQL : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -20,6 +20,9 @@ namespace SchoolAiChatbotBackend.Migrations
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Address = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ContactInfo = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PhoneNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Website = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     FeeStructure = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Timetable = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Holidays = table.Column<string>(type: "nvarchar(max)", nullable: false),
@@ -31,6 +34,23 @@ namespace SchoolAiChatbotBackend.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "UploadedFiles",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    FileName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    FilePath = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    UploadDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    EmbeddingDimension = table.Column<int>(type: "int", nullable: false),
+                    EmbeddingVector = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UploadedFiles", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Faqs",
                 columns: table => new
                 {
@@ -38,6 +58,8 @@ namespace SchoolAiChatbotBackend.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Question = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Answer = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Category = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     SchoolId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
@@ -45,29 +67,6 @@ namespace SchoolAiChatbotBackend.Migrations
                     table.PrimaryKey("PK_Faqs", x => x.Id);
                     table.ForeignKey(
                         name: "FK_Faqs_Schools_SchoolId",
-                        column: x => x.SchoolId,
-                        principalTable: "Schools",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "SyllabusChunks",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Subject = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Grade = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Source = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ChunkText = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    SchoolId = table.Column<int>(type: "int", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_SyllabusChunks", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_SyllabusChunks_Schools_SchoolId",
                         column: x => x.SchoolId,
                         principalTable: "Schools",
                         principalColumn: "Id",
@@ -84,6 +83,7 @@ namespace SchoolAiChatbotBackend.Migrations
                     Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Role = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     SchoolId = table.Column<int>(type: "int", nullable: false),
                     LanguagePreference = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
@@ -99,30 +99,28 @@ namespace SchoolAiChatbotBackend.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Embeddings",
+                name: "SyllabusChunks",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    SyllabusChunkId = table.Column<int>(type: "int", nullable: false),
-                    VectorJson = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    SchoolId = table.Column<int>(type: "int", nullable: false)
+                    Subject = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Grade = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Source = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ChunkText = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Chapter = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    UploadedFileId = table.Column<int>(type: "int", nullable: false),
+                    PineconeVectorId = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Embeddings", x => x.Id);
+                    table.PrimaryKey("PK_SyllabusChunks", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Embeddings_Schools_SchoolId",
-                        column: x => x.SchoolId,
-                        principalTable: "Schools",
+                        name: "FK_SyllabusChunks_UploadedFiles_UploadedFileId",
+                        column: x => x.UploadedFileId,
+                        principalTable: "UploadedFiles",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Embeddings_SyllabusChunks_SyllabusChunkId",
-                        column: x => x.SyllabusChunkId,
-                        principalTable: "SyllabusChunks",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -154,6 +152,33 @@ namespace SchoolAiChatbotBackend.Migrations
                         onDelete: ReferentialAction.Restrict);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "Embeddings",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    SyllabusChunkId = table.Column<int>(type: "int", nullable: false),
+                    VectorJson = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    SchoolId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Embeddings", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Embeddings_Schools_SchoolId",
+                        column: x => x.SchoolId,
+                        principalTable: "Schools",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Embeddings_SyllabusChunks_SyllabusChunkId",
+                        column: x => x.SyllabusChunkId,
+                        principalTable: "SyllabusChunks",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_ChatLogs_SchoolId",
                 table: "ChatLogs",
@@ -180,9 +205,9 @@ namespace SchoolAiChatbotBackend.Migrations
                 column: "SchoolId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_SyllabusChunks_SchoolId",
+                name: "IX_SyllabusChunks_UploadedFileId",
                 table: "SyllabusChunks",
-                column: "SchoolId");
+                column: "UploadedFileId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_SchoolId",
@@ -210,6 +235,9 @@ namespace SchoolAiChatbotBackend.Migrations
 
             migrationBuilder.DropTable(
                 name: "Schools");
+
+            migrationBuilder.DropTable(
+                name: "UploadedFiles");
         }
     }
 }

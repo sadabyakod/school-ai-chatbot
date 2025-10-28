@@ -11,8 +11,8 @@ namespace SchoolAiChatbotBackend.Data
             using var scope = serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             
-            // Ensure database is created
-            await context.Database.EnsureCreatedAsync();
+            // Apply any pending migrations to create/update database schema
+            await context.Database.MigrateAsync();
             
             // Check if data already exists
             if (await context.Schools.AnyAsync())

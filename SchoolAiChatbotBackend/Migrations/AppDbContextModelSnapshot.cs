@@ -50,7 +50,7 @@ namespace SchoolAiChatbotBackend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("UploadedFiles", (string)null);
+                    b.ToTable("UploadedFiles");
                 });
 
             modelBuilder.Entity("SchoolAiChatbotBackend.Models.ChatLog", b =>
@@ -84,7 +84,7 @@ namespace SchoolAiChatbotBackend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ChatLogs", (string)null);
+                    b.ToTable("ChatLogs");
                 });
 
             modelBuilder.Entity("SchoolAiChatbotBackend.Models.Embedding", b =>
@@ -111,7 +111,7 @@ namespace SchoolAiChatbotBackend.Migrations
 
                     b.HasIndex("SyllabusChunkId");
 
-                    b.ToTable("Embeddings", (string)null);
+                    b.ToTable("Embeddings");
                 });
 
             modelBuilder.Entity("SchoolAiChatbotBackend.Models.Faq", b =>
@@ -126,6 +126,13 @@ namespace SchoolAiChatbotBackend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Question")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -137,7 +144,7 @@ namespace SchoolAiChatbotBackend.Migrations
 
                     b.HasIndex("SchoolId");
 
-                    b.ToTable("Faqs", (string)null);
+                    b.ToTable("Faqs");
                 });
 
             modelBuilder.Entity("SchoolAiChatbotBackend.Models.School", b =>
@@ -153,6 +160,10 @@ namespace SchoolAiChatbotBackend.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ContactInfo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -172,13 +183,21 @@ namespace SchoolAiChatbotBackend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Timetable")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Website")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Schools", (string)null);
+                    b.ToTable("Schools");
                 });
 
             modelBuilder.Entity("SchoolAiChatbotBackend.Models.SyllabusChunk", b =>
@@ -205,9 +224,6 @@ namespace SchoolAiChatbotBackend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("SchoolId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Source")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -221,11 +237,9 @@ namespace SchoolAiChatbotBackend.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SchoolId");
-
                     b.HasIndex("UploadedFileId");
 
-                    b.ToTable("SyllabusChunks", (string)null);
+                    b.ToTable("SyllabusChunks");
                 });
 
             modelBuilder.Entity("SchoolAiChatbotBackend.Models.User", b =>
@@ -235,6 +249,9 @@ namespace SchoolAiChatbotBackend.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -263,7 +280,7 @@ namespace SchoolAiChatbotBackend.Migrations
 
                     b.HasIndex("SchoolId");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("SchoolAiChatbotBackend.Models.ChatLog", b =>
@@ -317,19 +334,11 @@ namespace SchoolAiChatbotBackend.Migrations
 
             modelBuilder.Entity("SchoolAiChatbotBackend.Models.SyllabusChunk", b =>
                 {
-                    b.HasOne("SchoolAiChatbotBackend.Models.School", "School")
-                        .WithMany()
-                        .HasForeignKey("SchoolId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("SchoolAiChatbotBackend.Data.UploadedFile", "UploadedFile")
                         .WithMany()
                         .HasForeignKey("UploadedFileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("School");
 
                     b.Navigation("UploadedFile");
                 });
