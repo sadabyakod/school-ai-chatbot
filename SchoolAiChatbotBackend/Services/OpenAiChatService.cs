@@ -15,61 +15,132 @@ namespace SchoolAiChatbotBackend.Services
 
         public async Task<string> GetChatCompletionAsync(string prompt, string language)
         {
-            var fullPrompt = $"You are a helpful school assistant. Reply in {(language == "kn" ? "Kannada" : "English")}\nUser: {prompt}";
-            using var httpClient = new System.Net.Http.HttpClient();
-            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_apiKey}");
-            var payload = new
+            try
             {
-                model = "gpt-3.5-turbo-instruct", // fallback to a known completions model
-                prompt = fullPrompt,
-                max_tokens = 256
-            };
-            var content = new System.Net.Http.StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json");
-            var response = await httpClient.PostAsync("https://api.openai.com/v1/completions", content);
-            if (!response.IsSuccessStatusCode)
-                return $"(OpenAI error: {response.StatusCode})";
-            var json = await response.Content.ReadAsStringAsync();
-            using var doc = System.Text.Json.JsonDocument.Parse(json);
-            var text = doc.RootElement.GetProperty("choices")[0].GetProperty("text").GetString();
-            return text?.Trim() ?? "(No response)";
+                using var httpClient = new System.Net.Http.HttpClient();
+                httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_apiKey}");
+
+                // Use the modern Chat Completions API with GPT-4 or GPT-3.5-turbo
+                var payload = new
+                {
+                    model = "gpt-3.5-turbo",
+                    messages = new[]
+                    {
+                        new
+                        {
+                            role = "system",
+                            content = $"You are a knowledgeable, friendly school tutor. Always provide accurate, helpful educational content in {(language == "kn" ? "Kannada" : "English")}. Keep responses clear and student-friendly."
+                        },
+                        new
+                        {
+                            role = "user",
+                            content = prompt
+                        }
+                    },
+                    max_tokens = 500,
+                    temperature = 0.7,
+                    top_p = 1.0,
+                    frequency_penalty = 0.0,
+                    presence_penalty = 0.0
+                };
+
+                var content = new System.Net.Http.StringContent(
+                    System.Text.Json.JsonSerializer.Serialize(payload), 
+                    System.Text.Encoding.UTF8, 
+                    "application/json"
+                );
+
+                var response = await httpClient.PostAsync("https://api.openai.com/v1/chat/completions", content);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    throw new System.Exception($"OpenAI API error ({response.StatusCode}): {errorContent}");
+                }
+
+                var json = await response.Content.ReadAsStringAsync();
+                using var doc = System.Text.Json.JsonDocument.Parse(json);
+                
+                var choices = doc.RootElement.GetProperty("choices");
+                if (choices.GetArrayLength() == 0)
+                {
+                    return "No response generated from AI service.";
+                }
+
+                var message = choices[0].GetProperty("message");
+                var responseText = message.GetProperty("content").GetString();
+                
+                return responseText?.Trim() ?? "Empty response from AI service.";
+            }
+            catch (System.Exception ex)
+            {
+                // Log the error but return a user-friendly message
+                throw new System.Exception($"Failed to get AI response: {ex.Message}");
+            }
         }
 
         public async Task<List<float>> GetEmbeddingAsync(string text)
         {
-            using var httpClient = new System.Net.Http.HttpClient();
-            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_apiKey}");
-            var payload = new
+            try
             {
-                input = text,
-                model = "text-embedding-ada-002"
-            };
-            var content = new System.Net.Http.StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json");
-            var response = await httpClient.PostAsync("https://api.openai.com/v1/embeddings", content);
-            if (!response.IsSuccessStatusCode)
-                throw new System.Exception($"OpenAI embedding error: {response.StatusCode}");
-            var json = await response.Content.ReadAsStringAsync();
-            using var doc = System.Text.Json.JsonDocument.Parse(json);
-            var embeddingArray = doc.RootElement.GetProperty("data")[0].GetProperty("embedding");
-            var embedding = new List<float>();
-            // Parse numeric values as double then cast to float for robustness
-            foreach (var v in embeddingArray.EnumerateArray())
-            {
-                if (v.ValueKind == System.Text.Json.JsonValueKind.Number)
+                using var httpClient = new System.Net.Http.HttpClient();
+                httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_apiKey}");
+                
+                var payload = new
                 {
-                    var d = v.GetDouble();
-                    embedding.Add((float)d);
+                    input = text,
+                    model = "text-embedding-3-small" // Updated to newer, more efficient model
+                };
+                
+                var content = new System.Net.Http.StringContent(
+                    System.Text.Json.JsonSerializer.Serialize(payload), 
+                    System.Text.Encoding.UTF8, 
+                    "application/json"
+                );
+                
+                var response = await httpClient.PostAsync("https://api.openai.com/v1/embeddings", content);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    throw new System.Exception($"OpenAI embedding error ({response.StatusCode}): {errorContent}");
                 }
-                else
+                
+                var json = await response.Content.ReadAsStringAsync();
+                using var doc = System.Text.Json.JsonDocument.Parse(json);
+                
+                var data = doc.RootElement.GetProperty("data");
+                if (data.GetArrayLength() == 0)
                 {
-                    // Fallback: try to get as string then parse
-                    var s = v.GetString();
-                    if (float.TryParse(s, out var fv))
-                        embedding.Add(fv);
+                    throw new System.Exception("No embedding data returned from OpenAI");
+                }
+                
+                var embeddingArray = data[0].GetProperty("embedding");
+                var embedding = new List<float>();
+                
+                foreach (var v in embeddingArray.EnumerateArray())
+                {
+                    if (v.ValueKind == System.Text.Json.JsonValueKind.Number)
+                    {
+                        embedding.Add((float)v.GetDouble());
+                    }
                     else
-                        embedding.Add(0f);
+                    {
+                        // Fallback: try to get as string then parse
+                        var s = v.GetString();
+                        if (float.TryParse(s, out var fv))
+                            embedding.Add(fv);
+                        else
+                            embedding.Add(0f);
+                    }
                 }
+                
+                return embedding;
             }
-            return embedding;
+            catch (System.Exception ex)
+            {
+                throw new System.Exception($"Failed to get embedding: {ex.Message}");
+            }
         }
     }
 }

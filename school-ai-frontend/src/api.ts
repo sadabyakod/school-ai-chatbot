@@ -1,11 +1,9 @@
 // API utility for backend calls
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
-export async function sendChat({ userId, schoolId, message, language, token }: {
-  userId: number;
-  schoolId: number;
+export async function sendChat({message, token }: {
   message: string;
-  language: string;
+  language?: string;
   token?: string;
 }) {
   const res = await fetch(`${API_URL}/chat`, {
@@ -14,8 +12,14 @@ export async function sendChat({ userId, schoolId, message, language, token }: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {})
     },
-    body: JSON.stringify({ userId, schoolId, message, language })
+    body: JSON.stringify({ Question: message })
   });
   if (!res.ok) throw new Error('Failed to get AI response');
-  return await res.json();
+  const data = await res.json();
+  
+  // Backend now returns 'reply' directly for both success and error cases
+  return {
+    reply: data.reply || "I apologize, but I couldn't generate a response. Please try again.",
+    status: data.status
+  };
 }

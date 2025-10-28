@@ -39,9 +39,6 @@ const ChatBot: React.FC<{ token?: string }> = ({ token }) => {
   const [serverError, setServerError] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const userId = 1;
-  const schoolId = 1;
-  const language = "en";
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -76,7 +73,7 @@ const ChatBot: React.FC<{ token?: string }> = ({ token }) => {
     setLoading(true);
     
     try {
-      const res = await sendChat({ userId, schoolId, message: messageText, language, token });
+      const res = await sendChat({ message: messageText, token });
       const botMessage: Message = {
         sender: "bot",
         text: res.reply || "I apologize, but I couldn't generate a response. Please try again.",

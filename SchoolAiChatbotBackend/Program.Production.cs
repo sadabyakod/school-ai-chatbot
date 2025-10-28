@@ -1,314 +1,245 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using SchoolAiChatbotBackend.Data;
-using System.Text;
 using Microsoft.OpenApi.Models;
-using System.Text.Json;
-// using SchoolAiChatbotBackend.Services;
+using SchoolAiChatbotBackend.Data;
+using SchoolAiChatbotBackend.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
-// Update CORS policy to allow any origin
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend",
-        policy => policy.AllowAnyOrigin()
-                        .AllowAnyHeader()
-                        .AllowAnyMethod());
-});
-
-
-builder.WebHost.ConfigureKestrel(options =>
-{
-    options.Limits.MaxRequestBodySize = 50_000_000; // 50 MB
-    options.ListenAnyIP(5001); // Listen on all network interfaces
-});
-// Add services to the container
+// Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "School AI Chatbot API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo 
+    { 
+        Title = "School AI Chatbot API", 
+        Version = "v1",
+        Description = "A comprehensive school chatbot API with AI integration"
+    });
+    
+    // Add JWT support in Swagger
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+    
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
 });
 
-// Configure EF Core provider selection
+// Add CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
+// Configure Database
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-var dbProvider = builder.Configuration["DatabaseProvider"] ?? "SqlServer";
 
 if (string.IsNullOrEmpty(connectionString))
 {
-    // Fallback to Azure SQL Server connection string if not configured
-    connectionString = "Server=school-chatbot-sql-10271900.database.windows.net;Database=SchoolAiChatbotDb;User Id=schooladmin;Password=SchoolAI123!@#;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
-}
-
-if (dbProvider == "MySql")
-{
+    // For local development, use in-memory database
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseMySql(
-            connectionString,
-            new MySqlServerVersion(new Version(8, 0, 36)) // Adjust MySQL version as needed
-        ));
+        options.UseInMemoryDatabase("SchoolAiChatbot"));
 }
 else
 {
+    // For production, use Azure SQL Database
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlServer(connectionString));
+        options.UseSqlServer(connectionString, sqlOptions =>
+        {
+            sqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(30),
+                errorNumbersToAdd: null);
+        }));
 }
 
+// Configure JWT Authentication
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "default-super-secret-jwt-key-for-development-only";
+var key = Encoding.ASCII.GetBytes(jwtKey);
 
-// Configure JWT authentication with robust key handling
-var jwtKey = builder.Configuration["Jwt:Key"];
-if (string.IsNullOrWhiteSpace(jwtKey))
+builder.Services.AddAuthentication(x =>
 {
-    jwtKey = Environment.GetEnvironmentVariable("JWT__SecretKey");
-}
-
-// If we still don't have a valid JWT key, use a fallback
-if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Length < 32)
-{
-    jwtKey = "default-super-secret-jwt-key-for-development-only-minimum-32-characters-long";
-}
-
-var key = Encoding.UTF8.GetBytes(jwtKey);
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
-.AddJwtBearer(options =>
+.AddJwtBearer(x =>
 {
-    options.RequireHttpsMetadata = false;
-    options.SaveToken = true;
-    options.TokenValidationParameters = new TokenValidationParameters
+    x.RequireHttpsMetadata = false;
+    x.SaveToken = true;
+    x.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(key),
         ValidateIssuer = false,
-        ValidateAudience = false,
-        ValidateLifetime = false
+        ValidateAudience = false
     };
 });
 
-builder.Services.AddAuthorization();
-// Temporarily comment out external services for debugging
-// builder.Services.AddScoped<SchoolAiChatbotBackend.Services.JwtService>();
-// builder.Services.AddScoped<SchoolAiChatbotBackend.Services.PineconeService>();
-// builder.Services.AddScoped<SchoolAiChatbotBackend.Services.FaqEmbeddingService>();
+// Register application services
+builder.Services.AddScoped<JwtService>();
+builder.Services.AddScoped<IChatService, OpenAiChatService>();
+
+// Add logging
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
-// Also add a simple file logger to persist logs to backend.log for debugging
-// builder.Logging.AddProvider(new SchoolAiChatbotBackend.Logging.FileLoggerProvider(Path.Combine(builder.Environment.ContentRootPath, "backend.log")));
-
-// Set default minimum log level to Information so request logs are emitted.
-// builder.Logging.SetMinimumLevel(LogLevel.Information);
-
-// Register chat service implementation based on configuration flag 'UseClaude'
-// Temporarily comment out chat services for debugging
-// builder.Services.AddScoped<IChatService>(provider =>
-// {
-//     var config = provider.GetRequiredService<IConfiguration>();
-//     var useClaude = bool.TryParse(config["UseClaude"], out var enabled) && enabled;
-//     if (useClaude)
-//     {
-//         return provider.GetRequiredService<ClaudeChatService>();
-//     }
-//     else
-//     {
-//         var apiKey = config["OpenAI:ApiKey"] ?? "YOUR_OPENAI_API_KEY";
-//         return new OpenAiChatService(apiKey);
-//     }
-// });
-// 
-// // Ensure ClaudeChatService is available for DI if requested
-// builder.Services.AddScoped<ClaudeChatService>();
+builder.Logging.AddDebug();
 
 var app = builder.Build();
 
-// Enable detailed error pages for debugging 500 errors
-app.UseDeveloperExceptionPage();
-
-// Add global exception handling middleware
-app.Use(async (context, next) =>
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
-    try
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
     {
-        await next();
-    }
-    catch (Exception ex)
-    {
-        var logger = app.Services.GetService<ILoggerFactory>()?.CreateLogger("GlobalExceptionHandler");
-        logger?.LogError(ex, "Unhandled exception in request {Method} {Path}", context.Request.Method, context.Request.Path);
-        
-        context.Response.StatusCode = 500;
-        context.Response.ContentType = "application/json";
-        
-        var errorDetails = new
-        {
-            error = "Internal Server Error",
-            message = ex.Message,
-            type = ex.GetType().Name,
-            stackTrace = ex.StackTrace?.Split('\n').Take(10).ToArray(),
-            timestamp = DateTime.UtcNow
-        };
-        
-        await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(errorDetails));
-    }
-});
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "School AI Chatbot API v1");
+        c.RoutePrefix = "swagger";  // Serve Swagger UI at /swagger
+    });
+}
 
-// Log the connection string we're using so it's easy to verify at runtime
-var connStr = builder.Configuration.GetConnectionString("DefaultConnection");
-// var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
-// startupLogger.LogInformation("Using DB connection: {Conn}", connStr);
-
-// Add middleware to log incoming requests early in the pipeline so we capture all hits.
-// Temporarily commented out to debug 500 errors
-// app.Use(async (context, next) =>
-// {
-//     var logger = app.Services.GetRequiredService<ILogger<Program>>();
-//     var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-//     var origin = context.Request.Headers["Origin"].ToString();
-//     var referer = context.Request.Headers["Referer"].ToString();
-//     var userAgent = context.Request.Headers["User-Agent"].ToString();
-
-//     logger.LogInformation("Frontend hit: {Method} {Path} from {RemoteIp} Origin={Origin} Referer={Referer} UA={UserAgent}",
-//         context.Request.Method, context.Request.Path, ip, origin, referer, userAgent);
-
-//     await next();
-// });
-
-// Enable Swagger in all environments for debugging
-app.UseSwagger();
-app.UseSwaggerUI();
-
-
-
-app.UseHttpsRedirection();
-app.UseCors("AllowFrontend");
-// Temporarily disable authentication to debug 500 errors
-// app.UseAuthentication();
-// app.UseAuthorization();
-
-// Ensure database is created and seeded
+// Create database and seed data if needed
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     
     try
     {
-        // Apply any pending migrations
-        context.Database.Migrate();
+        // Create database if it doesn't exist
+        await context.Database.EnsureCreatedAsync();
         
-        // Seed data if database is empty
-        if (!context.Faqs.Any())
+        // Seed initial data if database is empty
+        if (!await context.Users.AnyAsync())
         {
-            context.Faqs.AddRange(
-                new SchoolAiChatbotBackend.Models.Faq
-                {
-                    Question = "What are the school hours?",
-                    Answer = "School hours are Monday-Friday 8:00 AM to 3:00 PM.",
-                    Category = "General",
-                    CreatedAt = DateTime.UtcNow
-                },
-                new SchoolAiChatbotBackend.Models.Faq
-                {
-                    Question = "How do I contact the school?", 
-                    Answer = "You can contact us at (555) 123-4567 or email info@school.edu",
-                    Category = "Contact",
-                    CreatedAt = DateTime.UtcNow
-                },
-                new SchoolAiChatbotBackend.Models.Faq
-                {
-                    Question = "What is the homework policy?",
-                    Answer = "Homework should take approximately 10 minutes per grade level (e.g., 3rd grade = 30 minutes).",
-                    Category = "Academic", 
-                    CreatedAt = DateTime.UtcNow
-                }
-            );
-            context.SaveChanges();
+            await SeedDatabase(context);
         }
     }
     catch (Exception ex)
     {
-        // Log database connection errors but don't crash the app
-        Console.WriteLine($"Database initialization error: {ex.Message}");
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while creating/seeding the database");
     }
 }
 
-// Add comprehensive diagnostic endpoints
-app.MapGet("/health", () => "healthy");
-app.MapGet("/api/health", () => "api-healthy");
-app.MapGet("/api/ping", () => "pong");
-app.MapGet("/", () => "School AI Chatbot Backend is running");
+app.UseHttpsRedirection();
+app.UseCors("AllowAll");
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
 
-// Test JSON serialization
-app.MapGet("/api/test-json", () => Results.Json(new { message = "JSON test works", timestamp = DateTime.UtcNow }));
-
-// Test service provider
-app.MapGet("/api/test-services", (IServiceProvider services) => 
-{
-    var loggerFactory = services.GetService<ILoggerFactory>();
-    var configuration = services.GetService<IConfiguration>();
-    
-    return Results.Json(new { 
-        hasLoggerFactory = loggerFactory != null,
-        hasConfiguration = configuration != null,
-        serviceCount = services.GetType().Name,
-        timestamp = DateTime.UtcNow
-    });
+// Add a simple health check endpoint
+app.MapGet("/", () => new { 
+    Status = "Healthy", 
+    Service = "School AI Chatbot API", 
+    Version = "1.0.0",
+    Timestamp = DateTime.UtcNow,
+    Environment = app.Environment.EnvironmentName
 });
 
-// Test database connection without DI
-app.MapGet("/api/test-database", (IServiceProvider services) => 
+app.MapGet("/health", async (AppDbContext context) => 
 {
-    try 
+    try
     {
-        var context = services.GetService<AppDbContext>();
-        if (context == null)
-        {
-            return Results.Json(new { 
-                error = "AppDbContext not registered in DI container",
-                timestamp = DateTime.UtcNow
-            });
-        }
-        
-        var canConnect = context.Database.CanConnect();
-        return Results.Json(new { 
-            hasDbContext = true,
-            canConnect = canConnect,
-            connectionString = context.Database.GetConnectionString(),
-            timestamp = DateTime.UtcNow
+        await context.Database.CanConnectAsync();
+        return Results.Ok(new { 
+            Status = "Healthy", 
+            Database = "Connected",
+            Timestamp = DateTime.UtcNow 
         });
     }
     catch (Exception ex)
     {
-        return Results.Json(new { 
-            error = ex.Message,
-            innerException = ex.InnerException?.Message,
-            timestamp = DateTime.UtcNow
-        });
+        return Results.Problem(new { 
+            Status = "Unhealthy", 
+            Database = "Disconnected",
+            Error = ex.Message,
+            Timestamp = DateTime.UtcNow 
+        }.ToString());
     }
 });
 
-// Test configuration access without injection
-app.MapGet("/api/test-config", () => 
-{
-    var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Unknown";
-    var hasJwt = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("JWT__SecretKey"));
-    
-    return Results.Json(new { 
-        environment = env,
-        hasJwtEnvVar = hasJwt,
-        timestamp = DateTime.UtcNow,
-        message = "Config test without injection"
-    });
-});
-
-app.MapControllers();
-
 app.Run();
 
-public partial class Program { }
+// Helper method to seed initial data
+static async Task SeedDatabase(AppDbContext context)
+{
+    // Add default school
+    var school = new SchoolAiChatbotBackend.Models.School
+    {
+        Name = "Demo School",
+        Address = "123 Education St, Learning City, LC 12345",
+        PhoneNumber = "(555) 123-4567",
+        Email = "info@demoschool.edu",
+        Website = "https://demoschool.edu"
+    };
+    context.Schools.Add(school);
+    await context.SaveChangesAsync();
+
+    // Add sample FAQs
+    var faqs = new[]
+    {
+        new SchoolAiChatbotBackend.Models.Faq
+        {
+            Question = "What are the school hours?",
+            Answer = "School hours are Monday-Friday 8:00 AM to 3:00 PM.",
+            Category = "General",
+            SchoolId = school.Id
+        },
+        new SchoolAiChatbotBackend.Models.Faq
+        {
+            Question = "How do I contact the school?",
+            Answer = "You can contact us at (555) 123-4567 or email info@demoschool.edu",
+            Category = "Contact",
+            SchoolId = school.Id
+        },
+        new SchoolAiChatbotBackend.Models.Faq
+        {
+            Question = "What is the homework policy?",
+            Answer = "Homework should take approximately 10 minutes per grade level (e.g., 3rd grade = 30 minutes).",
+            Category = "Academic",
+            SchoolId = school.Id
+        },
+        new SchoolAiChatbotBackend.Models.Faq
+        {
+            Question = "When is the next parent-teacher conference?",
+            Answer = "Parent-teacher conferences are scheduled for November 15-16, 2024. Please sign up through the school portal.",
+            Category = "Events",
+            SchoolId = school.Id
+        },
+        new SchoolAiChatbotBackend.Models.Faq
+        {
+            Question = "What is the dress code policy?",
+            Answer = "Students should wear appropriate school attire. No offensive language or images on clothing. Closed-toe shoes required.",
+            Category = "Policies",
+            SchoolId = school.Id
+        }
+    };
+
+    context.Faqs.AddRange(faqs);
+    await context.SaveChangesAsync();
+}

@@ -77,10 +77,10 @@ builder.Services.AddAuthentication(options =>
     });
 
 builder.Services.AddAuthorization();
-// Temporarily comment out external services for debugging
-// builder.Services.AddScoped<SchoolAiChatbotBackend.Services.JwtService>();
-// builder.Services.AddScoped<SchoolAiChatbotBackend.Services.PineconeService>();
-// builder.Services.AddScoped<SchoolAiChatbotBackend.Services.FaqEmbeddingService>();
+// Register external services
+builder.Services.AddScoped<SchoolAiChatbotBackend.Services.JwtService>();
+builder.Services.AddScoped<SchoolAiChatbotBackend.Services.PineconeService>();
+builder.Services.AddScoped<SchoolAiChatbotBackend.Services.FaqEmbeddingService>();
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 // Also add a simple file logger to persist logs to backend.log for debugging
@@ -90,24 +90,23 @@ builder.Logging.AddConsole();
 builder.Logging.SetMinimumLevel(LogLevel.Information);
 
 // Register chat service implementation based on configuration flag 'UseClaude'
-// Temporarily comment out chat services for debugging
-// builder.Services.AddScoped<IChatService>(provider =>
-// {
-//     var config = provider.GetRequiredService<IConfiguration>();
-//     var useClaude = bool.TryParse(config["UseClaude"], out var enabled) && enabled;
-//     if (useClaude)
-//     {
-//         return provider.GetRequiredService<ClaudeChatService>();
-//     }
-//     else
-//     {
-//         var apiKey = config["OpenAI:ApiKey"] ?? "YOUR_OPENAI_API_KEY";
-//         return new OpenAiChatService(apiKey);
-//     }
-// });
-// 
-// // Ensure ClaudeChatService is available for DI if requested
-// builder.Services.AddScoped<ClaudeChatService>();
+builder.Services.AddScoped<IChatService>(provider =>
+{
+    var config = provider.GetRequiredService<IConfiguration>();
+    var useClaude = bool.TryParse(config["UseClaude"], out var enabled) && enabled;
+    if (useClaude)
+    {
+        return provider.GetRequiredService<ClaudeChatService>();
+    }
+    else
+    {
+        var apiKey = config["OpenAI:ApiKey"] ?? "YOUR_OPENAI_API_KEY";
+        return new OpenAiChatService(apiKey);
+    }
+});
+
+// Ensure ClaudeChatService is available for DI if requested
+builder.Services.AddScoped<ClaudeChatService>();
 
 var app = builder.Build();
 

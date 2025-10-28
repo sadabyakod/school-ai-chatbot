@@ -50,7 +50,7 @@ namespace SchoolAiChatbotBackend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("UploadedFiles");
+                    b.ToTable("UploadedFiles", (string)null);
                 });
 
             modelBuilder.Entity("SchoolAiChatbotBackend.Models.ChatLog", b =>
@@ -84,7 +84,7 @@ namespace SchoolAiChatbotBackend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ChatLogs");
+                    b.ToTable("ChatLogs", (string)null);
                 });
 
             modelBuilder.Entity("SchoolAiChatbotBackend.Models.Embedding", b =>
@@ -111,7 +111,7 @@ namespace SchoolAiChatbotBackend.Migrations
 
                     b.HasIndex("SyllabusChunkId");
 
-                    b.ToTable("Embeddings");
+                    b.ToTable("Embeddings", (string)null);
                 });
 
             modelBuilder.Entity("SchoolAiChatbotBackend.Models.Faq", b =>
@@ -137,7 +137,7 @@ namespace SchoolAiChatbotBackend.Migrations
 
                     b.HasIndex("SchoolId");
 
-                    b.ToTable("Faqs");
+                    b.ToTable("Faqs", (string)null);
                 });
 
             modelBuilder.Entity("SchoolAiChatbotBackend.Models.School", b =>
@@ -178,7 +178,7 @@ namespace SchoolAiChatbotBackend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Schools");
+                    b.ToTable("Schools", (string)null);
                 });
 
             modelBuilder.Entity("SchoolAiChatbotBackend.Models.SyllabusChunk", b =>
@@ -225,7 +225,7 @@ namespace SchoolAiChatbotBackend.Migrations
 
                     b.HasIndex("UploadedFileId");
 
-                    b.ToTable("SyllabusChunks");
+                    b.ToTable("SyllabusChunks", (string)null);
                 });
 
             modelBuilder.Entity("SchoolAiChatbotBackend.Models.User", b =>
@@ -263,7 +263,7 @@ namespace SchoolAiChatbotBackend.Migrations
 
                     b.HasIndex("SchoolId");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("SchoolAiChatbotBackend.Models.ChatLog", b =>

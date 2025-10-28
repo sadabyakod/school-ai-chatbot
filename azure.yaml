@@ -7,8 +7,7 @@ metadata:
 infra:
   provider: bicep
   path: infra
-  module: standard-app-service
-  parameters: standard-app-service
+  module: simple-basic
 services:
   # frontend:
   #   project: ./school-ai-frontend

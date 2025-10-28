@@ -1,145 +1,125 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System.Linq;
-using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
+using System.Text;
 using SchoolAiChatbotBackend.Models;
 using SchoolAiChatbotBackend.Services;
+using System.Linq;
 using System.Threading.Tasks;
-
+using System.Collections.Generic;
 namespace SchoolAiChatbotBackend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
     public class ChatController : ControllerBase
     {
-        // Temporarily simplified - no external service dependencies
-        // private readonly IChatService _chatService;
-        // private readonly FaqEmbeddingService _faqEmbeddingService;
-        // private readonly SchoolAiChatbotBackend.Services.PineconeService _pineconeService;
-        // private readonly SchoolAiChatbotBackend.Data.AppDbContext _dbContext;
+        private readonly IChatService _chatService;
+        private readonly PineconeService _pineconeService;
+        private readonly Data.AppDbContext _dbContext;
         private readonly ILogger<ChatController> _logger;
 
-        public ChatController(ILogger<ChatController> logger)
+        public ChatController(
+            IChatService chatService,
+            PineconeService pineconeService,
+            Data.AppDbContext dbContext,
+            ILogger<ChatController> logger)
         {
+            _chatService = chatService;
+            _pineconeService = pineconeService;
+            _dbContext = dbContext;
             _logger = logger;
-            // _chatService = chatService;
-            // _faqEmbeddingService = faqService;
-            // _pineconeService = pineconeService;
-            // _dbContext = dbContext;
         }
 
+        /// <summary>
+        /// Answers students' academic questions using AI and syllabus-based context.
+        /// </summary>
         [HttpPost]
-        /// <summary>
-        /// Finds the closest matching FAQ answer based on the user's question.
-        /// </summary>
-        /// <param name="question">The user input question.</param>
-        /// <returns>The most relevant answer from the database.</returns>
-        public async Task<ActionResult<ChatResponse>> Post([FromBody] ChatRequest request)
+        public async Task<IActionResult> Post([FromBody] ChatAskRequest request)
         {
-            if (request == null)
-                return BadRequest("Request body is missing.");
-
-            if (string.IsNullOrWhiteSpace(request.Message))
-                return BadRequest("Message is required.");
-
-            // Log requester details
-            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-            var origin = Request.Headers["Origin"].ToString();
-            var referer = Request.Headers["Referer"].ToString();
-            var ua = Request.Headers["User-Agent"].ToString();
-            _logger.LogInformation("POST /api/chat from {RemoteIp} Origin={Origin} Referer={Referer} UA={UserAgent} MessageLength={Len}", ip, origin, referer, ua, request.Message?.Length ?? 0);
-
-            // Temporarily return mock response while services are disabled
-            var reply = $"Thank you for your message: '{request.Message}'. The AI chat service will be available soon!";
-            return Ok(new ChatResponse { Reply = reply, Language = request.Language ?? "en" });
-        }
-
-        [HttpPost("ask")]
-        /// <summary>
-        /// Finds the closest matching FAQ answer based on the user's question.
-        /// </summary>
-        /// <param name="question">The user input question.</param>
-        /// <returns>The most relevant answer from the database. only specific to school FAQs.</returns>
-        public async Task<IActionResult> Ask([FromBody] ChatAskRequest request)
-        {
-            if (request == null || string.IsNullOrWhiteSpace(request.Question))
-                return BadRequest(new { status = "error", message = "Question is required." });
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-            var origin = Request.Headers["Origin"].ToString();
-            var referer = Request.Headers["Referer"].ToString();
-            var ua = Request.Headers["User-Agent"].ToString();
-            _logger.LogInformation("POST /api/chat/ask from {RemoteIp} Origin={Origin} Referer={Referer} UA={UserAgent} QuestionLength={Len}", ip, origin, referer, ua, request.Question?.Length ?? 0);
+            _logger.LogInformation("Chat request received from {IP}. Question length: {Len}", ip, request.Question?.Length ?? 0);
 
-            _logger.LogInformation("Received question: {Question}", request.Question);
-
-            // Temporarily return mock response while services are disabled
-            // // 1) Get embedding for the question
-            // var embedding = await _chatService.GetEmbeddingAsync(request.Question);
-
-            // // 2) Query Pinecone for similar vectors (optional school filter)
-            // var topK = request.TopK ?? 5;
-            // var pineconeIds = await _pineconeService.QuerySimilarVectorsAsync(embedding, topK);
-
-            // // 3) Fetch matching syllabus chunks from DB
-            var chunks = new List<Models.SyllabusChunk>();
-            // if (pineconeIds != null && pineconeIds.Any())
-            // {
-            //     chunks = _dbContext.SyllabusChunks.Where(s => pineconeIds.Contains(s.PineconeVectorId)).Take(topK).ToList();
-            // }
-
-            // 4) Build prompt using retrieved context
-            var contextText = string.Empty;
-            if (chunks != null && chunks.Any())
+            try
             {
-                contextText = string.Join("\n---\n", chunks.Select(c => $"Subject: {c.Subject} | Grade: {c.Grade} | Chapter: {c.Chapter}\n{c.ChunkText}"));
+                // 1️⃣ Generate vector embedding for the question
+                var embedding = await _chatService.GetEmbeddingAsync(request.Question);
+
+                // 2️⃣ Query Pinecone for top similar chunks (context)
+                const int topK = 5;
+                var pineconeIds = await _pineconeService.QuerySimilarVectorsAsync(embedding, topK);
+
+                // 3️⃣ Retrieve syllabus context from DB
+                var chunks = new List<SyllabusChunk>();
+                if (pineconeIds?.Any() == true)
+                {
+                    chunks = await _dbContext.SyllabusChunks
+                        .Where(s => pineconeIds.Contains(s.PineconeVectorId))
+                        .Take(topK)
+                        .ToListAsync();
+                }
+
+                // 4️⃣ Prepare the context text
+                var contextText = chunks.Any()
+                    ? string.Join("\n---\n", chunks.Select(c =>
+                        $"Subject: {c.Subject} | Grade: {c.Grade} | Chapter: {c.Chapter}\n{c.ChunkText}"))
+                    : "No syllabus context found.";
+
+                // 5️⃣ Build a rich AI prompt
+                var prompt = new StringBuilder()
+                    .AppendLine("### Role: You are a knowledgeable, friendly smart study school tutor.")
+                    .AppendLine("### Instruction: Use the syllabus context to explain concepts clearly and accurately.")
+                    .AppendLine("If you don't find the answer, say 'I don’t have enough syllabus data to answer precisely.'")
+                    .AppendLine("Always keep answers concise and student-friendly.\n")
+                    .AppendLine("### Context:")
+                    .AppendLine(contextText)
+                    .AppendLine("\n### Question:")
+                    .AppendLine(request.Question)
+                    .AppendLine("\n### Answer:")
+                    .ToString();
+
+                // 6️⃣ Call AI completion service
+                var answer = await _chatService.GetChatCompletionAsync(prompt, "en");
+
+                // 7️⃣ Return structured response
+                return Ok(new
+                {
+                    status = "success",
+                    question = request.Question,
+                    reply = answer,  // Changed from 'answer' to 'reply' to match frontend expectation
+                    contextCount = chunks.Count,
+                    usedChunks = chunks.Select(c => new { c.Subject, c.Grade, c.Chapter }).ToList()
+                });
             }
-
-            var promptBuilder = new System.Text.StringBuilder();
-            promptBuilder.AppendLine("You are a helpful tutor. Use the provided syllabus/context to answer the student's question. If the context doesn't contain the answer, say you don't know and provide a concise guidance.");
-            if (!string.IsNullOrWhiteSpace(contextText))
+            catch (Exception ex)
             {
-                promptBuilder.AppendLine("Context:");
-                promptBuilder.AppendLine(contextText);
-                promptBuilder.AppendLine("---");
+                _logger.LogError(ex, "Error answering question");
+
+                return Ok(new
+                {
+                    status = "error",
+                    reply = "AI service temporarily unavailable. Please try again later.",  // Changed from 'message' to 'reply'
+                    debug = ex.Message
+                });
             }
-            promptBuilder.AppendLine("Question:");
-            promptBuilder.AppendLine(request.Question);
-
-            var prompt = promptBuilder.ToString();
-
-            // 5) Call OpenAI completion with the prompt
-            var language = request.Language ?? "en";
-            // Temporarily return mock response while services are disabled
-            var answer = $"Thank you for your question: '{request.Question}'. The AI-powered FAQ system will be available soon! For now, please check our basic FAQ section.";
-
-            // 6) Return structured result
-            return Ok(new
-            {
-                answer,
-                contextCount = chunks?.Count ?? 0,
-                usedChunkIds = chunks?.Select(c => c.PineconeVectorId).ToList() ?? new List<string>()
-            });
         }
 
         [HttpGet("test")]
-        public IActionResult Test()
-        {
-            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-            var origin = Request.Headers["Origin"].ToString();
-            var referer = Request.Headers["Referer"].ToString();
-            var ua = Request.Headers["User-Agent"].ToString();
-            _logger.LogInformation("GET /api/chat/test from {RemoteIp} Origin={Origin} Referer={Referer} UA={UserAgent}", ip, origin, referer, ua);
-
-            return Ok("Test endpoint is working!");
-        }
+        public IActionResult Test() => Ok("✅ Chat endpoint is working!");
     }
 
     public class ChatAskRequest
     {
-        public string? Question { get; set; }
-        public int? TopK { get; set; }
-        public string? Language { get; set; }
+        [Required(ErrorMessage = "Question is required.")]
+        public string Question { get; set; } = string.Empty;
     }
 }
+
+
+
+
+
+
