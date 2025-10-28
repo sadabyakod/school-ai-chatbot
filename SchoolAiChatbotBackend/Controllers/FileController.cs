@@ -9,7 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace SchoolAiChatbotBackend.Controllers
@@ -123,64 +122,61 @@ namespace SchoolAiChatbotBackend.Controllers
                 if (!ok)
                     return StatusCode(500, new { message = "File uploaded but vector upsert failed.", details = result });
 
-                // ✅ Transaction-safe retry block (EF Core 9 compatible)
+                // ✅ Transaction-safe retry block (Pomelo + EF Core 9)
                 var executionStrategy = _dbContext.Database.CreateExecutionStrategy();
-                await executionStrategy.ExecuteAsync<object?>(null,
-                    async (context, state, cancellationToken) =>
+                await executionStrategy.ExecuteAsync(async () =>
+                {
+                    await using var transaction = await _dbContext.Database.BeginTransactionAsync();
+
+                    try
                     {
-                        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-                        try
+                        var uploadedFile = new UploadedFile
                         {
-                            var uploadedFile = new UploadedFile
+                            FileName = file.FileName,
+                            FilePath = filePath,
+                            UploadDate = DateTime.UtcNow,
+                            EmbeddingDimension = 1024,
+                            EmbeddingVector = $"MultipleChunks_{pineconeVectors.Count}"
+                        };
+
+                        _logger.LogInformation("Creating UploadedFile record: {FileName}, Size: {Size}", file.FileName, fileContent.Length);
+                        _dbContext.UploadedFiles.Add(uploadedFile);
+                        await _dbContext.SaveChangesAsync();
+
+                        int syllabusChunksCreated = 0;
+                        foreach (var pineconeVector in pineconeVectors)
+                        {
+                            var chunkText = pineconeVector.Metadata.TryGetValue("chunkText", out var text)
+                                ? text?.ToString()
+                                : "Text chunk content";
+
+                            var syllabusChunk = new SyllabusChunk
                             {
-                                FileName = file.FileName,
-                                FilePath = filePath,
-                                UploadDate = DateTime.UtcNow,
-                                EmbeddingDimension = 1024,
-                                EmbeddingVector = $"MultipleChunks_{pineconeVectors.Count}"
+                                Subject = subject,
+                                Grade = Class,
+                                Chapter = chapter,
+                                ChunkText = chunkText,
+                                Source = file.FileName,
+                                UploadedFileId = uploadedFile.Id,
+                                PineconeVectorId = pineconeVector.Id
                             };
 
-                            _logger.LogInformation("Creating UploadedFile record: {FileName}, Size: {Size}", file.FileName, fileContent.Length);
-                            _dbContext.UploadedFiles.Add(uploadedFile);
-                            await _dbContext.SaveChangesAsync(cancellationToken);
-
-                            int syllabusChunksCreated = 0;
-                            foreach (var pineconeVector in pineconeVectors)
-                            {
-                                var chunkText = pineconeVector.Metadata.TryGetValue("chunkText", out var text)
-                                    ? text.ToString()
-                                    : "Text chunk content";
-
-                                var syllabusChunk = new SyllabusChunk
-                                {
-                                    Subject = subject,
-                                    Grade = Class,
-                                    Chapter = chapter,
-                                    ChunkText = chunkText,
-                                    Source = file.FileName,
-                                    UploadedFileId = uploadedFile.Id,
-                                    PineconeVectorId = pineconeVector.Id
-                                };
-
-                                _dbContext.SyllabusChunks.Add(syllabusChunk);
-                                syllabusChunksCreated++;
-                            }
-
-                            _logger.LogInformation("Saving {Count} syllabus chunks to DB", syllabusChunksCreated);
-                            await _dbContext.SaveChangesAsync(cancellationToken);
-
-                            await transaction.CommitAsync(cancellationToken);
-                            _logger.LogInformation("Successfully processed {Count} chunks for {File}", syllabusChunksCreated, file.FileName);
-                        }
-                        catch
-                        {
-                            await transaction.RollbackAsync(cancellationToken);
-                            throw;
+                            _dbContext.SyllabusChunks.Add(syllabusChunk);
+                            syllabusChunksCreated++;
                         }
 
-                        return (object?)null;
-                    },
-                    null);
+                        _logger.LogInformation("Saving {Count} syllabus chunks to DB", syllabusChunksCreated);
+                        await _dbContext.SaveChangesAsync();
+
+                        await transaction.CommitAsync();
+                        _logger.LogInformation("Successfully created {Count} syllabus chunks for file {File}", syllabusChunksCreated, file.FileName);
+                    }
+                    catch
+                    {
+                        await transaction.RollbackAsync();
+                        throw;
+                    }
+                });
 
                 return Ok(new
                 {
