@@ -48,32 +48,6 @@ namespace DatabaseSetupConsole
 
             var serviceProvider = services.BuildServiceProvider();
 
-
-
-// inside WebApplication.CreateBuilder(args) setup
-
-builder.Configuration
-       .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-       .AddEnvironmentVariables(); // make sure environment vars are loaded
-
-// Register OpenAiChatService using a factory that reads config
-builder.Services.AddScoped<OpenAiChatService>(sp =>
-{
-    var config = sp.GetRequiredService<IConfiguration>();
-
-    // Try both forms: config key with colon and env var with double-underscore
-    var apiKey = config["OpenAI:ApiKey"] ?? config["OpenAI__ApiKey"] ?? config["OpenAI_ApiKey"];
-
-    if (string.IsNullOrWhiteSpace(apiKey))
-        throw new InvalidOperationException("OpenAI ApiKey not found. Set OpenAI__ApiKey in App Settings or OpenAI:ApiKey in config.");
-
-    return new OpenAiChatService(apiKey);
-});
-
-// If controllers depend on an interface, map it:
-builder.Services.AddScoped<IOpenAiChatService>(sp => sp.GetRequiredService<OpenAiChatService>());
-
-
             try
             {
                 Console.WriteLine("Testing database connection...");

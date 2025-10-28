@@ -89,6 +89,24 @@ builder.Logging.AddConsole();
 // Set default minimum log level to Information so request logs are emitted.
 builder.Logging.SetMinimumLevel(LogLevel.Information);
 
+// Register OpenAiChatService using a factory that reads config
+builder.Services.AddScoped<OpenAiChatService>(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    
+    // Try multiple configuration keys for OpenAI API key
+    var apiKey = config["OpenAI:ApiKey"] ?? 
+                 config["OpenAI__ApiKey"] ?? 
+                 config["OPENAI_API_KEY"] ??
+                 Environment.GetEnvironmentVariable("OPENAI_API_KEY") ??
+                 "YOUR_OPENAI_API_KEY";
+
+    if (string.IsNullOrWhiteSpace(apiKey) || apiKey == "YOUR_OPENAI_API_KEY")
+        throw new InvalidOperationException("OpenAI ApiKey not found. Set OPENAI_API_KEY environment variable or OpenAI:ApiKey in configuration.");
+
+    return new OpenAiChatService(apiKey);
+});
+
 // Register chat service implementation based on configuration flag 'UseClaude'
 builder.Services.AddScoped<IChatService>(provider =>
 {
@@ -100,8 +118,7 @@ builder.Services.AddScoped<IChatService>(provider =>
     }
     else
     {
-        var apiKey = config["OpenAI:ApiKey"] ?? "YOUR_OPENAI_API_KEY";
-        return new OpenAiChatService(apiKey);
+        return provider.GetRequiredService<OpenAiChatService>();
     }
 });
 
