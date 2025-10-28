@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_NAME: school-ai-chatbot-api
+  AZURE_WEBAPP_NAME: app-wlanqwy7vuwmu  # Update to your actual Azure Web App name
   AZURE_WEBAPP_PACKAGE_PATH: './SchoolAiChatbotBackend'
   DOTNET_VERSION: '9.0.x'
 
@@ -22,6 +22,11 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
     
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
     - name: Restore dependencies
       run: dotnet restore ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}/SchoolAiChatbotBackend.csproj
     
@@ -35,5 +40,4 @@ jobs:
       uses: azure/webapps-deploy@v2
       with:
         app-name: ${{ env.AZURE_WEBAPP_NAME }}
-        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
         package: ./publish
