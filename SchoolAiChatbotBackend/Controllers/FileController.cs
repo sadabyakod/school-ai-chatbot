@@ -141,11 +141,13 @@ namespace SchoolAiChatbotBackend.Controllers
 
                 try
                 {
-                    // Use database transaction to ensure both operations succeed or both fail
-                    using var transaction = await _dbContext.Database.BeginTransactionAsync();
-                    
-                    try
+                    // Use execution strategy for MySQL retry-compatible transactions
+                    var executionStrategy = _dbContext.Database.CreateExecutionStrategy();
+                    await executionStrategy.ExecuteAsync(async () =>
                     {
+                        using var transaction = await _dbContext.Database.BeginTransactionAsync();
+                        try
+                        {
                         // Create main uploaded file record
                         var uploadedFile = new SchoolAiChatbotBackend.Data.UploadedFile
                         {
@@ -188,18 +190,19 @@ namespace SchoolAiChatbotBackend.Controllers
                         _logger.LogInformation("Saving {ChunkCount} SyllabusChunk records to database", syllabusChunksCreated);
                         await _dbContext.SaveChangesAsync();
                         
-                        // Commit the transaction if both operations succeeded
-                        await transaction.CommitAsync();
-                        
-                        _logger.LogInformation("Successfully created {ChunkCount} syllabus chunks for file {FileName}", 
-                            syllabusChunksCreated, file.FileName);
-                    }
-                    catch (Exception ex)
-                    {
-                        // Rollback transaction on any error
-                        await transaction.RollbackAsync();
-                        throw; // Re-throw to be caught by outer catch block
-                    }
+                            // Commit the transaction if both operations succeeded
+                            await transaction.CommitAsync();
+                            
+                            _logger.LogInformation("Successfully created {ChunkCount} syllabus chunks for file {FileName}", 
+                                syllabusChunksCreated, file.FileName);
+                        }
+                        catch (Exception ex)
+                        {
+                            // Rollback transaction on any error
+                            await transaction.RollbackAsync();
+                            throw; // Re-throw to be caught by outer catch block
+                        }
+                    }); // Close execution strategy
                 }
                 catch (Exception ex)
                 {
