@@ -1,10 +1,16 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using System.IO;
-using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SchoolAiChatbotBackend.Data;
 using SchoolAiChatbotBackend.Models;
-using Microsoft.EntityFrameworkCore.Storage;
+using SchoolAiChatbotBackend.Services;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SchoolAiChatbotBackend.Controllers
 {
@@ -13,11 +19,15 @@ namespace SchoolAiChatbotBackend.Controllers
     public class FileController : ControllerBase
     {
         private readonly ILogger<FileController> _logger;
-        private readonly SchoolAiChatbotBackend.Services.PineconeService _pineconeService;
-        private readonly SchoolAiChatbotBackend.Services.IChatService _chatService;
-        private readonly SchoolAiChatbotBackend.Data.AppDbContext _dbContext;
+        private readonly PineconeService _pineconeService;
+        private readonly IChatService _chatService;
+        private readonly AppDbContext _dbContext;
 
-        public FileController(ILogger<FileController> logger, SchoolAiChatbotBackend.Services.PineconeService pineconeService, SchoolAiChatbotBackend.Services.IChatService chatService, SchoolAiChatbotBackend.Data.AppDbContext dbContext)
+        public FileController(
+            ILogger<FileController> logger,
+            PineconeService pineconeService,
+            IChatService chatService,
+            AppDbContext dbContext)
         {
             _logger = logger;
             _pineconeService = pineconeService;
@@ -38,70 +48,53 @@ namespace SchoolAiChatbotBackend.Controllers
             if (string.IsNullOrWhiteSpace(Class) || string.IsNullOrWhiteSpace(subject) || string.IsNullOrWhiteSpace(chapter))
                 return BadRequest("All fields (Class, Subject, Chapter) are required.");
 
-            // Placeholder: Save file to disk (replace with cloud storage in production)
             var filePath = Path.Combine("Uploads", file.FileName);
             Directory.CreateDirectory("Uploads");
-            using (var stream = new FileStream(filePath, FileMode.Create))
+
+            await using (var stream = new FileStream(filePath, FileMode.Create))
             {
                 await file.CopyToAsync(stream);
             }
 
             string? pineconeResult = null;
+
             try
             {
-                var rawBytes = System.IO.File.ReadAllBytes(filePath);
+                var rawBytes = await System.IO.File.ReadAllBytesAsync(filePath);
                 bool looksBinary = rawBytes.Any(b => b == 0);
-                string fileContent = looksBinary ? file.FileName : System.Text.Encoding.UTF8.GetString(rawBytes);
+                string fileContent = looksBinary
+                    ? file.FileName
+                    : System.Text.Encoding.UTF8.GetString(rawBytes);
 
-                const int chunkSize = 1024; // Maximum chunk size in characters
+                const int chunkSize = 1024;
                 var textChunks = new List<string>();
-                
-                // Split file content into chunks if larger than 1024 characters
-                if (fileContent.Length > chunkSize)
+
+                for (int i = 0; i < fileContent.Length; i += chunkSize)
                 {
-                    for (int i = 0; i < fileContent.Length; i += chunkSize)
-                    {
-                        int length = Math.Min(chunkSize, fileContent.Length - i);
-                        textChunks.Add(fileContent.Substring(i, length));
-                    }
-                }
-                else
-                {
-                    textChunks.Add(fileContent);
+                    int length = Math.Min(chunkSize, fileContent.Length - i);
+                    textChunks.Add(fileContent.Substring(i, length));
                 }
 
-                var pineconeVectors = new List<SchoolAiChatbotBackend.Models.PineconeVector>();
-                var chunkIndex = 0;
-                
-                // Process each chunk and create embeddings
+                var pineconeVectors = new List<PineconeVector>();
+                int chunkIndex = 0;
+
                 foreach (var chunk in textChunks)
                 {
-                    var embedding = await _chatService.GetEmbeddingAsync(string.IsNullOrWhiteSpace(chunk) ? $"{file.FileName}_chunk_{chunkIndex}" : chunk);
-
-                    bool hasNonZero = embedding != null && embedding.Any(v => System.Math.Abs(v) > 1e-9f);
-                    if (!hasNonZero)
-                    {
-                        embedding = await _chatService.GetEmbeddingAsync(string.IsNullOrWhiteSpace(chunk) ? $"{file.FileName}_chunk_{chunkIndex}" : chunk);
-                        hasNonZero = embedding != null && embedding.Any(v => System.Math.Abs(v) > 1e-9f);
-                    }
+                    var embedding = await _chatService.GetEmbeddingAsync(chunk);
+                    bool hasNonZero = embedding != null && embedding.Any(v => Math.Abs(v) > 1e-9f);
 
                     if (!hasNonZero)
                     {
                         _logger.LogWarning("Embedding generation failed for chunk {ChunkIndex} of file {FileName}", chunkIndex, file.FileName);
-                        continue; // Skip this chunk but continue with others
+                        continue;
                     }
 
-                    var original = (embedding ?? new System.Collections.Generic.List<float>()).Select(x => (float)x).ToList();
-                    List<float> vectorValues;
-                    if (original.Count > 1024)
-                        vectorValues = original.Take(1024).ToList();
-                    else
-                    {
-                        vectorValues = new List<float>(original);
-                        vectorValues.AddRange(Enumerable.Repeat(0f, 1024 - original.Count));
-                    }
+                    var original = (embedding ?? new List<float>()).Select(x => (float)x).ToList();
+                    var vectorValues = original.Count > 1024
+                        ? original.Take(1024).ToList()
+                        : original.Concat(Enumerable.Repeat(0f, 1024 - original.Count)).ToList();
 
-                    var pineconeVector = new SchoolAiChatbotBackend.Models.PineconeVector
+                    var pineconeVector = new PineconeVector
                     {
                         Id = $"{Guid.NewGuid()}_{chunkIndex}",
                         Values = vectorValues,
@@ -112,7 +105,7 @@ namespace SchoolAiChatbotBackend.Controllers
                             { "subject", subject },
                             { "chapter", chapter },
                             { "chunkIndex", chunkIndex },
-                            { "chunkText", chunk.Substring(0, Math.Min(100, chunk.Length)) + (chunk.Length > 100 ? "..." : "") } // Store first 100 chars as preview
+                            { "chunkText", chunk.Substring(0, Math.Min(100, chunk.Length)) + (chunk.Length > 100 ? "..." : "") }
                         }
                     };
 
@@ -121,122 +114,92 @@ namespace SchoolAiChatbotBackend.Controllers
                 }
 
                 if (pineconeVectors.Count == 0)
-                {
-                    return StatusCode(500, new { message = "No valid embeddings could be generated for any chunks of the file." });
-                }
+                    return StatusCode(500, new { message = "No valid embeddings could be generated for this file." });
 
-                // Upsert all vectors to Pinecone
-                var upsertRequest = new SchoolAiChatbotBackend.Models.PineconeUpsertRequest
-                {
-                    Vectors = pineconeVectors
-                };
-
+                var upsertRequest = new PineconeUpsertRequest { Vectors = pineconeVectors };
                 var (ok, result) = await _pineconeService.UpsertVectorsAsync(upsertRequest);
                 pineconeResult = result;
 
                 if (!ok)
-                {
                     return StatusCode(500, new { message = "File uploaded but vector upsert failed.", details = result });
-                }
 
-                try
-                {
-                    // Use execution strategy for MySQL retry-compatible transactions
-                    var executionStrategy = _dbContext.Database.CreateExecutionStrategy();
-                    await executionStrategy.ExecuteAsync(async () =>
+                // ✅ Transaction-safe retry block (EF Core 9 compatible)
+                var executionStrategy = _dbContext.Database.CreateExecutionStrategy();
+                await executionStrategy.ExecuteAsync<object?>(null,
+                    async (context, state, cancellationToken) =>
                     {
-                        using var transaction = await _dbContext.Database.BeginTransactionAsync();
+                        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
                         try
                         {
-                        // Create main uploaded file record
-                        var uploadedFile = new SchoolAiChatbotBackend.Data.UploadedFile
-                        {
-                            FileName = file.FileName,
-                            FilePath = filePath,
-                            UploadDate = DateTime.UtcNow,
-                            EmbeddingDimension = 1024, // Standard dimension
-                            EmbeddingVector = $"MultipleChunks_{pineconeVectors.Count}"
-                        };
-                        
-                        _logger.LogInformation("Creating UploadedFile record: {FileName}, Size: {FileSize}", file.FileName, fileContent.Length);
-                        _dbContext.UploadedFiles.Add(uploadedFile);
-                        await _dbContext.SaveChangesAsync();
-                        _logger.LogInformation("UploadedFile saved with Id: {FileId}", uploadedFile.Id);
-
-                        // Insert records into SyllabusChunks table for each processed chunk
-                        var syllabusChunksCreated = 0;
-                        foreach (var pineconeVector in pineconeVectors)
-                        {
-                            var chunkText = pineconeVector.Metadata.ContainsKey("chunkText") 
-                                ? pineconeVector.Metadata["chunkText"].ToString() 
-                                : "Text chunk content";
-                                
-                            var syllabusChunk = new SyllabusChunk
+                            var uploadedFile = new UploadedFile
                             {
-                                Subject = subject,
-                                Grade = Class,
-                                Chapter = chapter,
-                                ChunkText = chunkText,
-                                Source = file.FileName, // Set the source to the filename
-                                UploadedFileId = uploadedFile.Id,
-                                PineconeVectorId = pineconeVector.Id
+                                FileName = file.FileName,
+                                FilePath = filePath,
+                                UploadDate = DateTime.UtcNow,
+                                EmbeddingDimension = 1024,
+                                EmbeddingVector = $"MultipleChunks_{pineconeVectors.Count}"
                             };
-                            _logger.LogInformation("Creating SyllabusChunk {Index}: Subject={Subject}, Grade={Grade}, Chapter={Chapter}, UploadedFileId={FileId}", 
-                                syllabusChunksCreated, subject, Class, chapter, uploadedFile.Id);
-                            _dbContext.SyllabusChunks.Add(syllabusChunk);
-                            syllabusChunksCreated++;
-                        }
-                        
-                        _logger.LogInformation("Saving {ChunkCount} SyllabusChunk records to database", syllabusChunksCreated);
-                        await _dbContext.SaveChangesAsync();
-                        
-                            // Commit the transaction if both operations succeeded
-                            await transaction.CommitAsync();
-                            
-                            _logger.LogInformation("Successfully created {ChunkCount} syllabus chunks for file {FileName}", 
-                                syllabusChunksCreated, file.FileName);
-                        }
-                        catch (Exception ex)
-                        {
-                            // Rollback transaction on any error
-                            await transaction.RollbackAsync();
-                            throw; // Re-throw to be caught by outer catch block
-                        }
-                    }); // Close execution strategy
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to save UploadedFile or SyllabusChunks to DB for {File}. Error: {ErrorMessage}", file.FileName, ex.Message);
-                    
-                    // Log inner exception details for debugging
-                    var innerException = ex.InnerException;
-                    var innerMessage = innerException?.Message ?? "No inner exception";
-                    _logger.LogError("Inner exception: {InnerMessage}", innerMessage);
-                    
-                    // Get full exception details including stack trace
-                    var fullErrorDetails = $"Main: {ex.Message}. Inner: {innerMessage}. Stack: {ex.StackTrace}";
-                    _logger.LogError("Full exception details: {FullDetails}", fullErrorDetails);
-                    
-                    return StatusCode(500, new { 
-                        message = "Database operation failed", 
-                        details = ex.Message, 
-                        innerException = innerMessage,
-                        fullError = fullErrorDetails
-                    });
-                }
 
-                return Ok(new { 
-                    message = "File uploaded successfully and processed in chunks.", 
-                    fileName = file.FileName, 
+                            _logger.LogInformation("Creating UploadedFile record: {FileName}, Size: {Size}", file.FileName, fileContent.Length);
+                            _dbContext.UploadedFiles.Add(uploadedFile);
+                            await _dbContext.SaveChangesAsync(cancellationToken);
+
+                            int syllabusChunksCreated = 0;
+                            foreach (var pineconeVector in pineconeVectors)
+                            {
+                                var chunkText = pineconeVector.Metadata.TryGetValue("chunkText", out var text)
+                                    ? text.ToString()
+                                    : "Text chunk content";
+
+                                var syllabusChunk = new SyllabusChunk
+                                {
+                                    Subject = subject,
+                                    Grade = Class,
+                                    Chapter = chapter,
+                                    ChunkText = chunkText,
+                                    Source = file.FileName,
+                                    UploadedFileId = uploadedFile.Id,
+                                    PineconeVectorId = pineconeVector.Id
+                                };
+
+                                _dbContext.SyllabusChunks.Add(syllabusChunk);
+                                syllabusChunksCreated++;
+                            }
+
+                            _logger.LogInformation("Saving {Count} syllabus chunks to DB", syllabusChunksCreated);
+                            await _dbContext.SaveChangesAsync(cancellationToken);
+
+                            await transaction.CommitAsync(cancellationToken);
+                            _logger.LogInformation("Successfully processed {Count} chunks for {File}", syllabusChunksCreated, file.FileName);
+                        }
+                        catch
+                        {
+                            await transaction.RollbackAsync(cancellationToken);
+                            throw;
+                        }
+
+                        return (object?)null;
+                    },
+                    null);
+
+                return Ok(new
+                {
+                    message = "File uploaded successfully and processed in chunks.",
+                    fileName = file.FileName,
                     chunksProcessed = pineconeVectors.Count,
                     totalFileSize = fileContent.Length,
-                    pineconeResult 
+                    pineconeResult
                 });
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                _logger.LogError(ex, "Exception while generating embedding or upserting vector for file {File}", file.FileName);
-                return StatusCode(500, new { message = "Server error during embedding/upsert.", details = ex.Message });
+                _logger.LogError(ex, "File upload failed for {File}", file.FileName);
+                return StatusCode(500, new
+                {
+                    message = "Server error during upload or vectorization.",
+                    details = ex.Message,
+                    inner = ex.InnerException?.Message
+                });
             }
         }
     }
