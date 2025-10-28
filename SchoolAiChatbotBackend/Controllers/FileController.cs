@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading.Tasks;
 using SchoolAiChatbotBackend.Data;
 using SchoolAiChatbotBackend.Models;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace SchoolAiChatbotBackend.Controllers
 {
@@ -140,11 +141,8 @@ namespace SchoolAiChatbotBackend.Controllers
 
                 try
                 {
-                    // Check if we're using in-memory database (doesn't support transactions)
-                    bool isInMemory = _dbContext.Database.IsInMemory();
-                    
-                    // Use database transaction only if not using in-memory database
-                    using var transaction = isInMemory ? null : await _dbContext.Database.BeginTransactionAsync();
+                    // Use database transaction to ensure both operations succeed or both fail
+                    using var transaction = await _dbContext.Database.BeginTransactionAsync();
                     
                     try
                     {
@@ -190,22 +188,16 @@ namespace SchoolAiChatbotBackend.Controllers
                         _logger.LogInformation("Saving {ChunkCount} SyllabusChunk records to database", syllabusChunksCreated);
                         await _dbContext.SaveChangesAsync();
                         
-                        // Commit the transaction if both operations succeeded (only for real databases)
-                        if (transaction != null)
-                        {
-                            await transaction.CommitAsync();
-                        }
+                        // Commit the transaction if both operations succeeded
+                        await transaction.CommitAsync();
                         
                         _logger.LogInformation("Successfully created {ChunkCount} syllabus chunks for file {FileName}", 
                             syllabusChunksCreated, file.FileName);
                     }
-                    catch (Exception dbEx)
+                    catch (Exception ex)
                     {
-                        // Rollback transaction on any error (only for real databases)
-                        if (transaction != null)
-                        {
-                            await transaction.RollbackAsync();
-                        }
+                        // Rollback transaction on any error
+                        await transaction.RollbackAsync();
                         throw; // Re-throw to be caught by outer catch block
                     }
                 }

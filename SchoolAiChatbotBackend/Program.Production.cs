@@ -57,27 +57,27 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Configure Database
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+// Configure Database - Always use MySQL Server
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
+                        Environment.GetEnvironmentVariable("MYSQL_CONNECTION_STRING") ??
+                        Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
 
 if (string.IsNullOrEmpty(connectionString))
 {
-    // For local development, use in-memory database
-    builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseInMemoryDatabase("SchoolAiChatbot"));
+    throw new InvalidOperationException("Database connection string is required. Set 'ConnectionStrings:DefaultConnection' in configuration or 'MYSQL_CONNECTION_STRING' environment variable.");
 }
-else
-{
-    // For production, use Azure SQL Database
-    builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlServer(connectionString, sqlOptions =>
+
+// Always use MySQL Database with proper connection string
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseMySql(
+        connectionString,
+        new MySqlServerVersion(new Version(8, 0, 36)), // MySQL version
+        mysqlOptions =>
         {
-            sqlOptions.EnableRetryOnFailure(
+            mysqlOptions.EnableRetryOnFailure(
                 maxRetryCount: 5,
-                maxRetryDelay: TimeSpan.FromSeconds(30),
-                errorNumbersToAdd: null);
+                maxRetryDelay: TimeSpan.FromSeconds(30));
         }));
-}
 
 // Configure JWT Authentication
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "default-super-secret-jwt-key-for-development-only";

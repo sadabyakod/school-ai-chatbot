@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Connection Test</title>
+</head>
+<body>
+    <h1>API Connection Test</h1>
+    <button id="testBtn">Test API Connection</button>
+    <div id="result" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc;"></div>
+
+    <script>
+        const API_URL = 'http://localhost:5001/api';
+        
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Testing connection...</p>';
+            
+            try {
+                // Test health endpoint first
+                console.log('Testing health endpoint...');
+                const healthRes = await fetch(`${API_URL}/health`);
+                console.log('Health response:', healthRes);
+                
+                if (!healthRes.ok) {
+                    throw new Error(`Health check failed: ${healthRes.status}`);
+                }
+                
+                const healthData = await healthRes.json();
+                console.log('Health data:', healthData);
+                
+                // Test chat endpoint
+                console.log('Testing chat endpoint...');
+                const chatRes = await fetch(`${API_URL}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ Question: 'Hello from test page' })
+                });
+                
+                console.log('Chat response:', chatRes);
+                
+                if (!chatRes.ok) {
+                    throw new Error(`Chat failed: ${chatRes.status}`);
+                }
+                
+                const chatData = await chatRes.json();
+                console.log('Chat data:', chatData);
+                
+                resultDiv.innerHTML = `
+                    <h3>✅ Connection Successful!</h3>
+                    <p><strong>Health:</strong> ${JSON.stringify(healthData)}</p>
+                    <p><strong>Chat Response:</strong> ${JSON.stringify(chatData)}</p>
+                `;
+                
+            } catch (error) {
+                console.error('Connection error:', error);
+                resultDiv.innerHTML = `
+                    <h3>❌ Connection Failed</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p>Check browser console for more details.</p>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
