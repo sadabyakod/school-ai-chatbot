@@ -124,6 +124,12 @@ builder.Services.AddScoped<OpenAiChatService>(sp =>
 
 builder.Services.AddScoped<IChatService>(provider => provider.GetRequiredService<OpenAiChatService>());
 
+// Register PineconeService (it takes IConfiguration in constructor)
+builder.Services.AddScoped<PineconeService>();
+
+// Register FaqEmbeddingService
+builder.Services.AddScoped<FaqEmbeddingService>();
+
 // Add logging
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
