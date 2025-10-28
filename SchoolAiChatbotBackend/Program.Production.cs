@@ -103,7 +103,26 @@ builder.Services.AddAuthentication(x =>
 
 // Register application services
 builder.Services.AddScoped<JwtService>();
-builder.Services.AddScoped<IChatService, OpenAiChatService>();
+
+// Register OpenAiChatService using a factory that reads config
+builder.Services.AddScoped<OpenAiChatService>(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    
+    // Try multiple configuration keys for OpenAI API key
+    var apiKey = config["OpenAI:ApiKey"] ?? 
+                 config["OpenAI__ApiKey"] ?? 
+                 config["OPENAI_API_KEY"] ??
+                 Environment.GetEnvironmentVariable("OPENAI_API_KEY") ??
+                 "YOUR_OPENAI_API_KEY";
+
+    if (string.IsNullOrWhiteSpace(apiKey) || apiKey == "YOUR_OPENAI_API_KEY")
+        throw new InvalidOperationException("OpenAI ApiKey not found. Set OPENAI_API_KEY environment variable or OpenAI:ApiKey in configuration.");
+
+    return new OpenAiChatService(apiKey);
+});
+
+builder.Services.AddScoped<IChatService>(provider => provider.GetRequiredService<OpenAiChatService>());
 
 // Add logging
 builder.Logging.ClearProviders();
@@ -195,7 +214,12 @@ static async Task SeedDatabase(AppDbContext context)
         Address = "123 Education St, Learning City, LC 12345",
         PhoneNumber = "(555) 123-4567",
         Email = "info@demoschool.edu",
-        Website = "https://demoschool.edu"
+        Website = "https://demoschool.edu",
+        ContactInfo = "Main Office: (555) 123-4567\nEmergency: (555) 123-4568\nEmail: info@demoschool.edu",
+        FeeStructure = "Annual Tuition: $5,000\nRegistration Fee: $200\nBooks & Supplies: $300",
+        Timetable = "Classes: 8:00 AM - 3:00 PM\nBreak: 10:00 AM - 10:15 AM\nLunch: 12:00 PM - 1:00 PM",
+        Holidays = "Winter Break: Dec 20 - Jan 5\nSpring Break: Mar 15 - Mar 22\nSummer Break: Jun 1 - Aug 15",
+        Events = "Parent-Teacher Conference: Oct 15\nScience Fair: Nov 20\nGraduation: May 30"
     };
     context.Schools.Add(school);
     await context.SaveChangesAsync();
