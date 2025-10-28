@@ -12,18 +12,9 @@ var resourceToken = toLower(uniqueString(subscription().id, environmentName, loc
 var appServicePlanName = 'plan-${resourceToken}'
 var webAppName = 'app-${resourceToken}'
 
-// App Service Plan - Basic tier (B1)
-resource appServicePlan 'Microsoft.Web/serverfarms@2022-03-01' = {
-  name: appServicePlanName
-  location: location
-  sku: {
-    name: 'B1'
-    tier: 'Basic'
-  }
-  kind: 'linux'
-  properties: {
-    reserved: true
-  }
+// Reference existing App Service Plan
+resource appServicePlan 'Microsoft.Web/serverfarms@2022-03-01' existing = {
+  name: 'plan-wlanqwy7vuwmu'
 }
 
 // Web App
@@ -33,7 +24,7 @@ resource webApp 'Microsoft.Web/sites@2022-03-01' = {
   properties: {
     serverFarmId: appServicePlan.id
     siteConfig: {
-      linuxFxVersion: 'DOTNETCORE|9.0'
+      netFrameworkVersion: 'v9.0'
       appSettings: [
         {
           name: 'WEBSITES_ENABLE_APP_SERVICE_STORAGE'

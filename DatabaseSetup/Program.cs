@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SchoolAiChatbotBackend.Data;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using SchoolAiChatbotBackend.Services;
 
 namespace DatabaseSetupConsole
 {
@@ -25,6 +26,7 @@ namespace DatabaseSetupConsole
             string connectionString = $"Server=school-ai-mysql-server.mysql.database.azure.com;Database=flexibleserverdb;Uid=adminuser;Pwd={password};SslMode=Required;";
 
             var services = new ServiceCollection();
+
             
             // Add configuration
             var configuration = new ConfigurationBuilder()
@@ -38,13 +40,39 @@ namespace DatabaseSetupConsole
             services.AddSingleton<IConfiguration>(configuration);
             
             // Add DbContext
-            services.AddDbContext<AppDbContext>(options =>
+              services.AddDbContext<AppDbContext>(options =>
                 options.UseMySql(
                     connectionString,
                     new MySqlServerVersion(new Version(8, 0, 36))
                 ));
 
             var serviceProvider = services.BuildServiceProvider();
+
+
+
+// inside WebApplication.CreateBuilder(args) setup
+
+builder.Configuration
+       .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+       .AddEnvironmentVariables(); // make sure environment vars are loaded
+
+// Register OpenAiChatService using a factory that reads config
+builder.Services.AddScoped<OpenAiChatService>(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+
+    // Try both forms: config key with colon and env var with double-underscore
+    var apiKey = config["OpenAI:ApiKey"] ?? config["OpenAI__ApiKey"] ?? config["OpenAI_ApiKey"];
+
+    if (string.IsNullOrWhiteSpace(apiKey))
+        throw new InvalidOperationException("OpenAI ApiKey not found. Set OpenAI__ApiKey in App Settings or OpenAI:ApiKey in config.");
+
+    return new OpenAiChatService(apiKey);
+});
+
+// If controllers depend on an interface, map it:
+builder.Services.AddScoped<IOpenAiChatService>(sp => sp.GetRequiredService<OpenAiChatService>());
+
 
             try
             {
