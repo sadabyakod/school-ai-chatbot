@@ -7,16 +7,7 @@
     <UserSecretsId>b7cd7614-f9ba-4a76-8716-ddf92072b845</UserSecretsId>
   </PropertyGroup>
 
-  <!-- Conditional compilation for different Program files -->
-  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
-    <Compile Remove="Program.Production.cs" />
-    <Compile Remove="Program.Simple.cs" />
-  </ItemGroup>
-  
-  <ItemGroup Condition="'$(Configuration)' == 'Release'">
-    <Compile Remove="Program.cs" />
-    <Compile Remove="Program.Simple.cs" />
-  </ItemGroup>
+  <!-- Use same Program.cs for both Debug and Release configurations -->
   
   <ItemGroup Condition="'$(Configuration)' == 'Simple'">
     <Compile Remove="Program.cs" />
