@@ -180,7 +180,7 @@ using (var scope = app.Services.CreateScope())
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
 app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow, api = "v1" }));
 app.MapGet("/api/ping", () => Results.Ok("pong"));
-app.MapGet("/", () => Results.Ok(new { message = "School AI Chatbot Backend is running with Azure SQL Server", version = "1.0.1", timestamp = DateTime.UtcNow }));
+app.MapGet("/", () => Results.Ok(new { message = "School AI Chatbot Backend is running with Azure SQL Server", version = "1.0.2", timestamp = DateTime.UtcNow }));
 
             app.MapControllers();
 
