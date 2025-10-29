@@ -29,9 +29,6 @@ jobs:
         key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
         restore-keys: |
           ${{ runner.os }}-nuget-
-    
-    - name: Copy Production Program.cs
-      run: cp SchoolAiChatbotBackend/Program.Production.cs SchoolAiChatbotBackend/Program.cs
           
     - name: Build with dotnet
       run: dotnet build ${{ env.AZURE_WEBAPP_PACKAGE_PATH }} --configuration Release
