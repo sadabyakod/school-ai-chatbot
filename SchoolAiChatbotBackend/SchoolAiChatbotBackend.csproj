@@ -9,6 +9,11 @@
 
   <!-- Use same Program.cs for all configurations -->
 
+  <!-- Exclude Program.Production.cs from compilation to avoid duplicate Program class -->
+  <ItemGroup>
+    <Compile Remove="Program.Production.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.7" />
