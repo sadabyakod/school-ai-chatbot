@@ -30,7 +30,9 @@ namespace SchoolAiChatbotBackend
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.Limits.MaxRequestBodySize = 50_000_000; // 50 MB
-    options.ListenAnyIP(5001); // Listen on all network interfaces
+    // Azure App Service will set the PORT environment variable
+    var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+    options.ListenAnyIP(int.Parse(port)); // Listen on Azure's expected port
 });
 // Add services to the container
 builder.Services.AddControllers();
