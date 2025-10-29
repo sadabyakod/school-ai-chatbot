@@ -13,16 +13,20 @@ namespace SchoolAiChatbotBackend
         public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-// Update CORS policy to allow any origin
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend",
-        policy => policy.AllowAnyOrigin()
+            // Update CORS policy to allow frontend and any origin for development
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowFrontend",
+                    policy => policy
+                        .WithOrigins(
+                            "https://nice-ocean-0bd32c110.3.azurestaticapps.net",
+                            "http://localhost:3000",
+                            "https://localhost:3000"
+                        )
                         .AllowAnyHeader()
-                        .AllowAnyMethod());
-});
-
-
+                        .AllowAnyMethod()
+                        .AllowCredentials());
+            });
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.Limits.MaxRequestBodySize = 50_000_000; // 50 MB
@@ -153,10 +157,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-
+// Always allow CORS for all origins to handle frontend requests
+app.UseCors(policy => policy
+    .AllowAnyOrigin()
+    .AllowAnyHeader() 
+    .AllowAnyMethod());
 
 app.UseHttpsRedirection();
-app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
