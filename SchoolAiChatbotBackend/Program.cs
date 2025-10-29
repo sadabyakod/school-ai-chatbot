@@ -6,7 +6,13 @@ using System.Text;
 using Microsoft.OpenApi.Models;
 using SchoolAiChatbotBackend.Services;
 
-var builder = WebApplication.CreateBuilder(args);
+namespace SchoolAiChatbotBackend
+{
+    public class Program
+    {
+        public static async Task Main(string[] args)
+        {
+            var builder = WebApplication.CreateBuilder(args);
 // Update CORS policy to allow any origin
 builder.Services.AddCors(options =>
 {
@@ -176,8 +182,9 @@ app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", timestamp =
 app.MapGet("/api/ping", () => Results.Ok("pong"));
 app.MapGet("/", () => Results.Ok(new { message = "School AI Chatbot Backend is running with Azure SQL Server", version = "1.0.1", timestamp = DateTime.UtcNow }));
 
-app.MapControllers();
+            app.MapControllers();
 
-app.Run();
-
-public partial class Program { }
+            await app.RunAsync();
+        }
+    }
+}
