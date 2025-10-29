@@ -40,25 +40,30 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "School AI Chatbot API", Version = "v1" });
 });
 
-// Configure EF Core for Azure SQL Server
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+            // Configure EF Core for Azure SQL Server
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-if (string.IsNullOrEmpty(connectionString))
-{
-    throw new InvalidOperationException("Database connection string 'DefaultConnection' is required for Azure SQL Server.");
-}
-
-// Always use SQL Server for production Azure deployment
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(connectionString, sqlOptions =>
-    {
-        sqlOptions.EnableRetryOnFailure(
-            maxRetryCount: 3,
-            maxRetryDelay: TimeSpan.FromSeconds(30),
-            errorNumbersToAdd: null);
-    }));
-
-
+            if (!string.IsNullOrEmpty(connectionString))
+            {
+                // Use SQL Server when connection string is available
+                builder.Services.AddDbContext<AppDbContext>(options =>
+                    options.UseSqlServer(connectionString, sqlOptions =>
+                    {
+                        sqlOptions.EnableRetryOnFailure(
+                            maxRetryCount: 3,
+                            maxRetryDelay: TimeSpan.FromSeconds(30),
+                            errorNumbersToAdd: null);
+                    }));
+            }
+            else
+            {
+                // Fallback to in-memory database if no connection string (for debugging)
+                builder.Services.AddDbContext<AppDbContext>(options =>
+                    options.UseInMemoryDatabase("TempSchoolAiDb"));
+                
+                var logger = builder.Services.BuildServiceProvider().GetService<ILogger<Program>>();
+                logger?.LogWarning("No database connection string found. Using in-memory database. Configure 'ConnectionStrings:DefaultConnection' for production.");
+            }
 // Configure JWT authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 builder.Services.AddAuthentication(options =>
@@ -167,25 +172,54 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Ensure database is created and seeded
-using (var scope = app.Services.CreateScope())
-{
-    try
-    {
-        await DatabaseSeeder.SeedAsync(scope.ServiceProvider);
-        var logger = app.Services.GetRequiredService<ILogger<Program>>();
-        logger.LogInformation("Database seeding completed successfully");
-    }
-    catch (Exception ex)
-    {
-        var logger = app.Services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Error during database seeding");
-    }
-}
+            // Ensure database is created and seeded (only if we have a proper connection string)
+            using (var scope = app.Services.CreateScope())
+            {
+                try
+                {
+                    var dbConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+                    if (!string.IsNullOrEmpty(dbConnectionString))
+                    {
+                        await DatabaseSeeder.SeedAsync(scope.ServiceProvider);
+                        var logger = app.Services.GetRequiredService<ILogger<Program>>();
+                        logger.LogInformation("Database seeding completed successfully");
+                    }
+                    else
+                    {
+                        var logger = app.Services.GetRequiredService<ILogger<Program>>();
+                        logger.LogWarning("Skipping database seeding - no connection string configured");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+                    logger.LogError(ex, "Error during database seeding - application will continue without seeded data");
+                }
+            }
 
-// Add simple health check endpoints that don't depend on any services
-app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
-app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow, api = "v1" }));
+            // Add health check endpoints with database connection status
+            app.MapGet("/health", (IConfiguration config) => 
+            {
+                var hasConnectionString = !string.IsNullOrEmpty(config.GetConnectionString("DefaultConnection"));
+                return Results.Ok(new 
+                { 
+                    status = "healthy", 
+                    timestamp = DateTime.UtcNow,
+                    database = hasConnectionString ? "configured" : "not_configured"
+                });
+            });
+            
+            app.MapGet("/api/health", (IConfiguration config) => 
+            {
+                var hasConnectionString = !string.IsNullOrEmpty(config.GetConnectionString("DefaultConnection"));
+                return Results.Ok(new 
+                { 
+                    status = "healthy", 
+                    timestamp = DateTime.UtcNow, 
+                    api = "v1",
+                    database = hasConnectionString ? "configured" : "not_configured"
+                });
+            });
 app.MapGet("/api/ping", () => Results.Ok("pong"));
 app.MapGet("/", () => Results.Ok(new { message = "School AI Chatbot Backend is running with Azure SQL Server", version = "1.0.2", timestamp = DateTime.UtcNow }));
 

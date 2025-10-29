@@ -175,3 +175,4 @@ C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\refint\SchoolAiChatbotB
 C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.pdb
 C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.genruntimeconfig.cache
 C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\ref\SchoolAiChatbotBackend.dll
+C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.InMemory.dll
