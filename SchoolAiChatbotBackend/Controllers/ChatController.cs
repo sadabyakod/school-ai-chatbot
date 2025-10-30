@@ -8,6 +8,7 @@ using SchoolAiChatbotBackend.Services;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+
 namespace SchoolAiChatbotBackend.Controllers
 {
     [ApiController]
@@ -33,6 +34,7 @@ namespace SchoolAiChatbotBackend.Controllers
 
         /// <summary>
         /// Answers students' academic questions using AI and syllabus-based context.
+        /// Always returns a meaningful AI-generated response even if no data found.
         /// </summary>
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] ChatAskRequest request)
@@ -52,7 +54,7 @@ namespace SchoolAiChatbotBackend.Controllers
                 const int topK = 5;
                 var pineconeIds = await _pineconeService.QuerySimilarVectorsAsync(embedding, topK);
 
-                // 3️⃣ Retrieve syllabus context from DB
+                // 3️⃣ Retrieve syllabus context from DB (if any)
                 var chunks = new List<SyllabusChunk>();
                 if (pineconeIds?.Any() == true)
                 {
@@ -62,26 +64,34 @@ namespace SchoolAiChatbotBackend.Controllers
                         .ToListAsync();
                 }
 
-                // 4️⃣ Prepare the context text
-                var contextText = chunks.Any()
-                    ? string.Join("\n---\n", chunks.Select(c =>
-                        $"Subject: {c.Subject} | Grade: {c.Grade} | Chapter: {c.Chapter}\n{c.ChunkText}"))
-                    : "No syllabus context found.";
+                // 4️⃣ Prepare context text (if available)
+                string contextText;
+                if (chunks.Any())
+                {
+                    contextText = string.Join("\n---\n", chunks.Select(c =>
+                        $"Subject: {c.Subject} | Grade: {c.Grade} | Chapter: {c.Chapter}\n{c.ChunkText}"));
+                }
+                else
+                {
+                    // No syllabus context found → fallback mode
+                    contextText = "No syllabus context available. Please use general school knowledge.";
+                }
 
-                // 5️⃣ Build a rich AI prompt
-                var prompt = new StringBuilder()
-                    .AppendLine("### Role: You are a knowledgeable, friendly smart study school tutor.")
-                    .AppendLine("### Instruction: Use the syllabus context to explain concepts clearly and accurately.")
-                    .AppendLine("If you don't find the answer, say 'I don’t have enough syllabus data to answer precisely.'")
-                    .AppendLine("Always keep answers concise and student-friendly.\n")
-                    .AppendLine("### Context:")
-                    .AppendLine(contextText)
-                    .AppendLine("\n### Question:")
-                    .AppendLine(request.Question)
-                    .AppendLine("\n### Answer:")
-                    .ToString();
+                // 5️⃣ Build prompt dynamically
+                var promptBuilder = new StringBuilder();
+                promptBuilder.AppendLine("### Role: You are a knowledgeable, friendly, and accurate school AI tutor.");
+                promptBuilder.AppendLine("### Instruction: Answer clearly and simply, as if explaining to a student.");
+                promptBuilder.AppendLine("If no syllabus data is found, use your general academic knowledge to help.");
+                promptBuilder.AppendLine("Avoid saying 'I don't have data' — instead, give the best possible helpful answer.");
+                promptBuilder.AppendLine("\n### Context:");
+                promptBuilder.AppendLine(contextText);
+                promptBuilder.AppendLine("\n### Question:");
+                promptBuilder.AppendLine(request.Question);
+                promptBuilder.AppendLine("\n### Answer:");
 
-                // 6️⃣ Call AI completion service
+                var prompt = promptBuilder.ToString();
+
+                // 6️⃣ Call AI completion service (ChatGPT-style)
                 var answer = await _chatService.GetChatCompletionAsync(prompt, "en");
 
                 // 7️⃣ Return structured response
@@ -89,19 +99,26 @@ namespace SchoolAiChatbotBackend.Controllers
                 {
                     status = "success",
                     question = request.Question,
-                    reply = answer,  // Changed from 'answer' to 'reply' to match frontend expectation
+                    reply = answer,
                     contextCount = chunks.Count,
-                    usedChunks = chunks.Select(c => new { c.Subject, c.Grade, c.Chapter }).ToList()
+                    usedChunks = chunks.Select(c => new
+                    {
+                        c.Subject,
+                        c.Grade,
+                        c.Chapter
+                    }).ToList()
                 });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error answering question");
 
+                // Graceful fallback on error
                 return Ok(new
                 {
                     status = "error",
-                    reply = "AI service temporarily unavailable. Please try again later.",  // Changed from 'message' to 'reply'
+                    reply = "Sorry, I couldn’t process that question right now, but here’s what I know: " +
+                            "You can ask me about science, math, or any school topic — I’ll help you step by step!",
                     debug = ex.Message
                 });
             }
@@ -117,9 +134,3 @@ namespace SchoolAiChatbotBackend.Controllers
         public string Question { get; set; } = string.Empty;
     }
 }
-
-
-
-
-
-
