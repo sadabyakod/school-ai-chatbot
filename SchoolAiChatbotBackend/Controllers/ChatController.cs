@@ -34,7 +34,7 @@ namespace SchoolAiChatbotBackend.Controllers
 
         /// <summary>
         /// Answers students' academic questions using AI and syllabus-based context.
-        /// Always returns a meaningful AI-generated response even if no data found.
+        /// Now includes follow-up prompts to keep users engaged.
         /// </summary>
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] ChatAskRequest request)
@@ -43,7 +43,7 @@ namespace SchoolAiChatbotBackend.Controllers
                 return BadRequest(ModelState);
 
             var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-            _logger.LogInformation("Chat request received from {IP}. Question length: {Len}", ip, request.Question?.Length ?? 0);
+            _logger.LogInformation("Chat request from {IP}. Question length: {Len}", ip, request.Question?.Length ?? 0);
 
             try
             {
@@ -65,41 +65,49 @@ namespace SchoolAiChatbotBackend.Controllers
                 }
 
                 // 4️⃣ Prepare context text (if available)
-                string contextText;
-                if (chunks.Any())
-                {
-                    contextText = string.Join("\n---\n", chunks.Select(c =>
-                        $"Subject: {c.Subject} | Grade: {c.Grade} | Chapter: {c.Chapter}\n{c.ChunkText}"));
-                }
-                else
-                {
-                    // No syllabus context found → fallback mode
-                    contextText = "No syllabus context available. Please use general school knowledge.";
-                }
+                string contextText = chunks.Any()
+                    ? string.Join("\n---\n", chunks.Select(c =>
+                        $"Subject: {c.Subject} | Grade: {c.Grade} | Chapter: {c.Chapter}\n{c.ChunkText}"))
+                    : "No syllabus context available. Use general academic knowledge.";
 
-                // 5️⃣ Build prompt dynamically
+                // 5️⃣ Build AI Prompt with Engagement
                 var promptBuilder = new StringBuilder();
-                promptBuilder.AppendLine("### Role: You are a knowledgeable, friendly, and accurate school AI tutor.");
-                promptBuilder.AppendLine("### Instruction: Answer clearly and simply, as if explaining to a student.");
-                promptBuilder.AppendLine("If no syllabus data is found, use your general academic knowledge to help.");
-                promptBuilder.AppendLine("Avoid saying 'I don't have data' — instead, give the best possible helpful answer.");
-                promptBuilder.AppendLine("\n### Context:");
+                promptBuilder.AppendLine("### ROLE: You are Smarty, a friendly and intelligent AI study assistant.");
+                promptBuilder.AppendLine("### TONE: Conversational, engaging, and supportive. Use emojis occasionally.");
+                promptBuilder.AppendLine("### TASK:");
+                promptBuilder.AppendLine("- Answer the student's question clearly and simply.");
+                promptBuilder.AppendLine("- End your answer by asking a friendly follow-up question that keeps the conversation going.");
+                promptBuilder.AppendLine("- Do not repeat the same follow-up twice in a row.");
+                promptBuilder.AppendLine("- Examples of follow-up style:");
+                promptBuilder.AppendLine("   'Would you like a simple example of that?'");
+                promptBuilder.AppendLine("   'Should I explain this with a diagram?'");
+                promptBuilder.AppendLine("   'Want to try a short quiz to test your understanding?'");
+                promptBuilder.AppendLine("\n### CONTEXT (syllabus):");
                 promptBuilder.AppendLine(contextText);
-                promptBuilder.AppendLine("\n### Question:");
+                promptBuilder.AppendLine("\n### STUDENT QUESTION:");
                 promptBuilder.AppendLine(request.Question);
-                promptBuilder.AppendLine("\n### Answer:");
+                promptBuilder.AppendLine("\n### YOUR RESPONSE:");
 
                 var prompt = promptBuilder.ToString();
 
-                // 6️⃣ Call AI completion service (ChatGPT-style)
+                // 6️⃣ Get AI-generated response (main answer)
                 var answer = await _chatService.GetChatCompletionAsync(prompt, "en");
 
-                // 7️⃣ Return structured response
+                // 7️⃣ Optional: refine follow-up question if answer too short
+                if (answer.Length < 60)
+                {
+                    var enrichPrompt = $"Improve this response by expanding it and adding an engaging question at the end:\n\n{answer}";
+                    var enriched = await _chatService.GetChatCompletionAsync(enrichPrompt, "en");
+                    if (!string.IsNullOrWhiteSpace(enriched))
+                        answer = enriched;
+                }
+
+                // 8️⃣ Return structured response
                 return Ok(new
                 {
                     status = "success",
                     question = request.Question,
-                    reply = answer,
+                    reply = answer.Trim(),
                     contextCount = chunks.Count,
                     usedChunks = chunks.Select(c => new
                     {
@@ -113,12 +121,11 @@ namespace SchoolAiChatbotBackend.Controllers
             {
                 _logger.LogError(ex, "Error answering question");
 
-                // Graceful fallback on error
+                // 9️⃣ Graceful fallback
                 return Ok(new
                 {
                     status = "error",
-                    reply = "Sorry, I couldn’t process that question right now, but here’s what I know: " +
-                            "You can ask me about science, math, or any school topic — I’ll help you step by step!",
+                    reply = "⚠️ Hmm, I ran into a small issue processing your question. But don’t worry — you can ask me about Science, Math, or any topic, and I’ll help you step by step! 😊",
                     debug = ex.Message
                 });
             }
