@@ -73,11 +73,12 @@ namespace SchoolAiChatbotBackend.Controllers
                 // 5️⃣ Build AI Prompt with Engagement
                 var promptBuilder = new StringBuilder();
                 promptBuilder.AppendLine("### ROLE: You are Smarty, a friendly and intelligent AI study assistant.");
-                promptBuilder.AppendLine("### TONE: Conversational, engaging, and supportive. Use emojis occasionally.");
+                promptBuilder.AppendLine("### TONE: Keep your tone encouraging and conversational, like a kind teacher guiding a student.");
                 promptBuilder.AppendLine("### TASK:");
                 promptBuilder.AppendLine("- Answer the student's question clearly and simply.");
                 promptBuilder.AppendLine("- End your answer by asking a friendly follow-up question that keeps the conversation going.");
                 promptBuilder.AppendLine("- Do not repeat the same follow-up twice in a row.");
+                promptBuilder.AppendLine("- Use one relevant emoji if it fits naturally, but don’t overuse them.");
                 promptBuilder.AppendLine("- Examples of follow-up style:");
                 promptBuilder.AppendLine("   'Would you like a simple example of that?'");
                 promptBuilder.AppendLine("   'Should I explain this with a diagram?'");
