@@ -7,10 +7,32 @@ using SchoolAiChatbotBackend.Models;
 using SchoolAiChatbotBackend.Services;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System;
 
 namespace SchoolAiChatbotBackend.Controllers
 {
+    // 🧠 In-memory conversation store
+    public static class ConversationMemory
+    {
+        // Thread-safe dictionary for multiple users
+        public static ConcurrentDictionary<string, (string Topic, DateTime SavedAt)> UserContext 
+            = new ConcurrentDictionary<string, (string, DateTime)>();
+
+        // Optional auto-cleanup (you can call this occasionally)
+        public static void CleanupExpiredContexts(TimeSpan expiry)
+        {
+            var expired = UserContext
+                .Where(kvp => DateTime.UtcNow - kvp.Value.SavedAt > expiry)
+                .Select(kvp => kvp.Key)
+                .ToList();
+
+            foreach (var key in expired)
+                UserContext.TryRemove(key, out _);
+        }
+    }
+
     [ApiController]
     [Route("api/[controller]")]
     public class ChatController : ControllerBase
@@ -34,7 +56,7 @@ namespace SchoolAiChatbotBackend.Controllers
 
         /// <summary>
         /// Answers students' academic questions using AI and syllabus-based context.
-        /// Now includes follow-up prompts to keep users engaged.
+        /// Now includes in-memory context to continue conversations.
         /// </summary>
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] ChatAskRequest request)
@@ -43,18 +65,33 @@ namespace SchoolAiChatbotBackend.Controllers
                 return BadRequest(ModelState);
 
             var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-            _logger.LogInformation("Chat request from {IP}. Question length: {Len}", ip, request.Question?.Length ?? 0);
+            string userId = ip; // can later replace with user ID from frontend
+            string userMessage = request.Question.ToLower();
+
+            _logger.LogInformation("Chat request from {IP}. Question: {Q}", ip, request.Question);
 
             try
             {
+                // 🧠 Step 1: Restore last topic if user says "yes" or "explain more"
+                if ((userMessage.Contains("yes") || userMessage.Contains("explain more"))
+                    && ConversationMemory.UserContext.ContainsKey(userId))
+                {
+                    var lastTopic = ConversationMemory.UserContext[userId].Topic;
+                    request.Question = $"Explain more about {lastTopic}.";
+                    _logger.LogInformation("Continuing topic for {UserId}: {Topic}", userId, lastTopic);
+                }
+
+                // 🧹 Clean expired topics (older than 10 minutes)
+                ConversationMemory.CleanupExpiredContexts(TimeSpan.FromMinutes(10));
+
                 // 1️⃣ Generate vector embedding for the question
                 var embedding = await _chatService.GetEmbeddingAsync(request.Question);
 
-                // 2️⃣ Query Pinecone for top similar chunks (context)
+                // 2️⃣ Query Pinecone for top similar chunks
                 const int topK = 5;
                 var pineconeIds = await _pineconeService.QuerySimilarVectorsAsync(embedding, topK);
 
-                // 3️⃣ Retrieve syllabus context from DB (if any)
+                // 3️⃣ Retrieve syllabus context from DB
                 var chunks = new List<SyllabusChunk>();
                 if (pineconeIds?.Any() == true)
                 {
@@ -64,7 +101,7 @@ namespace SchoolAiChatbotBackend.Controllers
                         .ToListAsync();
                 }
 
-                // 4️⃣ Prepare context text (if available)
+                // 4️⃣ Prepare context text
                 string contextText = chunks.Any()
                     ? string.Join("\n---\n", chunks.Select(c =>
                         $"Subject: {c.Subject} | Grade: {c.Grade} | Chapter: {c.Chapter}\n{c.ChunkText}"))
@@ -73,16 +110,11 @@ namespace SchoolAiChatbotBackend.Controllers
                 // 5️⃣ Build AI Prompt with Engagement
                 var promptBuilder = new StringBuilder();
                 promptBuilder.AppendLine("### ROLE: You are Smarty, a friendly and intelligent AI study assistant.");
-                promptBuilder.AppendLine("### TONE: Keep your tone encouraging and conversational, like a kind teacher guiding a student.");
+                promptBuilder.AppendLine("### TONE: Encouraging and conversational, like a kind teacher.");
                 promptBuilder.AppendLine("### TASK:");
-                promptBuilder.AppendLine("- Answer the student's question clearly and simply.");
-                promptBuilder.AppendLine("- End your answer by asking a friendly follow-up question that keeps the conversation going.");
-                promptBuilder.AppendLine("- Do not repeat the same follow-up twice in a row.");
-                promptBuilder.AppendLine("- Use one relevant emoji if it fits naturally, but don’t overuse them.");
-                promptBuilder.AppendLine("- Examples of follow-up style:");
-                promptBuilder.AppendLine("   'Would you like a simple example of that?'");
-                promptBuilder.AppendLine("   'Should I explain this with a diagram?'");
-                promptBuilder.AppendLine("   'Want to try a short quiz to test your understanding?'");
+                promptBuilder.AppendLine("- Answer clearly and simply.");
+                promptBuilder.AppendLine("- End with a short follow-up question (e.g., 'Would you like an example?' or 'Should I explain more?').");
+                promptBuilder.AppendLine("- Use one emoji if it fits naturally.");
                 promptBuilder.AppendLine("\n### CONTEXT (syllabus):");
                 promptBuilder.AppendLine(contextText);
                 promptBuilder.AppendLine("\n### STUDENT QUESTION:");
@@ -91,19 +123,26 @@ namespace SchoolAiChatbotBackend.Controllers
 
                 var prompt = promptBuilder.ToString();
 
-                // 6️⃣ Get AI-generated response (main answer)
+                // 6️⃣ Get AI-generated response
                 var answer = await _chatService.GetChatCompletionAsync(prompt, "en");
 
-                // 7️⃣ Optional: refine follow-up question if answer too short
+                // 7️⃣ Improve short responses
                 if (answer.Length < 60)
                 {
-                    var enrichPrompt = $"Improve this response by expanding it and adding an engaging question at the end:\n\n{answer}";
+                    var enrichPrompt = $"Improve this response and end with an engaging question:\n\n{answer}";
                     var enriched = await _chatService.GetChatCompletionAsync(enrichPrompt, "en");
                     if (!string.IsNullOrWhiteSpace(enriched))
                         answer = enriched;
                 }
 
-                // 8️⃣ Return structured response
+                // 🧠 Step 8: Save current topic for future follow-ups
+                if (!userMessage.Contains("yes") && !userMessage.Contains("explain more"))
+                {
+                    ConversationMemory.UserContext[userId] = (request.Question, DateTime.UtcNow);
+                    _logger.LogInformation("Saved topic for {UserId}: {Topic}", userId, request.Question);
+                }
+
+                // 9️⃣ Return structured response
                 return Ok(new
                 {
                     status = "success",
@@ -121,12 +160,10 @@ namespace SchoolAiChatbotBackend.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error answering question");
-
-                // 9️⃣ Graceful fallback
                 return Ok(new
                 {
                     status = "error",
-                    reply = "⚠️ Hmm, I ran into a small issue processing your question. But don’t worry — you can ask me about Science, Math, or any topic, and I’ll help you step by step! 😊",
+                    reply = "⚠️ Oops! I had a small hiccup. Try again, and I’ll help you step by step! 😊",
                     debug = ex.Message
                 });
             }
