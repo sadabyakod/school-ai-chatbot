@@ -52,10 +52,10 @@ npm run dev
 
 Once configured, the application will call these endpoints:
 
-- **Chat**: `https://app-wlanqwy7vuwmu.azurewebsites.net/api/chat?code=YOUR_FUNCTION_KEY`
-- **File Upload**: `https://app-wlanqwy7vuwmu.azurewebsites.net/api/upload/textbook?code=YOUR_FUNCTION_KEY`
-- **FAQs**: `https://app-wlanqwy7vuwmu.azurewebsites.net/api/faqs?code=YOUR_FUNCTION_KEY`
-- **Analytics**: `https://app-wlanqwy7vuwmu.azurewebsites.net/api/analytics?code=YOUR_FUNCTION_KEY`
+- **Chat**: `https://studyai-ingestion-345.azurewebsites.net/api/chat?code=YOUR_FUNCTION_KEY`
+- **File Upload**: `https://studyai-ingestion-345.azurewebsites.net/api/upload/textbook?code=YOUR_FUNCTION_KEY`
+- **FAQs**: `https://studyai-ingestion-345.azurewebsites.net/api/faqs?code=YOUR_FUNCTION_KEY`
+- **Analytics**: `https://studyai-ingestion-345.azurewebsites.net/api/analytics?code=YOUR_FUNCTION_KEY`
 
 ## Local Development (Optional)
 
