@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { API_URL } from "./api";
+import { buildApiUrl } from "./api";
 
 const FileUpload: React.FC<{ token?: string }> = ({ token }) => {
   const [file, setFile] = useState<File | null>(null);
@@ -20,11 +20,11 @@ const FileUpload: React.FC<{ token?: string }> = ({ token }) => {
     setStatus("Uploading...");
     const formData = new FormData();
     formData.append("file", file);
-  formData.append("Class", Class);
+    formData.append("className", Class);
     formData.append("subject", subject);
     formData.append("chapter", chapter);
     try {
-      const res = await fetch(`${API_URL}/file/upload`, {
+      const res = await fetch(buildApiUrl('/upload/textbook'), {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,

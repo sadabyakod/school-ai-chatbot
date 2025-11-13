@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { sendChat, API_URL } from "./api";
+import { sendChat, API_URL, buildApiUrl } from "./api";
 import { motion } from "framer-motion";
 
 interface Message {
@@ -100,8 +100,7 @@ const ChatBot: React.FC<{ token?: string }> = ({ token }) => {
     setLoading(true);
     try {
       // Try a simple GET to the API root or health endpoint
-      const url = API_URL.endsWith('/') ? API_URL : API_URL + '/';
-      const res = await fetch(url, { method: 'GET' });
+      const res = await fetch(buildApiUrl('/'), { method: 'GET' });
       if (res.ok) {
         setServerError(null);
         // Optionally add a small confirmation message from the bot

@@ -1,12 +1,19 @@
 // API utility for backend calls
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:7071/api';
+const FUNCTION_KEY = import.meta.env.VITE_AZURE_FUNCTION_KEY || '';
+
+// Helper to append function key to URLs when configured
+export const buildApiUrl = (endpoint: string): string => {
+  const url = `${API_URL}${endpoint}`;
+  return FUNCTION_KEY ? `${url}?code=${FUNCTION_KEY}` : url;
+};
 
 export async function sendChat({message, token }: {
   message: string;
   language?: string;
   token?: string;
 }) {
-  const res = await fetch(`${API_URL}/chat`, {
+  const res = await fetch(buildApiUrl('/chat'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

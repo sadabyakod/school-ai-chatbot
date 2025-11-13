@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { API_URL } from "./api";
+import { buildApiUrl } from "./api";
 
 
 const Faqs: React.FC<{ token?: string }> = ({ token }) => {
@@ -12,7 +12,7 @@ const Faqs: React.FC<{ token?: string }> = ({ token }) => {
     const fetchFaqs = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${API_URL}/faqs`, {
+        const res = await fetch(buildApiUrl('/faqs'), {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         if (!res.ok) throw new Error("Failed to fetch FAQs");

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { API_URL } from "./api";
+import { buildApiUrl } from "./api";
 
 
 const Analytics: React.FC<{ token?: string }> = ({ token }) => {
@@ -12,7 +12,7 @@ const Analytics: React.FC<{ token?: string }> = ({ token }) => {
     const fetchAnalytics = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${API_URL}/analytics?schoolId=${schoolId}`, {
+        const res = await fetch(buildApiUrl(`/analytics?schoolId=${schoolId}`), {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         if (!res.ok) throw new Error("Failed to fetch analytics");
