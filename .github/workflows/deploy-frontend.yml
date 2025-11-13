@@ -34,7 +34,7 @@ jobs:
       id: get-api-url
       run: |
         # Use the correct Azure Function App URL
-        API_URL="app-wlanqwy7vuwmu.azurewebsites.net"
+        API_URL="studyai-ingestion-345.azurewebsites.net"
         echo "API_URL=https://$API_URL/api" >> $GITHUB_OUTPUT
         echo "Using API URL: https://$API_URL/api"
     
