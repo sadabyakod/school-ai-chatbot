@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { buildApiUrl } from "./api";
+import { uploadFile, ApiException } from "./api";
+import { useToast } from "./hooks/useToast";
 
-const FileUpload: React.FC<{ token?: string }> = ({ token }) => {
+const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> }> = ({ token, toast }) => {
   const [file, setFile] = useState<File | null>(null);
-  const [status, setStatus] = useState<string>("");
+  const [uploading, setUploading] = useState(false);
   const [Class, setClass] = useState<string>("");
   const [subject, setSubject] = useState<string>("");
   const [chapter, setChapter] = useState<string>("");
@@ -13,27 +14,30 @@ const FileUpload: React.FC<{ token?: string }> = ({ token }) => {
   };
 
   const handleUpload = async () => {
-  if (!file || !Class || !subject || !chapter) {
-      setStatus("Please fill all fields and select a file.");
+    if (!file || !Class || !subject || !chapter) {
+      toast.warning("Please fill all fields and select a file.");
       return;
     }
-    setStatus("Uploading...");
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("className", Class);
-    formData.append("subject", subject);
-    formData.append("chapter", chapter);
+    
+    setUploading(true);
     try {
-      const res = await fetch(buildApiUrl('/upload/textbook'), {
-        method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
-      });
-      if (!res.ok) throw new Error("Upload failed");
-      const data = await res.json();
-      setStatus(`Success: ${data.message}`);
+      const data = await uploadFile(file, token);
+      toast.success(`File uploaded successfully: ${data.message || 'Processing started'}`);
+      
+      // Reset form
+      setFile(null);
+      setClass("");
+      setSubject("");
+      setChapter("");
+      
+      // Reset file input
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
     } catch (err) {
-      setStatus("Error uploading file");
+      const error = err as ApiException;
+      toast.error(error.message || "Failed to upload file");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -77,11 +81,10 @@ const FileUpload: React.FC<{ token?: string }> = ({ token }) => {
       <button
         className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
         onClick={handleUpload}
-  disabled={!file || !Class || !subject || !chapter}
+        disabled={!file || !Class || !subject || !chapter || uploading}
       >
-        Upload
+        {uploading ? 'Uploading...' : 'Upload'}
       </button>
-      {status && <div className="mt-2 text-sm">{status}</div>}
     </div>
   );
 };

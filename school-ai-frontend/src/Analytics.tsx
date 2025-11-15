@@ -1,30 +1,28 @@
 import React, { useEffect, useState } from "react";
-import { buildApiUrl } from "./api";
+import { getAnalytics, ApiException } from "./api";
+import { useToast } from "./hooks/useToast";
 
-
-const Analytics: React.FC<{ token?: string }> = ({ token }) => {
+const Analytics: React.FC<{ token?: string; toast: ReturnType<typeof useToast> }> = ({ token, toast }) => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  // TODO: Replace with real schoolId if needed
-  const schoolId = 1;
+  const schoolId = "1"; // TODO: Replace with real schoolId if needed
 
   useEffect(() => {
     const fetchAnalytics = async () => {
       setLoading(true);
       try {
-        const res = await fetch(buildApiUrl(`/analytics?schoolId=${schoolId}`), {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        if (!res.ok) throw new Error("Failed to fetch analytics");
-        setData(await res.json());
-      } catch {
+        const analyticsData = await getAnalytics(schoolId, token);
+        setData(analyticsData);
+      } catch (err) {
+        const error = err as ApiException;
+        toast.error(error.message || "Failed to load analytics");
         setData(null);
       } finally {
         setLoading(false);
       }
     };
     fetchAnalytics();
-  }, [schoolId]);
+  }, [schoolId, token, toast]);
 
   return (
     <div className="max-w-md mx-auto mt-8 bg-white p-6 rounded shadow">

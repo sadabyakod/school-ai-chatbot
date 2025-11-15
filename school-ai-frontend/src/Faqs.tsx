@@ -1,30 +1,27 @@
 import React, { useEffect, useState } from "react";
-import { buildApiUrl } from "./api";
+import { getFaqs, ApiException } from "./api";
+import { useToast } from "./hooks/useToast";
 
-
-const Faqs: React.FC<{ token?: string }> = ({ token }) => {
+const Faqs: React.FC<{ token?: string; toast: ReturnType<typeof useToast> }> = ({ token, toast }) => {
   const [faqs, setFaqs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  // TODO: Replace with real schoolId if needed
-  const schoolId = 1;
 
   useEffect(() => {
     const fetchFaqs = async () => {
       setLoading(true);
       try {
-        const res = await fetch(buildApiUrl('/faqs'), {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        if (!res.ok) throw new Error("Failed to fetch FAQs");
-        setFaqs(await res.json());
-      } catch {
+        const data = await getFaqs(token);
+        setFaqs(data);
+      } catch (err) {
+        const error = err as ApiException;
+        toast.error(error.message || "Failed to load FAQs");
         setFaqs([]);
       } finally {
         setLoading(false);
       }
     };
     fetchFaqs();
-  }, [schoolId]);
+  }, [token, toast]);
 
   return (
     <div className="max-w-md mx-auto mt-8 bg-white p-6 rounded shadow">

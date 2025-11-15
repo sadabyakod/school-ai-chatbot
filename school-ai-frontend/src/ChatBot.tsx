@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { sendChat, API_URL, buildApiUrl } from "./api";
+import { sendChat, ApiException } from "./api";
 import { motion } from "framer-motion";
+import { useToast } from "./hooks/useToast";
 
 interface Message {
   sender: "user" | "bot";
@@ -32,11 +33,10 @@ const suggestedQuestions = [
   "What are the school timings?"
 ];
 
-const ChatBot: React.FC<{ token?: string }> = ({ token }) => {
+const ChatBot: React.FC<{ token?: string; toast: ReturnType<typeof useToast> }> = ({ token, toast }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -79,38 +79,16 @@ const ChatBot: React.FC<{ token?: string }> = ({ token }) => {
         text: res.reply || "I apologize, but I couldn't generate a response. Please try again.",
         timestamp: new Date()
       };
-      // Clear any previous server error once we receive a successful response
-      setServerError(null);
       setMessages((msgs) => [...msgs, botMessage]);
     } catch (err) {
-      // Friendly message plus set a visible server error banner so user can retry
+      const error = err as ApiException;
       const errorMessage: Message = {
         sender: "bot",
         text: "😔 Oops! I couldn't reach the server. Please check your connection or try again.",
         timestamp: new Date()
       };
       setMessages((msgs) => [...msgs, errorMessage]);
-      setServerError(`Cannot connect to the backend at ${API_URL}.`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRetry = async () => {
-    setLoading(true);
-    try {
-      // Try a simple GET to the API root or health endpoint
-      const res = await fetch(buildApiUrl('/'), { method: 'GET' });
-      if (res.ok) {
-        setServerError(null);
-        // Optionally add a small confirmation message from the bot
-        const okMsg: Message = { sender: 'bot', text: '✅ Server is reachable again. How can I help?', timestamp: new Date() };
-        setMessages((m) => [...m, okMsg]);
-      } else {
-        setServerError(`Server responded with status ${res.status}. Please check the backend.`);
-      }
-    } catch (e) {
-      setServerError(`Still unable to reach the backend at ${API_URL}.`);
+      toast.error(error.message || "Failed to get response from AI");
     } finally {
       setLoading(false);
     }
@@ -151,27 +129,6 @@ const ChatBot: React.FC<{ token?: string }> = ({ token }) => {
           <div className="text-xs opacity-75">Powered by Neurozic AI</div>
         </div>
       </div>
-
-      {/* Server error banner */}
-      {serverError && (
-        <div className="bg-red-50 border-l-4 border-red-400 text-red-700 px-4 py-3 flex items-center justify-between" role="alert">
-          <div className="flex items-center gap-3">
-            <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.681-1.36 3.446 0l5.518 9.807c.75 1.333-.213 2.994-1.723 2.994H4.462c-1.51 0-2.473-1.661-1.723-2.994L8.257 3.1zM11 13a1 1 0 10-2 0 1 1 0 002 0zm-1-8a1 1 0 01.894.553l.5 1a1 1 0 11-1.788.894L9.106 6.45A1 1 0 0110 5z" clipRule="evenodd"/></svg>
-            <div>
-              <p className="font-medium">Server unreachable</p>
-              <p className="text-sm">{serverError} — please check the backend or your connection.</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={handleRetry} className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 disabled:opacity-50" disabled={loading}>
-              Retry
-            </button>
-            <button onClick={() => setServerError(null)} className="text-red-600 px-2 py-1 rounded-md hover:bg-red-100">
-              Dismiss
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-gradient-to-b from-gray-50 to-white">

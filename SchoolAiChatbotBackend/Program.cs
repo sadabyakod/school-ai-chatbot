@@ -2,9 +2,12 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SchoolAiChatbotBackend.Data;
+using SchoolAiChatbotBackend.Middleware;
 using System.Text;
 using Microsoft.OpenApi.Models;
 using SchoolAiChatbotBackend.Services;
+using Serilog;
+using Serilog.Events;
 
 namespace SchoolAiChatbotBackend
 {
@@ -12,9 +15,35 @@ namespace SchoolAiChatbotBackend
     {
         public static async Task Main(string[] args)
         {
-            var builder = WebApplication.CreateBuilder(args);
-            // Update CORS policy to allow frontend and any origin for development
-            builder.Services.AddCors(options =>
+            // Configure Serilog before creating the builder
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Information()
+                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+                .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
+                .MinimumLevel.Override("System", LogEventLevel.Warning)
+                .Enrich.FromLogContext()
+                .Enrich.WithMachineName()
+                .Enrich.WithThreadId()
+                .WriteTo.Console(
+                    outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}")
+                .WriteTo.File(
+                    path: "logs/app-.log",
+                    rollingInterval: RollingInterval.Day,
+                    retainedFileCountLimit: 30,
+                    outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] [{SourceContext}] [{MachineName}] [{ThreadId}] {Message:lj}{NewLine}{Exception}")
+                .CreateLogger();
+
+            try
+            {
+                Log.Information("Starting School AI Chatbot Backend");
+
+                var builder = WebApplication.CreateBuilder(args);
+
+                // Use Serilog for logging
+                builder.Host.UseSerilog();
+                
+                // Update CORS policy to allow frontend and any origin for development
+                builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowFrontend",
                     policy => policy
@@ -43,7 +72,8 @@ builder.Services.AddSwaggerGen(c =>
 });
 
             // Configure EF Core for Azure SQL Server
-            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+                ?? builder.Configuration.GetConnectionString("SqlDb");
 
             if (!string.IsNullOrEmpty(connectionString))
             {
@@ -64,7 +94,7 @@ builder.Services.AddSwaggerGen(c =>
                     options.UseInMemoryDatabase("TempSchoolAiDb"));
                 
                 var logger = builder.Services.BuildServiceProvider().GetService<ILogger<Program>>();
-                logger?.LogWarning("No database connection string found. Using in-memory database. Configure 'ConnectionStrings:DefaultConnection' for production.");
+                logger?.LogWarning("No database connection string found. Using in-memory database. Configure 'ConnectionStrings:DefaultConnection' or 'ConnectionStrings:SqlDb' for production.");
             }
 // Configure JWT authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
@@ -88,17 +118,23 @@ builder.Services.AddAuthentication(options =>
     });
 
 builder.Services.AddAuthorization();
-// Register external services
-builder.Services.AddScoped<SchoolAiChatbotBackend.Services.JwtService>();
-builder.Services.AddScoped<SchoolAiChatbotBackend.Services.PineconeService>();
-builder.Services.AddScoped<SchoolAiChatbotBackend.Services.FaqEmbeddingService>();
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
-// Also add a simple file logger to persist logs to backend.log for debugging
-// builder.Logging.AddProvider(new SchoolAiChatbotBackend.Logging.FileLoggerProvider(Path.Combine(builder.Environment.ContentRootPath, "backend.log")));
 
-// Set default minimum log level to Information so request logs are emitted.
-builder.Logging.SetMinimumLevel(LogLevel.Information);
+// Register HttpClient for OpenAIService
+builder.Services.AddHttpClient<IOpenAIService, OpenAIService>();
+
+// Register core services
+builder.Services.AddScoped<SchoolAiChatbotBackend.Services.JwtService>();
+
+// Register Azure Functions migration services (SQL-based RAG)
+builder.Services.AddScoped<IOpenAIService, OpenAIService>();
+builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();
+builder.Services.AddScoped<SchoolAiChatbotBackend.Services.IChatHistoryService, SchoolAiChatbotBackend.Services.ChatHistoryService>();
+builder.Services.AddScoped<SchoolAiChatbotBackend.Services.IRAGService, SchoolAiChatbotBackend.Services.RAGService>();
+builder.Services.AddScoped<SchoolAiChatbotBackend.Services.IStudyNotesService, SchoolAiChatbotBackend.Services.StudyNotesService>();
+
+// Register global exception handler
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 // Register OpenAiChatService using a factory that reads config
 builder.Services.AddScoped<OpenAiChatService>(sp =>
@@ -144,6 +180,11 @@ var connStr = builder.Configuration.GetConnectionString("DefaultConnection");
 // startupLogger.LogInformation("Using DB connection: {Conn}", connStr);
 
 // Add middleware to log incoming requests early in the pipeline so we capture all hits.
+app.UseRequestLogging();
+
+// Add global exception handling
+app.UseExceptionHandler();
+
 app.Use(async (context, next) =>
 {
     var logger = app.Services.GetRequiredService<ILogger<Program>>();
@@ -228,6 +269,15 @@ app.MapGet("/", () => Results.Ok(new { message = "School AI Chatbot Backend is r
             app.MapControllers();
 
             await app.RunAsync();
+            }
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "Application terminated unexpectedly");
+            }
+            finally
+            {
+                Log.CloseAndFlush();
+            }
         }
     }
 }

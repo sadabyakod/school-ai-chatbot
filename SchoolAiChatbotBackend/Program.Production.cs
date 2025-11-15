@@ -90,8 +90,6 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 // Register external services
 builder.Services.AddScoped<SchoolAiChatbotBackend.Services.JwtService>();
-builder.Services.AddScoped<SchoolAiChatbotBackend.Services.PineconeService>();
-builder.Services.AddScoped<SchoolAiChatbotBackend.Services.FaqEmbeddingService>();
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 // Also add a simple file logger to persist logs to backend.log for debugging

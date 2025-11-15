@@ -31,7 +31,6 @@ namespace SchoolAiChatbotBackend.Controllers
         {
             return Ok(new { 
                 hasOpenAIKey = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("OpenAI__ApiKey")),
-                hasPineconeKey = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("Pinecone__ApiKey")),
                 hasJWTKey = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("JWT__SecretKey")),
                 environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Unknown"
             });

@@ -18,184 +18,175 @@ namespace SchoolAiChatbotBackend.Controllers
     public class FileController : ControllerBase
     {
         private readonly ILogger<FileController> _logger;
-        private readonly PineconeService _pineconeService;
-        private readonly IChatService _chatService;
+        private readonly IBlobStorageService _blobStorageService;
         private readonly AppDbContext _dbContext;
 
         public FileController(
             ILogger<FileController> logger,
-            PineconeService pineconeService,
-            IChatService chatService,
+            IBlobStorageService blobStorageService,
             AppDbContext dbContext)
         {
             _logger = logger;
-            _pineconeService = pineconeService;
-            _chatService = chatService;
+            _blobStorageService = blobStorageService;
             _dbContext = dbContext;
         }
 
+        /// <summary>
+        /// Upload a file to Azure Blob Storage and save metadata to UploadedFiles table
+        /// Azure Functions blob trigger will handle chunking and embedding generation
+        /// POST /api/file/upload
+        /// </summary>
         [HttpPost("upload")]
         public async Task<IActionResult> Upload(
             [FromForm] IFormFile file,
-            [FromForm] string Class,
-            [FromForm] string subject,
-            [FromForm] string chapter)
+            [FromForm] string? subject,
+            [FromForm] string? grade,
+            [FromForm] string? chapter)
         {
             if (file == null || file.Length == 0)
-                return BadRequest("No file uploaded.");
+                return BadRequest(new { status = "error", message = "No file uploaded." });
 
-            if (string.IsNullOrWhiteSpace(Class) || string.IsNullOrWhiteSpace(subject) || string.IsNullOrWhiteSpace(chapter))
-                return BadRequest("All fields (Class, Subject, Chapter) are required.");
-
-            var filePath = Path.Combine("Uploads", file.FileName);
-            Directory.CreateDirectory("Uploads");
-
-            await using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
-
-            string? pineconeResult = null;
+            _logger.LogInformation("Uploading file: {FileName}, Size: {Size} bytes", file.FileName, file.Length);
 
             try
             {
-                var rawBytes = await System.IO.File.ReadAllBytesAsync(filePath);
-                bool looksBinary = rawBytes.Any(b => b == 0);
-                string fileContent = looksBinary
-                    ? file.FileName
-                    : System.Text.Encoding.UTF8.GetString(rawBytes);
+                string blobUrl;
 
-                const int chunkSize = 1024;
-                var textChunks = new List<string>();
-
-                for (int i = 0; i < fileContent.Length; i += chunkSize)
+                // Upload to Azure Blob Storage
+                using (var stream = file.OpenReadStream())
                 {
-                    int length = Math.Min(chunkSize, fileContent.Length - i);
-                    textChunks.Add(fileContent.Substring(i, length));
+                    blobUrl = await _blobStorageService.UploadFileToBlobAsync(
+                        file.FileName, 
+                        stream, 
+                        file.ContentType);
                 }
 
-                var pineconeVectors = new List<PineconeVector>();
-                int chunkIndex = 0;
-
-                foreach (var chunk in textChunks)
+                // Save metadata to UploadedFiles table (Azure Functions schema)
+                var uploadedFile = new UploadedFile
                 {
-                    var embedding = await _chatService.GetEmbeddingAsync(chunk);
-                    bool hasNonZero = embedding != null && embedding.Any(v => Math.Abs(v) > 1e-9f);
+                    FileName = file.FileName,
+                    BlobUrl = blobUrl,
+                    UploadedAt = DateTime.UtcNow,
+                    Subject = subject,
+                    Grade = grade,
+                    Chapter = chapter,
+                    UploadedBy = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    Status = "Pending", // Azure Functions will update this to "Processing" -> "Completed"
+                    TotalChunks = null // Will be set by Azure Functions after processing
+                };
 
-                    if (!hasNonZero)
-                    {
-                        _logger.LogWarning("Embedding generation failed for chunk {ChunkIndex} of file {FileName}", chunkIndex, file.FileName);
-                        continue;
-                    }
+                _dbContext.UploadedFiles.Add(uploadedFile);
+                await _dbContext.SaveChangesAsync();
 
-                    var original = (embedding ?? new List<float>()).Select(x => (float)x).ToList();
-                    var vectorValues = original.Count > 1024
-                        ? original.Take(1024).ToList()
-                        : original.Concat(Enumerable.Repeat(0f, 1024 - original.Count)).ToList();
-
-                    var pineconeVector = new PineconeVector
-                    {
-                        Id = $"{Guid.NewGuid()}_{chunkIndex}",
-                        Values = vectorValues,
-                        Metadata = new Dictionary<string, object>
-                        {
-                            { "Class", Class },
-                            { "fileName", file.FileName },
-                            { "subject", subject },
-                            { "chapter", chapter },
-                            { "chunkIndex", chunkIndex },
-                            { "chunkText", chunk.Substring(0, Math.Min(100, chunk.Length)) + (chunk.Length > 100 ? "..." : "") }
-                        }
-                    };
-
-                    pineconeVectors.Add(pineconeVector);
-                    chunkIndex++;
-                }
-
-                if (pineconeVectors.Count == 0)
-                    return StatusCode(500, new { message = "No valid embeddings could be generated for this file." });
-
-                var upsertRequest = new PineconeUpsertRequest { Vectors = pineconeVectors };
-                var (ok, result) = await _pineconeService.UpsertVectorsAsync(upsertRequest);
-                pineconeResult = result;
-
-                if (!ok)
-                    return StatusCode(500, new { message = "File uploaded but vector upsert failed.", details = result });
-
-                // ✅ Transaction-safe retry block (Pomelo + EF Core 9)
-                var executionStrategy = _dbContext.Database.CreateExecutionStrategy();
-                await executionStrategy.ExecuteAsync(async () =>
-                {
-                    await using var transaction = await _dbContext.Database.BeginTransactionAsync();
-
-                    try
-                    {
-                        var uploadedFile = new UploadedFile
-                        {
-                            FileName = file.FileName,
-                            FilePath = filePath,
-                            UploadDate = DateTime.UtcNow,
-                            EmbeddingDimension = 1024,
-                            EmbeddingVector = $"MultipleChunks_{pineconeVectors.Count}"
-                        };
-
-                        _logger.LogInformation("Creating UploadedFile record: {FileName}, Size: {Size}", file.FileName, fileContent.Length);
-                        _dbContext.UploadedFiles.Add(uploadedFile);
-                        await _dbContext.SaveChangesAsync();
-
-                        int syllabusChunksCreated = 0;
-                        foreach (var pineconeVector in pineconeVectors)
-                        {
-                            var chunkText = pineconeVector.Metadata.TryGetValue("chunkText", out var text)
-                                ? text?.ToString()
-                                : "Text chunk content";
-
-                            var syllabusChunk = new SyllabusChunk
-                            {
-                                Subject = subject,
-                                Grade = Class,
-                                Chapter = chapter,
-                                ChunkText = chunkText,
-                                Source = file.FileName,
-                                UploadedFileId = uploadedFile.Id,
-                                PineconeVectorId = pineconeVector.Id
-                            };
-
-                            _dbContext.SyllabusChunks.Add(syllabusChunk);
-                            syllabusChunksCreated++;
-                        }
-
-                        _logger.LogInformation("Saving {Count} syllabus chunks to DB", syllabusChunksCreated);
-                        await _dbContext.SaveChangesAsync();
-
-                        await transaction.CommitAsync();
-                        _logger.LogInformation("Successfully created {Count} syllabus chunks for file {File}", syllabusChunksCreated, file.FileName);
-                    }
-                    catch
-                    {
-                        await transaction.RollbackAsync();
-                        throw;
-                    }
-                });
+                _logger.LogInformation("File uploaded successfully: {FileName}, FileId: {FileId}, BlobUrl: {BlobUrl}", 
+                    file.FileName, uploadedFile.Id, blobUrl);
 
                 return Ok(new
                 {
-                    message = "File uploaded successfully and processed in chunks.",
+                    status = "success",
+                    message = "File uploaded successfully. Processing will begin automatically.",
+                    fileId = uploadedFile.Id,
                     fileName = file.FileName,
-                    chunksProcessed = pineconeVectors.Count,
-                    totalFileSize = fileContent.Length,
-                    pineconeResult
+                    blobUrl = blobUrl,
+                    uploadedAt = uploadedFile.UploadedAt,
+                    note = "Azure Functions will process this file and generate embeddings automatically."
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "File upload failed for {File}", file.FileName);
+                _logger.LogError(ex, "Error uploading file: {FileName}", file.FileName);
                 return StatusCode(500, new
                 {
-                    message = "Server error during upload or vectorization.",
-                    details = ex.Message,
-                    inner = ex.InnerException?.Message
+                    status = "error",
+                    message = "Failed to upload file.",
+                    details = ex.Message
                 });
+            }
+        }
+
+        /// <summary>
+        /// Get upload status and processing progress
+        /// GET /api/file/status/{fileId}
+        /// </summary>
+        [HttpGet("status/{fileId}")]
+        public async Task<IActionResult> GetStatus(int fileId)
+        {
+            try
+            {
+                var uploadedFile = await _dbContext.UploadedFiles.FindAsync(fileId);
+
+                if (uploadedFile == null)
+                    return NotFound(new { status = "error", message = "File not found." });
+
+                // Check how many chunks have been created
+                var chunksCreated = await _dbContext.FileChunks
+                    .Where(fc => fc.FileId == fileId)
+                    .CountAsync();
+
+                var embeddingsCreated = await _dbContext.ChunkEmbeddings
+                    .Where(ce => _dbContext.FileChunks
+                        .Where(fc => fc.FileId == fileId)
+                        .Select(fc => fc.Id)
+                        .Contains(ce.ChunkId))
+                    .CountAsync();
+
+                return Ok(new
+                {
+                    status = "success",
+                    fileId = uploadedFile.Id,
+                    fileName = uploadedFile.FileName,
+                    uploadedAt = uploadedFile.UploadedAt,
+                    processingStatus = uploadedFile.Status,
+                    chunksCreated = chunksCreated,
+                    embeddingsCreated = embeddingsCreated,
+                    totalChunks = uploadedFile.TotalChunks,
+                    isComplete = uploadedFile.Status == "Completed"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting file status for FileId: {FileId}", fileId);
+                return StatusCode(500, new { status = "error", message = "Failed to get file status." });
+            }
+        }
+
+        /// <summary>
+        /// List all uploaded files
+        /// GET /api/file/list
+        /// </summary>
+        [HttpGet("list")]
+        public async Task<IActionResult> ListFiles([FromQuery] int limit = 50)
+        {
+            try
+            {
+                var files = await _dbContext.UploadedFiles
+                    .OrderByDescending(f => f.UploadedAt)
+                    .Take(limit)
+                    .Select(f => new
+                    {
+                        f.Id,
+                        f.FileName,
+                        f.BlobUrl,
+                        f.UploadedAt,
+                        f.Subject,
+                        f.Grade,
+                        f.Chapter,
+                        f.Status,
+                        f.TotalChunks
+                    })
+                    .ToListAsync();
+
+                return Ok(new
+                {
+                    status = "success",
+                    count = files.Count(),
+                    files
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error listing files");
+                return StatusCode(500, new { status = "error", message = "Failed to list files." });
             }
         }
     }

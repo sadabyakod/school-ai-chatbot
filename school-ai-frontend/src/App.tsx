@@ -2,18 +2,21 @@ import ChatBot from './ChatBot';
 import FileUpload from './FileUpload';
 import Faqs from './Faqs';
 import Analytics from './Analytics';
+import { ToastContainer } from './components/Toast';
+import { useToast } from './hooks/useToast';
 import { useState } from "react";
 
 const PAGES = [
-  { name: 'Chat', component: (token: string) => <ChatBot token={token} /> },
-  { name: 'File Upload', component: (token: string) => <FileUpload token={token} /> },
-  { name: 'FAQs', component: (token: string) => <Faqs token={token} /> },
-  { name: 'Analytics', component: (token: string) => <Analytics token={token} /> },
+  { name: 'Chat', component: (token: string, toast: ReturnType<typeof useToast>) => <ChatBot token={token} toast={toast} /> },
+  { name: 'File Upload', component: (token: string, toast: ReturnType<typeof useToast>) => <FileUpload token={token} toast={toast} /> },
+  { name: 'FAQs', component: (token: string, toast: ReturnType<typeof useToast>) => <Faqs token={token} toast={toast} /> },
+  { name: 'Analytics', component: (token: string, toast: ReturnType<typeof useToast>) => <Analytics token={token} toast={toast} /> },
 ];
 
 function App() {
   const [page, setPage] = useState(0);
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('jwt') || null);
+  const toast = useToast();
 
   const handleLogout = () => {
     localStorage.removeItem('jwt');
@@ -64,8 +67,9 @@ function App() {
           </div>
         </div>
       </nav>
+      <ToastContainer toasts={toast.toasts} onClose={toast.removeToast} />
       <div className="py-4">
-        {PAGES[page].component(token || "")}
+        {PAGES[page].component(token || "", toast)}
       </div>
     </div>
   );

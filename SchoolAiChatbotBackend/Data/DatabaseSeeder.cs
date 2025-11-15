@@ -161,34 +161,46 @@ namespace SchoolAiChatbotBackend.Data
                 new UploadedFile
                 {
                     FileName = "math_curriculum_grade5.pdf",
-                    FilePath = "/uploads/math_grade5.pdf",
-                    UploadDate = new DateTime(2024, 9, 1, 10, 0, 0),
-                    EmbeddingDimension = 1536,
-                    EmbeddingVector = "[0.1, 0.2, 0.3]"
+                    BlobUrl = "https://storage.blob.core.windows.net/uploads/math_grade5.pdf",
+                    UploadedAt = new DateTime(2024, 9, 1, 10, 0, 0),
+                    Subject = "Math",
+                    Grade = "Grade 5",
+                    Chapter = "Curriculum",
+                    Status = "Processed",
+                    TotalChunks = 10
                 },
                 new UploadedFile
                 {
                     FileName = "science_syllabus_grade8.pdf",
-                    FilePath = "/uploads/science_grade8.pdf",
-                    UploadDate = new DateTime(2024, 9, 2, 14, 30, 0),
-                    EmbeddingDimension = 1536,
-                    EmbeddingVector = "[0.4, 0.5, 0.6]"
+                    BlobUrl = "https://storage.blob.core.windows.net/uploads/science_grade8.pdf",
+                    UploadedAt = new DateTime(2024, 9, 2, 14, 30, 0),
+                    Subject = "Science",
+                    Grade = "Grade 8",
+                    Chapter = "Syllabus",
+                    Status = "Processed",
+                    TotalChunks = 12
                 },
                 new UploadedFile
                 {
                     FileName = "english_literature_grade10.pdf",
-                    FilePath = "/uploads/english_grade10.pdf",
-                    UploadDate = new DateTime(2024, 9, 3, 9, 15, 0),
-                    EmbeddingDimension = 1536,
-                    EmbeddingVector = "[0.7, 0.8, 0.9]"
+                    BlobUrl = "https://storage.blob.core.windows.net/uploads/english_grade10.pdf",
+                    UploadedAt = new DateTime(2024, 9, 3, 9, 15, 0),
+                    Subject = "English",
+                    Grade = "Grade 10",
+                    Chapter = "Literature",
+                    Status = "Processed",
+                    TotalChunks = 15
                 },
                 new UploadedFile
                 {
                     FileName = "history_textbook_grade7.pdf",
-                    FilePath = "/uploads/history_grade7.pdf",
-                    UploadDate = new DateTime(2024, 9, 4, 16, 45, 0),
-                    EmbeddingDimension = 1536,
-                    EmbeddingVector = "[0.2, 0.4, 0.6]"
+                    BlobUrl = "https://storage.blob.core.windows.net/uploads/history_grade7.pdf",
+                    UploadedAt = new DateTime(2024, 9, 4, 16, 45, 0),
+                    Subject = "History",
+                    Grade = "Grade 7",
+                    Chapter = "Textbook",
+                    Status = "Processed",
+                    TotalChunks = 8
                 }
             };
 
@@ -205,8 +217,7 @@ namespace SchoolAiChatbotBackend.Data
                     Source = "Common Core Standards",
                     ChunkText = "Students will learn multiplication and division of multi-digit numbers. They will understand place value and use it to perform operations.",
                     Chapter = "Chapter 1: Number Operations",
-                    UploadedFileId = uploadedFiles[0].Id,
-                    PineconeVectorId = "math-grade5-chunk-001"
+                    UploadedFileId = uploadedFiles[0].Id
                 },
                 new SyllabusChunk
                 {
@@ -215,8 +226,7 @@ namespace SchoolAiChatbotBackend.Data
                     Source = "Common Core Standards",
                     ChunkText = "Introduction to fractions and decimals. Students will add and subtract fractions with like denominators.",
                     Chapter = "Chapter 2: Fractions",
-                    UploadedFileId = uploadedFiles[0].Id,
-                    PineconeVectorId = "math-grade5-chunk-002"
+                    UploadedFileId = uploadedFiles[0].Id
                 },
                 new SyllabusChunk
                 {
@@ -225,8 +235,7 @@ namespace SchoolAiChatbotBackend.Data
                     Source = "Next Generation Science Standards",
                     ChunkText = "Earth and Space Sciences: Understanding the solar system, planets, and their characteristics.",
                     Chapter = "Chapter 3: Solar System",
-                    UploadedFileId = uploadedFiles[1].Id,
-                    PineconeVectorId = "science-grade8-chunk-001"
+                    UploadedFileId = uploadedFiles[1].Id
                 },
                 new SyllabusChunk
                 {
@@ -235,8 +244,7 @@ namespace SchoolAiChatbotBackend.Data
                     Source = "Next Generation Science Standards",
                     ChunkText = "Physical Science: Introduction to atoms, molecules, and chemical reactions.",
                     Chapter = "Chapter 4: Chemistry Basics",
-                    UploadedFileId = uploadedFiles[1].Id,
-                    PineconeVectorId = "science-grade8-chunk-002"
+                    UploadedFileId = uploadedFiles[1].Id
                 },
                 new SyllabusChunk
                 {
@@ -245,8 +253,7 @@ namespace SchoolAiChatbotBackend.Data
                     Source = "State Standards",
                     ChunkText = "Reading comprehension strategies for poetry and prose. Analysis of literary devices and themes.",
                     Chapter = "Chapter 5: Literary Analysis",
-                    UploadedFileId = uploadedFiles[2].Id,
-                    PineconeVectorId = "english-grade10-chunk-001"
+                    UploadedFileId = uploadedFiles[2].Id
                 },
                 new SyllabusChunk
                 {
@@ -255,8 +262,7 @@ namespace SchoolAiChatbotBackend.Data
                     Source = "Social Studies Standards",
                     ChunkText = "American Revolution: Causes, key events, and consequences of the Revolutionary War.",
                     Chapter = "Chapter 6: American Revolution",
-                    UploadedFileId = uploadedFiles[3].Id,
-                    PineconeVectorId = "history-grade7-chunk-001"
+                    UploadedFileId = uploadedFiles[3].Id
                 }
             };
 

@@ -18,9 +18,6 @@ namespace SchoolAiChatbotBackend.Models
         [ForeignKey("UploadedFile")]
         public int UploadedFileId { get; set; }
 
-        [Required]
-        public string PineconeVectorId { get; set; } = string.Empty;
-
         public UploadedFile? UploadedFile { get; set; }
     }
 }
