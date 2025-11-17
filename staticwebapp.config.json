@@ -15,7 +15,16 @@
     "exclude": ["/images/*.{png,jpg,gif}", "/css/*", "/api/*"]
   },
   "mimeTypes": {
-    ".json": "application/json"
+    ".json": "application/json",
+    ".js": "text/javascript",
+    ".mjs": "text/javascript",
+    ".css": "text/css",
+    ".svg": "image/svg+xml",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".gif": "image/gif",
+    ".ico": "image/x-icon"
   },
   "globalHeaders": {
     "Access-Control-Allow-Origin": "*",
