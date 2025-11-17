@@ -1,23 +1,33 @@
 {
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": ["/assets/*"]
+    "exclude": ["/assets/*", "*.{css,js,json,svg,png,jpg,jpeg,gif,ico,woff,woff2,ttf,eot}"]
   },
   "mimeTypes": {
-    ".js": "text/javascript",
-    ".mjs": "text/javascript",
+    ".js": "application/javascript",
+    ".mjs": "application/javascript",
     ".json": "application/json",
     ".css": "text/css",
     ".svg": "image/svg+xml",
     ".png": "image/png",
     ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".gif": "image/gif",
     ".ico": "image/x-icon",
     ".woff": "font/woff",
-    ".woff2": "font/woff2"
+    ".woff2": "font/woff2",
+    ".ttf": "font/ttf",
+    ".eot": "application/vnd.ms-fontobject"
   },
   "globalHeaders": {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization"
+  },
+  "responseOverrides": {
+    "404": {
+      "rewrite": "/index.html",
+      "statusCode": 200
+    }
   }
 }
