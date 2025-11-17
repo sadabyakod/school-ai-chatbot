@@ -12,8 +12,8 @@
   },
   "mimeTypes": {
     ".json": "application/json",
-    ".js": "text/javascript",
-    ".mjs": "text/javascript",
+    ".js": "application/javascript",
+    ".mjs": "application/javascript",
     ".css": "text/css",
     ".svg": "image/svg+xml",
     ".png": "image/png",
@@ -30,5 +30,11 @@
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
     "Access-Control-Allow-Origin": "*"
+  },
+  "responseOverrides": {
+    "404": {
+      "rewrite": "/index.html",
+      "statusCode": 200
+    }
   }
 }
