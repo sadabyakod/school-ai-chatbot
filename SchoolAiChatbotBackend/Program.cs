@@ -42,20 +42,16 @@ namespace SchoolAiChatbotBackend
                 // Use Serilog for logging
                 builder.Host.UseSerilog();
                 
-                // Update CORS policy to allow frontend and any origin for development
+                // CORS: Only allow your frontend in production
                 builder.Services.AddCors(options =>
-            {
-                options.AddPolicy("AllowFrontend",
-                    policy => policy
-                        .WithOrigins(
-                            "https://nice-ocean-0bd32c110.3.azurestaticapps.net",
-                            "http://localhost:3000",
-                            "https://localhost:3000"
-                        )
-                        .AllowAnyHeader()
-                        .AllowAnyMethod()
-                        .AllowCredentials());
-            });
+                {
+                    options.AddPolicy("AllowFrontend",
+                        policy => policy
+                            .WithOrigins("https://nice-ocean-0bd32c110.3.azurestaticapps.net")
+                            .AllowAnyHeader()
+                            .AllowAnyMethod()
+                            .AllowCredentials());
+                });
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.Limits.MaxRequestBodySize = 50_000_000; // 50 MB
@@ -199,17 +195,17 @@ app.Use(async (context, next) =>
     await next();
 });
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
 
-// Always allow CORS for all origins to handle frontend requests
-app.UseCors(policy => policy
-    .AllowAnyOrigin()
-    .AllowAnyHeader() 
-    .AllowAnyMethod());
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseSwagger();
+                app.UseSwaggerUI();
+                app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+            }
+            else
+            {
+                app.UseCors("AllowFrontend");
+            }
 
 app.UseHttpsRedirection();
 app.UseAuthentication();

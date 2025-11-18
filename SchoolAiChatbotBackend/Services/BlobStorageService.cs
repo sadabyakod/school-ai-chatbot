@@ -95,7 +95,7 @@ namespace SchoolAiChatbotBackend.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error uploading file {FileName} to blob storage", fileName);
+                _logger.LogError(ex, "Error uploading file {FileName} to blob storage. Exception: {ExceptionMessage}\nStackTrace: {StackTrace}", fileName, ex.Message, ex.StackTrace);
                 throw;
             }
         }
