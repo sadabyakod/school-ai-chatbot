@@ -29,10 +29,14 @@ namespace SchoolAiChatbotBackend.Services
         {
             _logger = logger;
 
-            // Try to get connection string from Azure Functions compatible keys
-            var connectionString = configuration["AzureWebJobsStorage"] 
+            // Try to get connection string from configuration
+            var connectionString = configuration["BlobStorage:ConnectionString"]
+                ?? configuration["AzureWebJobsStorage"] 
                 ?? configuration["AzureBlobStorage:ConnectionString"]
                 ?? Environment.GetEnvironmentVariable("AzureWebJobsStorage");
+
+            // Also get container name from configuration
+            _containerName = configuration["BlobStorage:ContainerName"] ?? "textbooks";
 
             if (!string.IsNullOrWhiteSpace(connectionString) && 
                 !connectionString.Equals("UseDevelopmentStorage=true", StringComparison.OrdinalIgnoreCase))
@@ -51,7 +55,7 @@ namespace SchoolAiChatbotBackend.Services
             }
             else
             {
-                _logger.LogWarning("Blob Storage not configured. Set AzureWebJobsStorage in configuration.");
+                _logger.LogWarning("Blob Storage not configured. Set BlobStorage:ConnectionString in appsettings.json.");
                 _isConfigured = false;
             }
         }
