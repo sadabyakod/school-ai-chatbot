@@ -2,11 +2,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SchoolAiChatbotBackend.Data;
 using SchoolAiChatbotBackend.Features.Exams;
+using Microsoft.AspNetCore.Http;
 
 namespace SchoolAiChatbotBackend.Controllers;
 
 [ApiController]
-[Route("api/exams")]
+[Route("api/exam")]
+[Produces("application/json")]
+[Tags("Exam System")]
 public class ExamController : ControllerBase
 {
     private readonly IExamService _examService;

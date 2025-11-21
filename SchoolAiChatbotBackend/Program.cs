@@ -69,7 +69,42 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "School AI Chatbot API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo 
+    { 
+        Title = "School AI Chatbot API", 
+        Version = "v1",
+        Description = "API for School AI Chatbot with RAG, Chat History, Study Notes, and Adaptive Exam System",
+        Contact = new OpenApiContact
+        {
+            Name = "School AI Support",
+            Email = "support@schoolai.com"
+        }
+    });
+    
+    // Add JWT authentication to Swagger
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+    
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
 });
 
             // Configure EF Core for Azure SQL Server
@@ -204,10 +239,17 @@ app.Use(async (context, next) =>
 });
 
 
+            // Enable Swagger in all environments
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "School AI Chatbot API v1");
+                c.RoutePrefix = "swagger"; // Access at /swagger
+                c.DocumentTitle = "School AI Chatbot API";
+            });
+
             if (app.Environment.IsDevelopment())
             {
-                app.UseSwagger();
-                app.UseSwaggerUI();
                 app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
             }
             else
