@@ -68,7 +68,7 @@ interface ResultSummary {
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 async function getExamSummary(attemptId: number): Promise<ResultSummary> {
-  const response = await fetch(`${API_URL}/api/exams/${attemptId}/summary`, {
+  const response = await fetch(`${API_URL}/api/exam/${attemptId}/summary`, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
   });

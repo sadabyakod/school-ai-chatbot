@@ -59,7 +59,7 @@ interface SubmitAnswerResponse {
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 async function startExam(studentId: string, examTemplateId: number): Promise<StartExamResponse> {
-  const response = await fetch(`${API_URL}/api/exams/start`, {
+  const response = await fetch(`${API_URL}/api/exam/start`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ studentId, examTemplateId }),
@@ -78,7 +78,7 @@ async function submitAnswer(
   selectedOptionId: number,
   timeTakenSeconds: number
 ): Promise<SubmitAnswerResponse> {
-  const response = await fetch(`${API_URL}/api/exams/${attemptId}/answer`, {
+  const response = await fetch(`${API_URL}/api/exam/${attemptId}/answer`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ questionId, selectedOptionId, timeTakenSeconds }),
