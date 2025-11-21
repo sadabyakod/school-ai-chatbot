@@ -21,7 +21,7 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
     
     setUploading(true);
     try {
-      const data = await uploadFile(file, token);
+      const data = await uploadFile(file, subject, Class, chapter, token);
       toast.success(`File uploaded successfully: ${data.message || 'Processing started'}`);
       
       // Reset form

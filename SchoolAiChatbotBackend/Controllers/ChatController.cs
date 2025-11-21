@@ -68,7 +68,28 @@ namespace SchoolAiChatbotBackend.Controllers
                 }
 
                 // Use RAG service to get answer (handles retrieval, prompt building, and saving)
-                var answer = await _ragService.GetRAGAnswerAsync(question, userId, sessionId);
+                string answer;
+                try
+                {
+                    answer = await _ragService.GetRAGAnswerAsync(question, userId, sessionId);
+                }
+                catch (Exception ragEx)
+                {
+                    _logger.LogError(ragEx, "RAG service failed, falling back to direct AI");
+                    // Fallback to direct AI if RAG fails completely
+                    var openAIService = HttpContext.RequestServices.GetRequiredService<IOpenAIService>();
+                    answer = await openAIService.GetChatCompletionAsync($"You are a helpful study assistant. Answer this question: {question}");
+                    
+                    // Try to save to history
+                    try
+                    {
+                        await _chatHistoryService.SaveChatHistoryAsync(userId, sessionId, question, answer, "[]", 0);
+                    }
+                    catch (Exception histEx)
+                    {
+                        _logger.LogWarning(histEx, "Failed to save chat history");
+                    }
+                }
 
                 return Ok(new
                 {
@@ -87,7 +108,8 @@ namespace SchoolAiChatbotBackend.Controllers
                     status = "error",
                     sessionId = sessionId,
                     reply = "⚠️ Oops! I had a small hiccup. Try again, and I'll help you step by step! 😊",
-                    debug = ex.Message
+                    error = ex.Message,
+                    stackTrace = ex.StackTrace?.Split('\n').Take(5)
                 });
             }
         }
@@ -160,8 +182,56 @@ namespace SchoolAiChatbotBackend.Controllers
             }
         }
 
+        /// <summary>
+        /// Get the most recent session for a user
+        /// GET /api/chat/most-recent-session
+        /// </summary>
+        [HttpGet("most-recent-session")]
+        public async Task<IActionResult> GetMostRecentSession()
+        {
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            string userId = ip;
+
+            _logger.LogInformation("Retrieving most recent session for user {UserId}", userId);
+
+            try
+            {
+                var sessionId = await _chatHistoryService.GetMostRecentSessionAsync(userId);
+
+                if (sessionId == null)
+                {
+                    return NotFound(new { status = "error", message = "No recent session found." });
+                }
+
+                return Ok(new { status = "success", sessionId });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving most recent session");
+                return StatusCode(500, new { status = "error", message = "Failed to retrieve most recent session." });
+            }
+        }
+
         [HttpGet("test")]
         public IActionResult Test() => Ok("✅ Chat endpoint is working!");
+
+        /// <summary>
+        /// Test Azure OpenAI connection directly
+        /// GET /api/chat/test-ai
+        /// </summary>
+        [HttpGet("test-ai")]
+        public async Task<IActionResult> TestAI([FromServices] IOpenAIService openAIService)
+        {
+            try
+            {
+                var response = await openAIService.GetChatCompletionAsync("Say 'Azure OpenAI is working!' in one sentence.");
+                return Ok(new { status = "success", response });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { status = "error", message = ex.Message, stackTrace = ex.StackTrace });
+            }
+        }
     }
 
     public class ChatAskRequest

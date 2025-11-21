@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "jVcS+VsjAaU=",
+  "dgSpecHash": "dbZWThT8p/E=",
   "success": true,
-  "projectFilePath": "C:\\SmartStudyAI\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj",
+  "projectFilePath": "C:\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\HP\\.nuget\\packages\\azure.core\\1.44.1\\azure.core.1.44.1.nupkg.sha512",
     "C:\\Users\\HP\\.nuget\\packages\\azure.identity\\1.11.4\\azure.identity.1.11.4.nupkg.sha512",

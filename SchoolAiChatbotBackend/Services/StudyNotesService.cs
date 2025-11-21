@@ -21,6 +21,10 @@ namespace SchoolAiChatbotBackend.Services
         Task<List<StudyNote>> GetUserStudyNotesAsync(string userId, int limit = 20);
         Task<StudyNote?> GetStudyNoteByIdAsync(int id);
         Task<bool> RateStudyNoteAsync(int id, int rating);
+        Task<StudyNote?> UpdateStudyNoteAsync(int id, string userId, string updatedContent);
+        Task<string?> ShareStudyNoteAsync(int id, string userId);
+        Task<bool> UnshareStudyNoteAsync(int id, string userId);
+        Task<StudyNote?> GetSharedStudyNoteAsync(string shareToken);
     }
 
     public class StudyNotesService : IStudyNotesService
@@ -189,6 +193,122 @@ namespace SchoolAiChatbotBackend.Services
             await _dbContext.SaveChangesAsync();
 
             return true;
+        }
+
+        /// <summary>
+        /// Update/edit study note content
+        /// </summary>
+        public async Task<StudyNote?> UpdateStudyNoteAsync(int id, string userId, string updatedContent)
+        {
+            try
+            {
+                var note = await _dbContext.StudyNotes.FindAsync(id);
+                
+                if (note == null || note.UserId != userId)
+                {
+                    _logger.LogWarning("Study note {NoteId} not found or user {UserId} not authorized", id, userId);
+                    return null;
+                }
+
+                note.GeneratedNotes = updatedContent;
+                note.UpdatedAt = DateTime.UtcNow;
+                
+                await _dbContext.SaveChangesAsync();
+                
+                _logger.LogInformation("Successfully updated study note {NoteId}", id);
+                return note;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating study note {NoteId}", id);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Share a study note and generate shareable token
+        /// </summary>
+        public async Task<string?> ShareStudyNoteAsync(int id, string userId)
+        {
+            try
+            {
+                var note = await _dbContext.StudyNotes.FindAsync(id);
+                
+                if (note == null || note.UserId != userId)
+                {
+                    _logger.LogWarning("Study note {NoteId} not found or user {UserId} not authorized", id, userId);
+                    return null;
+                }
+
+                // Generate unique share token if not already shared
+                if (string.IsNullOrEmpty(note.ShareToken))
+                {
+                    note.ShareToken = Guid.NewGuid().ToString("N");
+                }
+                
+                note.IsShared = true;
+                await _dbContext.SaveChangesAsync();
+                
+                _logger.LogInformation("Successfully shared study note {NoteId} with token {Token}", id, note.ShareToken);
+                return note.ShareToken;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sharing study note {NoteId}", id);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Unshare a study note (revoke public access)
+        /// </summary>
+        public async Task<bool> UnshareStudyNoteAsync(int id, string userId)
+        {
+            try
+            {
+                var note = await _dbContext.StudyNotes.FindAsync(id);
+                
+                if (note == null || note.UserId != userId)
+                {
+                    _logger.LogWarning("Study note {NoteId} not found or user {UserId} not authorized", id, userId);
+                    return false;
+                }
+
+                note.IsShared = false;
+                await _dbContext.SaveChangesAsync();
+                
+                _logger.LogInformation("Successfully unshared study note {NoteId}", id);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error unsharing study note {NoteId}", id);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Get a shared study note by its share token (public access)
+        /// </summary>
+        public async Task<StudyNote?> GetSharedStudyNoteAsync(string shareToken)
+        {
+            try
+            {
+                var note = await _dbContext.StudyNotes
+                    .FirstOrDefaultAsync(n => n.ShareToken == shareToken && n.IsShared);
+                
+                if (note == null)
+                {
+                    _logger.LogWarning("Shared study note with token {Token} not found", shareToken);
+                }
+                
+                return note;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving shared study note with token {Token}", shareToken);
+                throw;
+            }
         }
     }
 }

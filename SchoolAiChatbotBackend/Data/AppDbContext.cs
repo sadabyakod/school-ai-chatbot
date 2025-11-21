@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SchoolAiChatbotBackend.Models;
+using SchoolAiChatbotBackend.Features.Exams;
 
 namespace SchoolAiChatbotBackend.Data
 {
@@ -22,6 +23,13 @@ namespace SchoolAiChatbotBackend.Data
         // Azure Functions ingestion tables (shared schema)
         public DbSet<FileChunk> FileChunks { get; set; }
         public DbSet<ChunkEmbedding> ChunkEmbeddings { get; set; }
+
+        // Exam System entities
+        public DbSet<Question> Questions { get; set; }
+        public DbSet<QuestionOption> QuestionOptions { get; set; }
+        public DbSet<ExamTemplate> ExamTemplates { get; set; }
+        public DbSet<ExamAttempt> ExamAttempts { get; set; }
+        public DbSet<ExamAnswer> ExamAnswers { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -51,6 +59,10 @@ namespace SchoolAiChatbotBackend.Data
             modelBuilder.Entity<ChatHistory>()
                 .HasIndex(c => new { c.UserId, c.SessionId, c.Timestamp });
             
+            // Add index for ChatHistory Tag
+            modelBuilder.Entity<ChatHistory>()
+                .HasIndex(c => c.Tag);
+            
             // Configure StudyNote relationships
             modelBuilder.Entity<StudyNote>()
                 .HasOne(s => s.User)
@@ -60,6 +72,11 @@ namespace SchoolAiChatbotBackend.Data
             
             modelBuilder.Entity<StudyNote>()
                 .HasIndex(s => new { s.UserId, s.CreatedAt });
+            
+            // Add index for StudyNote ShareToken for fast lookup
+            modelBuilder.Entity<StudyNote>()
+                .HasIndex(s => s.ShareToken)
+                .IsUnique();
             
             // Configure FileChunk relationships (Azure Functions schema)
             modelBuilder.Entity<FileChunk>()
@@ -84,6 +101,50 @@ namespace SchoolAiChatbotBackend.Data
             modelBuilder.Entity<ChunkEmbedding>()
                 .HasIndex(ce => ce.ChunkId)
                 .IsUnique();
+            
+            // Configure Exam System relationships
+            // Question -> QuestionOptions (One-to-Many)
+            modelBuilder.Entity<Question>()
+                .HasMany(q => q.Options)
+                .WithOne(o => o.Question)
+                .HasForeignKey(o => o.QuestionId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            modelBuilder.Entity<Question>()
+                .HasIndex(q => new { q.Subject, q.Chapter, q.Difficulty });
+            
+            // ExamTemplate -> ExamAttempts (One-to-Many)
+            modelBuilder.Entity<ExamTemplate>()
+                .HasMany(t => t.ExamAttempts)
+                .WithOne(a => a.ExamTemplate)
+                .HasForeignKey(a => a.ExamTemplateId)
+                .OnDelete(DeleteBehavior.Restrict);
+            
+            modelBuilder.Entity<ExamTemplate>()
+                .HasIndex(t => new { t.Subject, t.Chapter });
+            
+            // ExamAttempt -> ExamAnswers (One-to-Many)
+            modelBuilder.Entity<ExamAttempt>()
+                .HasMany(a => a.ExamAnswers)
+                .WithOne(ans => ans.ExamAttempt)
+                .HasForeignKey(ans => ans.ExamAttemptId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            modelBuilder.Entity<ExamAttempt>()
+                .HasIndex(a => new { a.StudentId, a.StartedAt });
+            
+            modelBuilder.Entity<ExamAttempt>()
+                .HasIndex(a => a.Status);
+            
+            // ExamAnswer -> Question (Many-to-One)
+            modelBuilder.Entity<ExamAnswer>()
+                .HasOne(ans => ans.Question)
+                .WithMany(q => q.ExamAnswers)
+                .HasForeignKey(ans => ans.QuestionId)
+                .OnDelete(DeleteBehavior.Restrict);
+            
+            modelBuilder.Entity<ExamAnswer>()
+                .HasIndex(ans => new { ans.ExamAttemptId, ans.QuestionId });
         }
     }
 }

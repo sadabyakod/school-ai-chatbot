@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\My Friend App\\DatabaseSetup\\DatabaseSetup.csproj": {}
+    "C:\\school-ai-chatbot\\DatabaseSetup\\DatabaseSetup.csproj": {}
   },
   "projects": {
-    "C:\\My Friend App\\DatabaseSetup\\DatabaseSetup.csproj": {
+    "C:\\school-ai-chatbot\\DatabaseSetup\\DatabaseSetup.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\My Friend App\\DatabaseSetup\\DatabaseSetup.csproj",
+        "projectUniqueName": "C:\\school-ai-chatbot\\DatabaseSetup\\DatabaseSetup.csproj",
         "projectName": "DatabaseSetup",
-        "projectPath": "C:\\My Friend App\\DatabaseSetup\\DatabaseSetup.csproj",
-        "packagesPath": "C:\\Users\\sadab\\.nuget\\packages\\",
-        "outputPath": "C:\\My Friend App\\DatabaseSetup\\obj\\",
+        "projectPath": "C:\\school-ai-chatbot\\DatabaseSetup\\DatabaseSetup.csproj",
+        "packagesPath": "C:\\Users\\HP\\.nuget\\packages\\",
+        "outputPath": "C:\\school-ai-chatbot\\DatabaseSetup\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\sadab\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\HP\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
@@ -26,8 +26,8 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\My Friend App\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj": {
-                "projectPath": "C:\\My Friend App\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj"
+              "C:\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj": {
+                "projectPath": "C:\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj"
               }
             }
           }
@@ -42,7 +42,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.300"
+        "SdkAnalysisLevel": "9.0.100"
       },
       "frameworks": {
         "net9.0": {
@@ -85,21 +85,21 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.306/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.112/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\My Friend App\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj": {
+    "C:\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\My Friend App\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj",
+        "projectUniqueName": "C:\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj",
         "projectName": "SchoolAiChatbotBackend",
-        "projectPath": "C:\\My Friend App\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj",
-        "packagesPath": "C:\\Users\\sadab\\.nuget\\packages\\",
-        "outputPath": "C:\\My Friend App\\SchoolAiChatbotBackend\\obj\\",
+        "projectPath": "C:\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj",
+        "packagesPath": "C:\\Users\\HP\\.nuget\\packages\\",
+        "outputPath": "C:\\school-ai-chatbot\\SchoolAiChatbotBackend\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\sadab\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\HP\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
@@ -123,37 +123,41 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.300"
+        "SdkAnalysisLevel": "9.0.100"
       },
       "frameworks": {
         "net9.0": {
           "targetAlias": "net9.0",
           "dependencies": {
+            "Azure.Storage.Blobs": {
+              "target": "Package",
+              "version": "[12.22.2, )"
+            },
             "Microsoft.AspNetCore.Authentication.JwtBearer": {
               "target": "Package",
               "version": "[9.0.0, )"
             },
             "Microsoft.AspNetCore.OpenApi": {
               "target": "Package",
-              "version": "[9.0.7, )"
+              "version": "[9.0.0, )"
             },
             "Microsoft.EntityFrameworkCore": {
               "target": "Package",
-              "version": "[9.0.10, )"
+              "version": "[9.0.0, )"
             },
             "Microsoft.EntityFrameworkCore.Design": {
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
               "suppressParent": "All",
               "target": "Package",
-              "version": "[9.0.10, )"
+              "version": "[9.0.0, )"
             },
             "Microsoft.EntityFrameworkCore.InMemory": {
               "target": "Package",
-              "version": "[9.0.10, )"
+              "version": "[9.0.0, )"
             },
             "Microsoft.EntityFrameworkCore.SqlServer": {
               "target": "Package",
-              "version": "[9.0.10, )"
+              "version": "[9.0.0, )"
             },
             "Newtonsoft.Json": {
               "target": "Package",
@@ -163,9 +167,25 @@
               "target": "Package",
               "version": "[2.5.0, )"
             },
-            "Pomelo.EntityFrameworkCore.MySql": {
+            "Serilog.AspNetCore": {
               "target": "Package",
-              "version": "[9.0.0, )"
+              "version": "[8.0.1, )"
+            },
+            "Serilog.Enrichers.Environment": {
+              "target": "Package",
+              "version": "[2.3.0, )"
+            },
+            "Serilog.Enrichers.Thread": {
+              "target": "Package",
+              "version": "[3.1.0, )"
+            },
+            "Serilog.Sinks.Console": {
+              "target": "Package",
+              "version": "[5.0.1, )"
+            },
+            "Serilog.Sinks.File": {
+              "target": "Package",
+              "version": "[5.0.0, )"
             },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
@@ -191,7 +211,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.306/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.112/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

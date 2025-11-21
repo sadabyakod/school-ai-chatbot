@@ -22,6 +22,209 @@ namespace SchoolAiChatbotBackend.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("SchoolAiChatbotBackend.Features.Exams.ExamAnswer", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ExamAttemptId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsCorrect")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("QuestionId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SelectedOptionId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TimeTakenSeconds")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuestionId");
+
+                    b.HasIndex("ExamAttemptId", "QuestionId");
+
+                    b.ToTable("ExamAnswers");
+                });
+
+            modelBuilder.Entity("SchoolAiChatbotBackend.Features.Exams.ExamAttempt", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CorrectCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ExamTemplateId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("ScorePercent")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("StudentId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("WrongCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExamTemplateId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("StudentId", "StartedAt");
+
+                    b.ToTable("ExamAttempts");
+                });
+
+            modelBuilder.Entity("SchoolAiChatbotBackend.Features.Exams.ExamTemplate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("AdaptiveEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Chapter")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("TotalQuestions")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Subject", "Chapter");
+
+                    b.ToTable("ExamTemplates");
+                });
+
+            modelBuilder.Entity("SchoolAiChatbotBackend.Features.Exams.Question", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Chapter")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Difficulty")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Explanation")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int?>("SourceFileId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Topic")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Subject", "Chapter", "Difficulty");
+
+                    b.ToTable("Questions");
+                });
+
+            modelBuilder.Entity("SchoolAiChatbotBackend.Features.Exams.QuestionOption", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("IsCorrect")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("OptionText")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("QuestionId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuestionId");
+
+                    b.ToTable("QuestionOptions");
+                });
+
             modelBuilder.Entity("SchoolAiChatbotBackend.Models.ChatHistory", b =>
                 {
                     b.Property<int>("Id")
@@ -51,6 +254,10 @@ namespace SchoolAiChatbotBackend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<string>("Tag")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("datetime2");
 
@@ -61,6 +268,8 @@ namespace SchoolAiChatbotBackend.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AuthenticatedUserId");
+
+                    b.HasIndex("Tag");
 
                     b.HasIndex("UserId", "SessionId", "Timestamp");
 
@@ -306,8 +515,14 @@ namespace SchoolAiChatbotBackend.Migrations
                     b.Property<string>("Grade")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("IsShared")
+                        .HasColumnType("bit");
+
                     b.Property<int?>("Rating")
                         .HasColumnType("int");
+
+                    b.Property<string>("ShareToken")
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("SourceChunks")
                         .HasColumnType("nvarchar(max)");
@@ -319,6 +534,9 @@ namespace SchoolAiChatbotBackend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
@@ -326,6 +544,10 @@ namespace SchoolAiChatbotBackend.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AuthenticatedUserId");
+
+                    b.HasIndex("ShareToken")
+                        .IsUnique()
+                        .HasFilter("[ShareToken] IS NOT NULL");
 
                     b.HasIndex("UserId", "CreatedAt");
 
@@ -461,6 +683,47 @@ namespace SchoolAiChatbotBackend.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("SchoolAiChatbotBackend.Features.Exams.ExamAnswer", b =>
+                {
+                    b.HasOne("SchoolAiChatbotBackend.Features.Exams.ExamAttempt", "ExamAttempt")
+                        .WithMany("ExamAnswers")
+                        .HasForeignKey("ExamAttemptId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SchoolAiChatbotBackend.Features.Exams.Question", "Question")
+                        .WithMany("ExamAnswers")
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ExamAttempt");
+
+                    b.Navigation("Question");
+                });
+
+            modelBuilder.Entity("SchoolAiChatbotBackend.Features.Exams.ExamAttempt", b =>
+                {
+                    b.HasOne("SchoolAiChatbotBackend.Features.Exams.ExamTemplate", "ExamTemplate")
+                        .WithMany("ExamAttempts")
+                        .HasForeignKey("ExamTemplateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ExamTemplate");
+                });
+
+            modelBuilder.Entity("SchoolAiChatbotBackend.Features.Exams.QuestionOption", b =>
+                {
+                    b.HasOne("SchoolAiChatbotBackend.Features.Exams.Question", "Question")
+                        .WithMany("Options")
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Question");
+                });
+
             modelBuilder.Entity("SchoolAiChatbotBackend.Models.ChatHistory", b =>
                 {
                     b.HasOne("SchoolAiChatbotBackend.Models.User", "User")
@@ -572,6 +835,23 @@ namespace SchoolAiChatbotBackend.Migrations
                         .IsRequired();
 
                     b.Navigation("School");
+                });
+
+            modelBuilder.Entity("SchoolAiChatbotBackend.Features.Exams.ExamAttempt", b =>
+                {
+                    b.Navigation("ExamAnswers");
+                });
+
+            modelBuilder.Entity("SchoolAiChatbotBackend.Features.Exams.ExamTemplate", b =>
+                {
+                    b.Navigation("ExamAttempts");
+                });
+
+            modelBuilder.Entity("SchoolAiChatbotBackend.Features.Exams.Question", b =>
+                {
+                    b.Navigation("ExamAnswers");
+
+                    b.Navigation("Options");
                 });
 #pragma warning restore 612, 618
         }

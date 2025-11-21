@@ -186,6 +186,152 @@ namespace SchoolAiChatbotBackend.Controllers
             }
         }
 
+        /// <summary>
+        /// Update/edit a study note
+        /// PUT /api/notes/{id}
+        /// </summary>
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateNote(int id, [FromBody] UpdateNoteRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            string userId = ip;
+
+            _logger.LogInformation("Updating study note {NoteId} for user {UserId}", id, userId);
+
+            try
+            {
+                var updatedNote = await _notesService.UpdateStudyNoteAsync(id, userId, request.Content);
+
+                if (updatedNote == null)
+                    return NotFound(new { status = "error", message = "Study note not found or you don't have permission to edit it." });
+
+                return Ok(new
+                {
+                    status = "success",
+                    message = "Note updated successfully.",
+                    note = new
+                    {
+                        id = updatedNote.Id,
+                        topic = updatedNote.Topic,
+                        notes = updatedNote.GeneratedNotes,
+                        updatedAt = updatedNote.UpdatedAt
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating study note {NoteId}", id);
+                return StatusCode(500, new { status = "error", message = "Failed to update note." });
+            }
+        }
+
+        /// <summary>
+        /// Share a study note and get shareable link
+        /// POST /api/notes/{id}/share
+        /// </summary>
+        [HttpPost("{id}/share")]
+        public async Task<IActionResult> ShareNote(int id)
+        {
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            string userId = ip;
+
+            _logger.LogInformation("Sharing study note {NoteId} for user {UserId}", id, userId);
+
+            try
+            {
+                var shareToken = await _notesService.ShareStudyNoteAsync(id, userId);
+
+                if (shareToken == null)
+                    return NotFound(new { status = "error", message = "Study note not found or you don't have permission to share it." });
+
+                var shareUrl = $"{Request.Scheme}://{Request.Host}/api/notes/shared/{shareToken}";
+
+                return Ok(new
+                {
+                    status = "success",
+                    message = "Note shared successfully.",
+                    shareToken,
+                    shareUrl
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sharing study note {NoteId}", id);
+                return StatusCode(500, new { status = "error", message = "Failed to share note." });
+            }
+        }
+
+        /// <summary>
+        /// Unshare a study note (revoke public access)
+        /// POST /api/notes/{id}/unshare
+        /// </summary>
+        [HttpPost("{id}/unshare")]
+        public async Task<IActionResult> UnshareNote(int id)
+        {
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            string userId = ip;
+
+            _logger.LogInformation("Unsharing study note {NoteId} for user {UserId}", id, userId);
+
+            try
+            {
+                var success = await _notesService.UnshareStudyNoteAsync(id, userId);
+
+                if (!success)
+                    return NotFound(new { status = "error", message = "Study note not found or you don't have permission to unshare it." });
+
+                return Ok(new { status = "success", message = "Note unshared successfully." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error unsharing study note {NoteId}", id);
+                return StatusCode(500, new { status = "error", message = "Failed to unshare note." });
+            }
+        }
+
+        /// <summary>
+        /// Get a shared study note by token (public access)
+        /// GET /api/notes/shared/{token}
+        /// </summary>
+        [HttpGet("shared/{token}")]
+        public async Task<IActionResult> GetSharedNote(string token)
+        {
+            _logger.LogInformation("Retrieving shared study note with token {Token}", token);
+
+            try
+            {
+                var note = await _notesService.GetSharedStudyNoteAsync(token);
+
+                if (note == null)
+                    return NotFound(new { status = "error", message = "Shared note not found or has been unshared." });
+
+                return Ok(new
+                {
+                    status = "success",
+                    note = new
+                    {
+                        id = note.Id,
+                        topic = note.Topic,
+                        notes = note.GeneratedNotes,
+                        subject = note.Subject,
+                        grade = note.Grade,
+                        chapter = note.Chapter,
+                        createdAt = note.CreatedAt,
+                        updatedAt = note.UpdatedAt,
+                        rating = note.Rating
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving shared study note with token {Token}", token);
+                return StatusCode(500, new { status = "error", message = "Failed to retrieve shared note." });
+            }
+        }
+
         [HttpGet("test")]
         public IActionResult Test() => Ok("✅ Notes endpoint is working!");
     }
@@ -198,6 +344,12 @@ namespace SchoolAiChatbotBackend.Controllers
         public string? Subject { get; set; }
         public string? Grade { get; set; }
         public string? Chapter { get; set; }
+    }
+
+    public class UpdateNoteRequest
+    {
+        [Required(ErrorMessage = "Content is required.")]
+        public string Content { get; set; } = string.Empty;
     }
 
     public class RateNoteRequest
