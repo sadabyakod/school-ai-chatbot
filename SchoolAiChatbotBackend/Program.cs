@@ -47,7 +47,12 @@ namespace SchoolAiChatbotBackend
                 {
                     options.AddPolicy("AllowFrontend",
                         policy => policy
-                            .WithOrigins("https://nice-ocean-0bd32c110.3.azurestaticapps.net")
+                            .WithOrigins(
+                                "https://nice-ocean-0bd32c110.3.azurestaticapps.net",
+                                "http://localhost:5173",
+                                "http://localhost:5174",
+                                "http://localhost:5175"
+                            )
                             .AllowAnyHeader()
                             .AllowAnyMethod()
                             .AllowCredentials());
