@@ -42,15 +42,26 @@ namespace SchoolAiChatbotBackend
                 // Use Serilog for logging
                 builder.Host.UseSerilog();
                 
-                // CORS: Only allow your frontend in production
+                // CORS: Allow your frontend origins
                 builder.Services.AddCors(options =>
                 {
                     options.AddPolicy("AllowFrontend",
                         policy => policy
-                            .WithOrigins("https://nice-ocean-0bd32c110.3.azurestaticapps.net")
+                            .WithOrigins(
+                                "https://nice-ocean-0bd32c110.3.azurestaticapps.net",
+                                "http://localhost:5173",
+                                "http://localhost:5174"
+                            )
                             .AllowAnyHeader()
                             .AllowAnyMethod()
                             .AllowCredentials());
+                    
+                    // Policy for development - allows all origins
+                    options.AddPolicy("AllowAll",
+                        policy => policy
+                            .AllowAnyOrigin()
+                            .AllowAnyHeader()
+                            .AllowAnyMethod());
                 });
 builder.WebHost.ConfigureKestrel(options =>
 {
