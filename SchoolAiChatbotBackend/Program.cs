@@ -128,6 +128,9 @@ builder.Services.AddScoped<SchoolAiChatbotBackend.Services.IChatHistoryService, 
 builder.Services.AddScoped<SchoolAiChatbotBackend.Services.IRAGService, SchoolAiChatbotBackend.Services.RAGService>();
 builder.Services.AddScoped<SchoolAiChatbotBackend.Services.IStudyNotesService, SchoolAiChatbotBackend.Services.StudyNotesService>();
 
+// Register Exam System services
+builder.Services.AddScoped<SchoolAiChatbotBackend.Features.Exams.IExamService, SchoolAiChatbotBackend.Features.Exams.ExamService>();
+
 // Register global exception handler
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();

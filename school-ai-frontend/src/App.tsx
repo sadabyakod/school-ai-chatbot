@@ -2,6 +2,7 @@ import ChatBot from './ChatBot';
 import FileUpload from './FileUpload';
 import Faqs from './Faqs';
 import Analytics from './Analytics';
+import ExamHub from './pages/ExamHub';
 import { ToastContainer } from './components/Toast';
 import { useToast } from './hooks/useToast';
 import { useState } from "react";
@@ -11,6 +12,7 @@ const PAGES = [
   { name: 'File Upload', component: (token: string, toast: ReturnType<typeof useToast>) => <FileUpload token={token} toast={toast} /> },
   { name: 'FAQs', component: (token: string, toast: ReturnType<typeof useToast>) => <Faqs token={token} toast={toast} /> },
   { name: 'Analytics', component: (token: string, toast: ReturnType<typeof useToast>) => <Analytics token={token} toast={toast} /> },
+  { name: 'Exams', component: (token: string, toast: ReturnType<typeof useToast>) => <ExamHub token={token} toast={toast} /> },
 ];
 
 function App() {
