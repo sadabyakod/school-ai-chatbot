@@ -52,13 +52,16 @@ namespace SchoolAiChatbotBackend.Controllers
             {
                 string blobUrl;
 
-                // Upload to Azure Blob Storage
+                // Upload to Azure Blob Storage with folder structure: grade/subject/chapter/
                 using (var stream = file.OpenReadStream())
                 {
                     blobUrl = await _blobStorageService.UploadFileToBlobAsync(
                         file.FileName, 
                         stream, 
-                        file.ContentType);
+                        file.ContentType,
+                        grade,
+                        subject,
+                        chapter);
                 }
 
                 // Save metadata to UploadedFiles table (Azure Functions schema)

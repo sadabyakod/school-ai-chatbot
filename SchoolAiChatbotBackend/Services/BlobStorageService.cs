@@ -14,7 +14,7 @@ namespace SchoolAiChatbotBackend.Services
     /// </summary>
     public interface IBlobStorageService
     {
-        Task<string> UploadFileToBlobAsync(string fileName, Stream fileStream, string? contentType = null);
+        Task<string> UploadFileToBlobAsync(string fileName, Stream fileStream, string? contentType = null, string? grade = null, string? subject = null, string? chapter = null);
         Task<bool> DeleteBlobAsync(string blobUrl);
     }
 
@@ -61,9 +61,9 @@ namespace SchoolAiChatbotBackend.Services
         }
 
         /// <summary>
-        /// Upload a file to Azure Blob Storage
+        /// Upload a file to Azure Blob Storage with folder structure: grade/subject/chapter/filename
         /// </summary>
-        public async Task<string> UploadFileToBlobAsync(string fileName, Stream fileStream, string? contentType = null)
+        public async Task<string> UploadFileToBlobAsync(string fileName, Stream fileStream, string? contentType = null, string? grade = null, string? subject = null, string? chapter = null)
         {
             if (!_isConfigured || _blobServiceClient == null)
             {
@@ -73,12 +73,27 @@ namespace SchoolAiChatbotBackend.Services
 
             try
             {
-                // Get or create container
+                // Get or create container (without public access)
                 var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
-                await containerClient.CreateIfNotExistsAsync(PublicAccessType.Blob);
+                await containerClient.CreateIfNotExistsAsync(PublicAccessType.None);
 
-                // Generate unique blob name
-                var blobName = $"{Guid.NewGuid()}_{fileName}";
+                // Build folder structure: grade/subject/chapter/
+                var folderPath = "";
+                if (!string.IsNullOrWhiteSpace(grade))
+                {
+                    folderPath += $"{grade}/";
+                    if (!string.IsNullOrWhiteSpace(subject))
+                    {
+                        folderPath += $"{subject}/";
+                        if (!string.IsNullOrWhiteSpace(chapter))
+                        {
+                            folderPath += $"{chapter}/";
+                        }
+                    }
+                }
+
+                // Generate unique blob name with folder structure
+                var blobName = $"{folderPath}{Guid.NewGuid()}_{fileName}";
                 var blobClient = containerClient.GetBlobClient(blobName);
 
                 // Upload file
