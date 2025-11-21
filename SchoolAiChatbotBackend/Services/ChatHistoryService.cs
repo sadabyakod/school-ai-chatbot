@@ -19,6 +19,10 @@ namespace SchoolAiChatbotBackend.Services
         Task<List<string>> GetUserChatSessionsAsync(string userId, int limit = 20);
         Task<int> DeleteOldHistoryAsync(TimeSpan olderThan);
         Task<ChatHistory?> GetLastMessageAsync(string userId, string sessionId);
+        /// <summary>
+        /// Get the most recent session for a user
+        /// </summary>
+        Task<string?> GetMostRecentSessionAsync(string userId);
     }
 
     public class ChatHistoryService : IChatHistoryService
@@ -111,6 +115,18 @@ namespace SchoolAiChatbotBackend.Services
             return await _dbContext.ChatHistories
                 .Where(c => c.UserId == userId && c.SessionId == sessionId)
                 .OrderByDescending(c => c.Timestamp)
+                .FirstOrDefaultAsync();
+        }
+
+        /// <summary>
+        /// Get the most recent session for a user
+        /// </summary>
+        public async Task<string?> GetMostRecentSessionAsync(string userId)
+        {
+            return await _dbContext.ChatHistories
+                .Where(c => c.UserId == userId)
+                .OrderByDescending(c => c.Timestamp)
+                .Select(c => c.SessionId)
                 .FirstOrDefaultAsync();
         }
     }

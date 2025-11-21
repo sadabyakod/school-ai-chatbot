@@ -192,14 +192,20 @@ namespace SchoolAiChatbotBackend.Services
         {
             try
             {
-                // Step 1: Find relevant chunks
-                var relevantChunks = await FindRelevantChunksAsync(question, topK: 5);
+                string answer;
+                int chunksFound = 0;
+                
+                try
+                {
+                    // Step 1: Find relevant chunks
+                    var relevantChunks = await FindRelevantChunksAsync(question, topK: 5);
+                    chunksFound = relevantChunks.Count;
 
-                // Step 2: Build context
-                var contextText = await BuildContextTextAsync(relevantChunks);
+                    // Step 2: Build context
+                    var contextText = await BuildContextTextAsync(relevantChunks);
 
-                // Step 3: Build RAG prompt
-                var prompt = $@"### ROLE: You are a helpful AI study assistant.
+                    // Step 3: Build RAG prompt
+                    var prompt = $@"### ROLE: You are a helpful AI study assistant.
 
 ### TASK: Answer the student's question using the provided educational content.
 
@@ -212,20 +218,23 @@ namespace SchoolAiChatbotBackend.Services
 ### YOUR ANSWER:
 Provide a clear, accurate answer based on the context above. If the context doesn't contain relevant information, say so and provide general guidance.";
 
-                // Step 4: Get AI response
-                var answer = await _openAIService.GetChatCompletionAsync(prompt);
+                    // Step 4: Get AI response
+                    answer = await _openAIService.GetChatCompletionAsync(prompt);
+                }
+                catch (Exception ex)
+                {
+                    // If RAG fails, fall back to direct AI response without context
+                    _logger.LogWarning(ex, "RAG pipeline failed, using direct AI response");
+                    answer = await _openAIService.GetChatCompletionAsync($"Answer this student question: {question}");
+
+                    // If RAG fails, fall back to direct AI response without context
+                    _logger.LogWarning(ex, "RAG pipeline failed, using direct AI response");
+                    answer = await _openAIService.GetChatCompletionAsync($"Answer this student question: {question}");
+                    chunksFound = 0;
+                }
 
                 // Step 5: Save to chat history
-                var contextUsedJson = JsonSerializer.Serialize(
-                    relevantChunks.Select(c => new 
-                    { 
-                        c.Id, 
-                        c.Subject, 
-                        c.Grade, 
-                        c.Chapter,
-                        c.ChunkIndex 
-                    }).ToList()
-                );
+                var contextUsedJson = "[]";
 
                 await _chatHistoryService.SaveChatHistoryAsync(
                     userId,
@@ -233,11 +242,11 @@ Provide a clear, accurate answer based on the context above. If the context does
                     question,
                     answer,
                     contextUsedJson,
-                    relevantChunks.Count
+                    chunksFound
                 );
 
                 _logger.LogInformation("RAG answer generated for session {SessionId} with {ChunkCount} chunks", 
-                    sessionId, relevantChunks.Count);
+                    sessionId, chunksFound);
 
                 return answer;
             }

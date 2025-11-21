@@ -261,3 +261,220 @@ export async function checkHealth(): Promise<boolean> {
     return false;
   }
 }
+
+// ==========================================
+// STUDY NOTES API
+// ==========================================
+
+export interface StudyNoteRequest {
+  topic: string;
+  subject?: string;
+  grade?: string;
+  chapter?: string;
+}
+
+export interface StudyNote {
+  id: number;
+  topic: string;
+  notes: string;
+  subject?: string;
+  grade?: string;
+  chapter?: string;
+  createdAt: string;
+  updatedAt?: string;
+  rating?: number;
+  isShared?: boolean;
+  shareToken?: string;
+}
+
+export async function generateStudyNote(request: StudyNoteRequest, token?: string): Promise<any> {
+  const response = await fetchWithRetry(
+    buildApiUrl('/api/notes/generate'),
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        Topic: request.topic,
+        Subject: request.subject,
+        Grade: request.grade,
+        Chapter: request.chapter
+      })
+    },
+    { maxRetries: 1 } // AI generation can take time
+  );
+
+  if (!response.ok) {
+    const error = await parseErrorResponse(response);
+    throw new ApiException(error);
+  }
+
+  return await response.json();
+}
+
+export async function getUserStudyNotes(limit: number = 20, token?: string): Promise<any> {
+  const response = await fetchWithRetry(
+    buildApiUrl(`/api/notes?limit=${limit}`),
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const error = await parseErrorResponse(response);
+    throw new ApiException(error);
+  }
+
+  return await response.json();
+}
+
+export async function getStudyNoteById(id: number, token?: string): Promise<any> {
+  const response = await fetchWithRetry(
+    buildApiUrl(`/api/notes/${id}`),
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const error = await parseErrorResponse(response);
+    throw new ApiException(error);
+  }
+
+  return await response.json();
+}
+
+export async function updateStudyNote(id: number, content: string, token?: string): Promise<any> {
+  const response = await fetchWithRetry(
+    buildApiUrl(`/api/notes/${id}`),
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ Content: content })
+    }
+  );
+
+  if (!response.ok) {
+    const error = await parseErrorResponse(response);
+    throw new ApiException(error);
+  }
+
+  return await response.json();
+}
+
+export async function shareStudyNote(id: number, token?: string): Promise<any> {
+  const response = await fetchWithRetry(
+    buildApiUrl(`/api/notes/${id}/share`),
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const error = await parseErrorResponse(response);
+    throw new ApiException(error);
+  }
+
+  return await response.json();
+}
+
+export async function unshareStudyNote(id: number, token?: string): Promise<any> {
+  const response = await fetchWithRetry(
+    buildApiUrl(`/api/notes/${id}/unshare`),
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const error = await parseErrorResponse(response);
+    throw new ApiException(error);
+  }
+
+  return await response.json();
+}
+
+export async function getSharedStudyNote(shareToken: string): Promise<any> {
+  const response = await fetchWithRetry(
+    buildApiUrl(`/api/notes/shared/${shareToken}`),
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const error = await parseErrorResponse(response);
+    throw new ApiException(error);
+  }
+
+  return await response.json();
+}
+
+export async function rateStudyNote(id: number, rating: number, token?: string): Promise<any> {
+  const response = await fetchWithRetry(
+    buildApiUrl(`/api/notes/${id}/rate`),
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ Rating: rating })
+    }
+  );
+
+  if (!response.ok) {
+    const error = await parseErrorResponse(response);
+    throw new ApiException(error);
+  }
+
+  return await response.json();
+}
+
+// ==========================================
+// CHAT HISTORY API (New Feature)
+// ==========================================
+
+export async function getMostRecentSession(token?: string): Promise<any> {
+  const response = await fetchWithRetry(
+    buildApiUrl('/api/chat/most-recent-session'),
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const error = await parseErrorResponse(response);
+    throw new ApiException(error);
+  }
+
+  return await response.json();
+}

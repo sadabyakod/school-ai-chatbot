@@ -51,6 +51,10 @@ namespace SchoolAiChatbotBackend.Data
             modelBuilder.Entity<ChatHistory>()
                 .HasIndex(c => new { c.UserId, c.SessionId, c.Timestamp });
             
+            // Add index for ChatHistory Tag
+            modelBuilder.Entity<ChatHistory>()
+                .HasIndex(c => c.Tag);
+            
             // Configure StudyNote relationships
             modelBuilder.Entity<StudyNote>()
                 .HasOne(s => s.User)
@@ -60,6 +64,11 @@ namespace SchoolAiChatbotBackend.Data
             
             modelBuilder.Entity<StudyNote>()
                 .HasIndex(s => new { s.UserId, s.CreatedAt });
+            
+            // Add index for StudyNote ShareToken for fast lookup
+            modelBuilder.Entity<StudyNote>()
+                .HasIndex(s => s.ShareToken)
+                .IsUnique();
             
             // Configure FileChunk relationships (Azure Functions schema)
             modelBuilder.Entity<FileChunk>()

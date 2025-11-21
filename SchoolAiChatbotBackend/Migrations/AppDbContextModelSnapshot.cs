@@ -51,6 +51,10 @@ namespace SchoolAiChatbotBackend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<string>("Tag")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("datetime2");
 
@@ -61,6 +65,8 @@ namespace SchoolAiChatbotBackend.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AuthenticatedUserId");
+
+                    b.HasIndex("Tag");
 
                     b.HasIndex("UserId", "SessionId", "Timestamp");
 
@@ -306,8 +312,14 @@ namespace SchoolAiChatbotBackend.Migrations
                     b.Property<string>("Grade")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("IsShared")
+                        .HasColumnType("bit");
+
                     b.Property<int?>("Rating")
                         .HasColumnType("int");
+
+                    b.Property<string>("ShareToken")
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("SourceChunks")
                         .HasColumnType("nvarchar(max)");
@@ -319,6 +331,9 @@ namespace SchoolAiChatbotBackend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
@@ -326,6 +341,10 @@ namespace SchoolAiChatbotBackend.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AuthenticatedUserId");
+
+                    b.HasIndex("ShareToken")
+                        .IsUnique()
+                        .HasFilter("[ShareToken] IS NOT NULL");
 
                     b.HasIndex("UserId", "CreatedAt");
 

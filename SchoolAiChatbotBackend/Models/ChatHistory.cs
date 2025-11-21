@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace SchoolAiChatbotBackend.Models
 {
@@ -50,5 +51,11 @@ namespace SchoolAiChatbotBackend.Models
         /// </summary>
         public int? AuthenticatedUserId { get; set; }
         public User? User { get; set; }
+
+        /// <summary>
+        /// Optional tag for the session (e.g., "Math Homework", "Exam Prep")
+        /// </summary>
+        [MaxLength(100)]
+        public string? Tag { get; set; }
     }
 }

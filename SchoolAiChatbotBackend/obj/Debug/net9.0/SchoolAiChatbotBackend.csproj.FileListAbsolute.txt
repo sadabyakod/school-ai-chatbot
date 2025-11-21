@@ -1,362 +1,182 @@
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\web.config
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\appsettings.Development.json
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\appsettings.json
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\appsettings.Production.json
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\appsettings.Development.json
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\appsettings.json
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\appsettings.Production.json
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\SchoolAiChatbotBackend.deps.json
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\SchoolAiChatbotBackend.runtimeconfig.json
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\SchoolAiChatbotBackend.staticwebassets.endpoints.json
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\SchoolAiChatbotBackend.staticwebassets.endpoints.json
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\SchoolAiChatbotBackend.exe
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\SchoolAiChatbotBackend.deps.json
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\SchoolAiChatbotBackend.runtimeconfig.json
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\SchoolAiChatbotBackend.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\SchoolAiChatbotBackend.pdb
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Azure.Core.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Azure.Identity.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Humanizer.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.AspNetCore.OpenApi.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Bcl.AsyncInterfaces.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Build.Locator.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.CodeAnalysis.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.CodeAnalysis.CSharp.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.CodeAnalysis.CSharp.Workspaces.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.CodeAnalysis.Workspaces.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.CodeAnalysis.Workspaces.MSBuild.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Data.SqlClient.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.Abstractions.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.Design.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.Relational.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.SqlServer.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Extensions.Caching.Abstractions.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Extensions.Caching.Memory.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Extensions.Configuration.Abstractions.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Extensions.DependencyInjection.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Extensions.DependencyModel.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Extensions.Logging.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Extensions.Logging.Abstractions.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Extensions.Options.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Extensions.Primitives.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Identity.Client.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Identity.Client.Extensions.Msal.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.IdentityModel.Abstractions.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.IdentityModel.JsonWebTokens.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.IdentityModel.Logging.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.IdentityModel.Protocols.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.IdentityModel.Tokens.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.OpenApi.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.SqlServer.Server.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Win32.SystemEvents.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Mono.TextTemplating.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Newtonsoft.Json.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\OpenAI.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Swashbuckle.AspNetCore.Swagger.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerGen.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerUI.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\System.ClientModel.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\System.CodeDom.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Composition.AttributedModel.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Composition.Convention.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Composition.Hosting.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Composition.Runtime.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Composition.TypedParts.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Configuration.ConfigurationManager.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Drawing.Common.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\System.IdentityModel.Tokens.Jwt.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Memory.Data.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Runtime.Caching.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Security.Cryptography.ProtectedData.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Security.Permissions.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Windows.Extensions.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\es\Microsoft.CodeAnalysis.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\fr\Microsoft.CodeAnalysis.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\it\Microsoft.CodeAnalysis.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\ja\Microsoft.CodeAnalysis.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\ko\Microsoft.CodeAnalysis.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\pl\Microsoft.CodeAnalysis.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\pt-BR\Microsoft.CodeAnalysis.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\ru\Microsoft.CodeAnalysis.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.CSharp.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.CSharp.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\es\Microsoft.CodeAnalysis.CSharp.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\fr\Microsoft.CodeAnalysis.CSharp.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\it\Microsoft.CodeAnalysis.CSharp.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\ja\Microsoft.CodeAnalysis.CSharp.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\ko\Microsoft.CodeAnalysis.CSharp.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\pl\Microsoft.CodeAnalysis.CSharp.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\pt-BR\Microsoft.CodeAnalysis.CSharp.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\ru\Microsoft.CodeAnalysis.CSharp.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.CSharp.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.CSharp.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.CSharp.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\es\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\fr\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\it\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\ja\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\ko\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\pl\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\pt-BR\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\ru\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\es\Microsoft.CodeAnalysis.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\fr\Microsoft.CodeAnalysis.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\it\Microsoft.CodeAnalysis.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\ja\Microsoft.CodeAnalysis.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\ko\Microsoft.CodeAnalysis.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\pl\Microsoft.CodeAnalysis.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\pt-BR\Microsoft.CodeAnalysis.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\ru\Microsoft.CodeAnalysis.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\es\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\fr\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\it\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\ja\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\ko\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\pl\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\pt-BR\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\ru\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\unix\lib\net6.0\Microsoft.Data.SqlClient.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win\lib\net6.0\Microsoft.Data.SqlClient.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win-arm\native\Microsoft.Data.SqlClient.SNI.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win-arm64\native\Microsoft.Data.SqlClient.SNI.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win-x64\native\Microsoft.Data.SqlClient.SNI.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win-x86\native\Microsoft.Data.SqlClient.SNI.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win\lib\net6.0\Microsoft.Win32.SystemEvents.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\unix\lib\net6.0\System.Drawing.Common.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win\lib\net6.0\System.Drawing.Common.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win\lib\net6.0\System.Runtime.Caching.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win\lib\net6.0\System.Security.Cryptography.ProtectedData.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win\lib\net6.0\System.Windows.Extensions.dll
-C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.csproj.AssemblyReference.cache
-C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\rpswa.dswa.cache.json
-C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.GeneratedMSBuildEditorConfig.editorconfig
-C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.AssemblyInfoInputs.cache
-C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.AssemblyInfo.cs
-C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.csproj.CoreCompileInputs.cache
-C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.MvcApplicationPartsAssemblyInfo.cs
-C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.MvcApplicationPartsAssemblyInfo.cache
-C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.sourcelink.json
-C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\rjimswa.dswa.cache.json
-C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\rjsmrazor.dswa.cache.json
-C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\rjsmcshtml.dswa.cache.json
-C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\scopedcss\bundle\SchoolAiChatbotBackend.styles.css
-C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\staticwebassets.build.json
-C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\staticwebassets.build.json.cache
-C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\staticwebassets.development.json
-C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\staticwebassets.build.endpoints.json
-C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAi.1A44DDCE.Up2Date
-C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.dll
-C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\refint\SchoolAiChatbotBackend.dll
-C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.pdb
-C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.genruntimeconfig.cache
-C:\My Friend App\SchoolAiChatbotBackend\obj\Debug\net9.0\ref\SchoolAiChatbotBackend.dll
-C:\My Friend App\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.InMemory.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\appsettings.json
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\web.config
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\appsettings.Development.json
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\appsettings.Production.json
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\appsettings.Development.json
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\appsettings.json
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\appsettings.Production.json
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\SchoolAiChatbotBackend.deps.json
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\SchoolAiChatbotBackend.runtimeconfig.json
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\SchoolAiChatbotBackend.staticwebassets.endpoints.json
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\SchoolAiChatbotBackend.staticwebassets.endpoints.json
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\SchoolAiChatbotBackend.exe
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\SchoolAiChatbotBackend.deps.json
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\SchoolAiChatbotBackend.runtimeconfig.json
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\SchoolAiChatbotBackend.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\SchoolAiChatbotBackend.pdb
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Azure.Core.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Azure.Identity.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Azure.Storage.Blobs.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Azure.Storage.Common.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Humanizer.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.AspNetCore.OpenApi.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Bcl.AsyncInterfaces.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Build.Locator.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.CodeAnalysis.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.CodeAnalysis.CSharp.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.CodeAnalysis.CSharp.Workspaces.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.CodeAnalysis.Workspaces.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.CodeAnalysis.Workspaces.MSBuild.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Data.SqlClient.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.Abstractions.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.Design.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.InMemory.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.Relational.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.SqlServer.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Extensions.DependencyModel.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Identity.Client.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Identity.Client.Extensions.Msal.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.IdentityModel.Abstractions.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.IdentityModel.JsonWebTokens.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.IdentityModel.Logging.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.IdentityModel.Protocols.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.IdentityModel.Tokens.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.OpenApi.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.SqlServer.Server.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Win32.SystemEvents.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Mono.TextTemplating.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Newtonsoft.Json.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\OpenAI.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Serilog.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Serilog.AspNetCore.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Serilog.Enrichers.Environment.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Serilog.Enrichers.Thread.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Serilog.Extensions.Hosting.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Serilog.Extensions.Logging.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Serilog.Formatting.Compact.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Serilog.Settings.Configuration.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Serilog.Sinks.Console.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Serilog.Sinks.Debug.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Serilog.Sinks.File.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Swashbuckle.AspNetCore.Swagger.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerGen.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerUI.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.ClientModel.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.CodeDom.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Composition.AttributedModel.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Composition.Convention.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Composition.Hosting.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Composition.Runtime.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Composition.TypedParts.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Configuration.ConfigurationManager.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Drawing.Common.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.IdentityModel.Tokens.Jwt.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.IO.Hashing.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Memory.Data.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Runtime.Caching.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Security.Cryptography.ProtectedData.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Security.Permissions.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Windows.Extensions.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\es\Microsoft.CodeAnalysis.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\fr\Microsoft.CodeAnalysis.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\it\Microsoft.CodeAnalysis.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ja\Microsoft.CodeAnalysis.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ko\Microsoft.CodeAnalysis.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\pl\Microsoft.CodeAnalysis.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\pt-BR\Microsoft.CodeAnalysis.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ru\Microsoft.CodeAnalysis.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.CSharp.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.CSharp.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\es\Microsoft.CodeAnalysis.CSharp.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\fr\Microsoft.CodeAnalysis.CSharp.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\it\Microsoft.CodeAnalysis.CSharp.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ja\Microsoft.CodeAnalysis.CSharp.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ko\Microsoft.CodeAnalysis.CSharp.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\pl\Microsoft.CodeAnalysis.CSharp.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\pt-BR\Microsoft.CodeAnalysis.CSharp.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ru\Microsoft.CodeAnalysis.CSharp.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.CSharp.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.CSharp.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.CSharp.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\es\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\fr\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\it\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ja\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ko\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\pl\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\pt-BR\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ru\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\es\Microsoft.CodeAnalysis.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\fr\Microsoft.CodeAnalysis.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\it\Microsoft.CodeAnalysis.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ja\Microsoft.CodeAnalysis.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ko\Microsoft.CodeAnalysis.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\pl\Microsoft.CodeAnalysis.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\pt-BR\Microsoft.CodeAnalysis.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ru\Microsoft.CodeAnalysis.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\es\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\fr\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\it\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ja\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ko\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\pl\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\pt-BR\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ru\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\unix\lib\net6.0\Microsoft.Data.SqlClient.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win\lib\net6.0\Microsoft.Data.SqlClient.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win-arm\native\Microsoft.Data.SqlClient.SNI.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win-arm64\native\Microsoft.Data.SqlClient.SNI.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win-x64\native\Microsoft.Data.SqlClient.SNI.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win-x86\native\Microsoft.Data.SqlClient.SNI.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win\lib\net6.0\Microsoft.Win32.SystemEvents.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\unix\lib\net6.0\System.Drawing.Common.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win\lib\net6.0\System.Drawing.Common.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win\lib\net6.0\System.Runtime.Caching.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win\lib\net6.0\System.Security.Cryptography.ProtectedData.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win\lib\net6.0\System.Windows.Extensions.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.csproj.AssemblyReference.cache
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.GeneratedMSBuildEditorConfig.editorconfig
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.AssemblyInfoInputs.cache
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.AssemblyInfo.cs
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.csproj.CoreCompileInputs.cache
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.MvcApplicationPartsAssemblyInfo.cs
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.MvcApplicationPartsAssemblyInfo.cache
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.sourcelink.json
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\scopedcss\bundle\SchoolAiChatbotBackend.styles.css
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\staticwebassets.build.json
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\staticwebassets.development.json
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\staticwebassets.build.endpoints.json
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\staticwebassets\msbuild.SchoolAiChatbotBackend.Microsoft.AspNetCore.StaticWebAssets.props
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\staticwebassets\msbuild.SchoolAiChatbotBackend.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\staticwebassets\msbuild.build.SchoolAiChatbotBackend.props
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\staticwebassets\msbuild.buildMultiTargeting.SchoolAiChatbotBackend.props
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\staticwebassets\msbuild.buildTransitive.SchoolAiChatbotBackend.props
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\staticwebassets.pack.json
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAi.1A44DDCE.Up2Date
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\refint\SchoolAiChatbotBackend.dll
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.pdb
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.genruntimeconfig.cache
-c:\SmartStudyAI\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\ref\SchoolAiChatbotBackend.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.csproj.AssemblyReference.cache
+c:\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.GeneratedMSBuildEditorConfig.editorconfig
+c:\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.csproj.CoreCompileInputs.cache
+c:\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.MvcApplicationPartsAssemblyInfo.cs
+c:\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.MvcApplicationPartsAssemblyInfo.cache
+c:\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.sourcelink.json
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\web.config
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\appsettings.json
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\appsettings.Production.json
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\appsettings.Development.json
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\appsettings.json
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\appsettings.Production.json
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\SchoolAiChatbotBackend.deps.json
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\SchoolAiChatbotBackend.runtimeconfig.json
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\publish\SchoolAiChatbotBackend.staticwebassets.endpoints.json
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\appsettings.Development.json
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\SchoolAiChatbotBackend.staticwebassets.endpoints.json
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\SchoolAiChatbotBackend.exe
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\SchoolAiChatbotBackend.deps.json
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\SchoolAiChatbotBackend.runtimeconfig.json
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\SchoolAiChatbotBackend.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\SchoolAiChatbotBackend.pdb
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Azure.Core.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Azure.Identity.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Azure.Storage.Blobs.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Azure.Storage.Common.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Humanizer.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.AspNetCore.OpenApi.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Bcl.AsyncInterfaces.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Build.Locator.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.CodeAnalysis.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.CodeAnalysis.CSharp.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.CodeAnalysis.CSharp.Workspaces.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.CodeAnalysis.Workspaces.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.CodeAnalysis.Workspaces.MSBuild.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Data.SqlClient.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.Abstractions.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.Design.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.InMemory.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.Relational.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.SqlServer.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Extensions.DependencyModel.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Identity.Client.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Identity.Client.Extensions.Msal.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.IdentityModel.Abstractions.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.IdentityModel.JsonWebTokens.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.IdentityModel.Logging.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.IdentityModel.Protocols.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.IdentityModel.Tokens.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.OpenApi.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.SqlServer.Server.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Microsoft.Win32.SystemEvents.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Mono.TextTemplating.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Newtonsoft.Json.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\OpenAI.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Serilog.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Serilog.AspNetCore.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Serilog.Enrichers.Environment.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Serilog.Enrichers.Thread.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Serilog.Extensions.Hosting.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Serilog.Extensions.Logging.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Serilog.Formatting.Compact.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Serilog.Settings.Configuration.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Serilog.Sinks.Console.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Serilog.Sinks.Debug.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Serilog.Sinks.File.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Swashbuckle.AspNetCore.Swagger.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerGen.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerUI.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.ClientModel.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.CodeDom.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Composition.AttributedModel.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Composition.Convention.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Composition.Hosting.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Composition.Runtime.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Composition.TypedParts.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Configuration.ConfigurationManager.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Drawing.Common.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.IdentityModel.Tokens.Jwt.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.IO.Hashing.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Memory.Data.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Runtime.Caching.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Security.Cryptography.ProtectedData.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Security.Permissions.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\System.Windows.Extensions.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\es\Microsoft.CodeAnalysis.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\fr\Microsoft.CodeAnalysis.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\it\Microsoft.CodeAnalysis.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ja\Microsoft.CodeAnalysis.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ko\Microsoft.CodeAnalysis.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\pl\Microsoft.CodeAnalysis.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\pt-BR\Microsoft.CodeAnalysis.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ru\Microsoft.CodeAnalysis.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.CSharp.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.CSharp.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\es\Microsoft.CodeAnalysis.CSharp.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\fr\Microsoft.CodeAnalysis.CSharp.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\it\Microsoft.CodeAnalysis.CSharp.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ja\Microsoft.CodeAnalysis.CSharp.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ko\Microsoft.CodeAnalysis.CSharp.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\pl\Microsoft.CodeAnalysis.CSharp.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\pt-BR\Microsoft.CodeAnalysis.CSharp.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ru\Microsoft.CodeAnalysis.CSharp.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.CSharp.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.CSharp.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.CSharp.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\es\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\fr\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\it\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ja\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ko\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\pl\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\pt-BR\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ru\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\es\Microsoft.CodeAnalysis.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\fr\Microsoft.CodeAnalysis.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\it\Microsoft.CodeAnalysis.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ja\Microsoft.CodeAnalysis.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ko\Microsoft.CodeAnalysis.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\pl\Microsoft.CodeAnalysis.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\pt-BR\Microsoft.CodeAnalysis.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ru\Microsoft.CodeAnalysis.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\es\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\fr\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\it\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ja\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ko\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\pl\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\pt-BR\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\ru\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\unix\lib\net6.0\Microsoft.Data.SqlClient.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win\lib\net6.0\Microsoft.Data.SqlClient.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win-arm\native\Microsoft.Data.SqlClient.SNI.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win-arm64\native\Microsoft.Data.SqlClient.SNI.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win-x64\native\Microsoft.Data.SqlClient.SNI.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win-x86\native\Microsoft.Data.SqlClient.SNI.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win\lib\net6.0\Microsoft.Win32.SystemEvents.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\unix\lib\net6.0\System.Drawing.Common.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win\lib\net6.0\System.Drawing.Common.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win\lib\net6.0\System.Runtime.Caching.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win\lib\net6.0\System.Security.Cryptography.ProtectedData.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\bin\Debug\net9.0\runtimes\win\lib\net6.0\System.Windows.Extensions.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\scopedcss\bundle\SchoolAiChatbotBackend.styles.css
+c:\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\staticwebassets.build.json
+c:\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\staticwebassets.development.json
+c:\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\staticwebassets.build.endpoints.json
+c:\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\staticwebassets\msbuild.SchoolAiChatbotBackend.Microsoft.AspNetCore.StaticWebAssets.props
+c:\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\staticwebassets\msbuild.SchoolAiChatbotBackend.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
+c:\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\staticwebassets\msbuild.build.SchoolAiChatbotBackend.props
+c:\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\staticwebassets\msbuild.buildMultiTargeting.SchoolAiChatbotBackend.props
+c:\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\staticwebassets\msbuild.buildTransitive.SchoolAiChatbotBackend.props
+c:\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\staticwebassets.pack.json
+c:\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAi.1A44DDCE.Up2Date
+c:\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\refint\SchoolAiChatbotBackend.dll
+c:\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.pdb
+c:\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\SchoolAiChatbotBackend.genruntimeconfig.cache
+c:\school-ai-chatbot\SchoolAiChatbotBackend\obj\Debug\net9.0\ref\SchoolAiChatbotBackend.dll

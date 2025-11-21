@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\SmartStudyAI\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj": {}
+    "C:\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj": {}
   },
   "projects": {
-    "C:\\SmartStudyAI\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj": {
+    "C:\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\SmartStudyAI\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj",
+        "projectUniqueName": "C:\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj",
         "projectName": "SchoolAiChatbotBackend",
-        "projectPath": "C:\\SmartStudyAI\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj",
+        "projectPath": "C:\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj",
         "packagesPath": "C:\\Users\\HP\\.nuget\\packages\\",
-        "outputPath": "C:\\SmartStudyAI\\school-ai-chatbot\\SchoolAiChatbotBackend\\obj\\",
+        "outputPath": "C:\\school-ai-chatbot\\SchoolAiChatbotBackend\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\HP\\AppData\\Roaming\\NuGet\\NuGet.Config"

@@ -36,6 +36,11 @@ namespace SchoolAiChatbotBackend.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         
         /// <summary>
+        /// When the notes were last updated/edited
+        /// </summary>
+        public DateTime? UpdatedAt { get; set; }
+        
+        /// <summary>
         /// Subject/grade/chapter metadata
         /// </summary>
         public string? Subject { get; set; }
@@ -52,5 +57,15 @@ namespace SchoolAiChatbotBackend.Models
         /// Optional user rating/feedback (1-5 stars)
         /// </summary>
         public int? Rating { get; set; }
+        
+        /// <summary>
+        /// Whether the note is shared publicly
+        /// </summary>
+        public bool IsShared { get; set; } = false;
+        
+        /// <summary>
+        /// Unique shareable token for public access
+        /// </summary>
+        public string? ShareToken { get; set; }
     }
 }

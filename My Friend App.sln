@@ -1,8 +1,10 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SchoolAiChatbotBackend", "SchoolAiChatbotBackend\SchoolAiChatbotBackend.csproj", "{7A780085-B0A1-DD0A-08E0-43BF1B6F5639}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SchoolAiChatbotBackend.Tests", "SchoolAiChatbotBackend.Tests\SchoolAiChatbotBackend.Tests.csproj", "{684B163E-9AF2-4C59-AA76-02EDC8939800}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -14,6 +16,10 @@ Global
 		{7A780085-B0A1-DD0A-08E0-43BF1B6F5639}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7A780085-B0A1-DD0A-08E0-43BF1B6F5639}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7A780085-B0A1-DD0A-08E0-43BF1B6F5639}.Release|Any CPU.Build.0 = Release|Any CPU
+		{684B163E-9AF2-4C59-AA76-02EDC8939800}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{684B163E-9AF2-4C59-AA76-02EDC8939800}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{684B163E-9AF2-4C59-AA76-02EDC8939800}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{684B163E-9AF2-4C59-AA76-02EDC8939800}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

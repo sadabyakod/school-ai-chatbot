@@ -97,8 +97,8 @@ namespace SchoolAiChatbotBackend.Services
                 string url;
                 if (_useAzureOpenAI)
                 {
-                    // Azure OpenAI format: {endpoint}/openai/deployments/{deployment}/chat/completions?api-version=2024-02-15-preview
-                    url = $"{_endpoint}/openai/deployments/{_chatDeployment}/chat/completions?api-version=2024-02-15-preview";
+                    // Azure OpenAI format: {endpoint}/openai/deployments/{deployment}/chat/completions?api-version=2024-08-01-preview
+                    url = $"{_endpoint}/openai/deployments/{_chatDeployment}/chat/completions?api-version=2024-08-01-preview";
                 }
                 else
                 {
@@ -170,8 +170,8 @@ namespace SchoolAiChatbotBackend.Services
                 string url;
                 if (_useAzureOpenAI)
                 {
-                    // Azure OpenAI format: {endpoint}/openai/deployments/{deployment}/embeddings?api-version=2024-02-15-preview
-                    url = $"{_endpoint}/openai/deployments/{_embeddingDeployment}/embeddings?api-version=2024-02-15-preview";
+                    // Azure OpenAI format: {endpoint}/openai/deployments/{deployment}/embeddings?api-version=2024-08-01-preview
+                    url = $"{_endpoint}/openai/deployments/{_embeddingDeployment}/embeddings?api-version=2024-08-01-preview";
                 }
                 else
                 {
