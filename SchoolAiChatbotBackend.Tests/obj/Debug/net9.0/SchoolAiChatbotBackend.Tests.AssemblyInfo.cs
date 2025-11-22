@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SchoolAiChatbotBackend.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4582202809064fd4ad53e2c88558f956962add37")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+31ad465d5907ac3a48e5eaf5d09b68dffdb80815")]
 [assembly: System.Reflection.AssemblyProductAttribute("SchoolAiChatbotBackend.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SchoolAiChatbotBackend.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
