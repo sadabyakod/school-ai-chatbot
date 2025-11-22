@@ -12,8 +12,11 @@
   },
   "mimeTypes": {
     ".json": "application/json",
-    ".js": "application/javascript",
-    ".mjs": "application/javascript",
+    ".js": "text/javascript",
+    ".mjs": "text/javascript",
+    ".jsx": "text/javascript",
+    ".ts": "text/javascript",
+    ".tsx": "text/javascript",
     ".css": "text/css",
     ".svg": "image/svg+xml",
     ".png": "image/png",
