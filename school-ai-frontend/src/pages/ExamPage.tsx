@@ -111,9 +111,6 @@ async function submitAnswer(
   
   throw new Error('Failed to submit answer');
 }
-  
-  return response.json();
-}
 
 // ==========================================
 // TIMER COMPONENT
