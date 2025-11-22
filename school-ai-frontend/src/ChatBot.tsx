@@ -2,11 +2,21 @@ import React, { useState, useEffect, useRef } from "react";
 import { sendChat, ApiException } from "./api";
 import { motion } from "framer-motion";
 import { useToast } from "./hooks/useToast";
+import SessionsList from "./components/SessionsList";
 
 interface Message {
   sender: "user" | "bot";
   text: string;
   timestamp: Date;
+  id?: number;
+}
+
+interface ChatHistory {
+  id: number;
+  message: string;
+  reply: string;
+  timestamp: string;
+  contextCount: number;
 }
 
 const userAvatar = (
@@ -38,7 +48,11 @@ const ChatBot: React.FC<{ token?: string; toast: ReturnType<typeof useToast> }> 
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [showSessions, setShowSessions] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -49,14 +63,78 @@ const ChatBot: React.FC<{ token?: string; toast: ReturnType<typeof useToast> }> 
   }, [messages]);
 
   useEffect(() => {
-    // Welcome message
-    const welcomeMessage: Message = {
-      sender: "bot",
-      text: "Welcome To The Smart Neurozic AI Chat Bot...!!",
-      timestamp: new Date()
-    };
-    setMessages([welcomeMessage]);
+    // Get most recent session or create new one
+    fetchMostRecentSession();
   }, []);
+
+  const fetchMostRecentSession = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/chat/most-recent-session`);
+      
+      // Handle server errors gracefully
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.status === 'success' && data.sessionId) {
+        setSessionId(data.sessionId);
+        // Load history for this session
+        await loadChatHistory(data.sessionId);
+      } else {
+        // Show welcome message if no session
+        const welcomeMessage: Message = {
+          sender: "bot",
+          text: "Welcome To The Smart Neurozic AI Chat Bot...!!",
+          timestamp: new Date()
+        };
+        setMessages([welcomeMessage]);
+      }
+    } catch (error) {
+      console.error('Error fetching session:', error);
+      // Fallback to basic mode without session history
+      const welcomeMessage: Message = {
+        sender: "bot",
+        text: "Welcome To The Smart Neurozic AI Chat Bot...!!",
+        timestamp: new Date()
+      };
+      setMessages([welcomeMessage]);
+      setShowSessions(false); // Disable session features
+    }
+  };
+
+  const loadChatHistory = async (sid: string) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/chat/history?sessionId=${sid}&limit=50`);
+      const data = await response.json();
+      
+      if (data.status === 'success' && data.messages) {
+        const history: Message[] = data.messages.flatMap((msg: ChatHistory) => [
+          {
+            sender: 'user' as const,
+            text: msg.message,
+            timestamp: new Date(msg.timestamp),
+            id: msg.id
+          },
+          {
+            sender: 'bot' as const,
+            text: msg.reply,
+            timestamp: new Date(msg.timestamp),
+            id: msg.id
+          }
+        ]).reverse();
+        
+        setMessages(history.length > 0 ? history : [{
+          sender: "bot",
+          text: "Welcome back! Continue our conversation...",
+          timestamp: new Date()
+        }]);
+      }
+    } catch (error) {
+      console.error('Error loading history:', error);
+    }
+  };
 
   const handleSend = async (text?: string) => {
     const messageText = text || input;
@@ -73,13 +151,34 @@ const ChatBot: React.FC<{ token?: string; toast: ReturnType<typeof useToast> }> 
     setLoading(true);
     
     try {
-      const res = await sendChat({ message: messageText, token });
-      const botMessage: Message = {
-        sender: "bot",
-        text: res.reply || "I apologize, but I couldn't generate a response. Please try again.",
-        timestamp: new Date()
-      };
-      setMessages((msgs) => [...msgs, botMessage]);
+      const response = await fetch(`${API_BASE}/api/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question: messageText,
+          sessionId: sessionId
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        // Update session ID if it changed or was created
+        if (data.sessionId && data.sessionId !== sessionId) {
+          setSessionId(data.sessionId);
+        }
+
+        const botMessage: Message = {
+          sender: "bot",
+          text: data.reply || "I apologize, but I couldn't generate a response. Please try again.",
+          timestamp: new Date(data.timestamp)
+        };
+        setMessages((msgs) => [...msgs, botMessage]);
+      } else {
+        throw new Error(data.message || 'Failed to get response');
+      }
     } catch (err) {
       const error = err as ApiException;
       const errorMessage: Message = {
@@ -92,6 +191,16 @@ const ChatBot: React.FC<{ token?: string; toast: ReturnType<typeof useToast> }> 
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleNewSession = () => {
+    setSessionId(null);
+    setMessages([{
+      sender: "bot",
+      text: "New conversation started! How can I help you today?",
+      timestamp: new Date()
+    }]);
+    setShowSuggestions(true);
   };
 
   const formatTime = (date: Date) => {
@@ -120,13 +229,25 @@ const ChatBot: React.FC<{ token?: string; toast: ReturnType<typeof useToast> }> 
             <h2 className="font-bold text-xl tracking-wide">School AI Assistant</h2>
             <p className="text-xs opacity-90 flex items-center gap-1">
               <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-              Always here to help
+              {sessionId ? `Session: ${sessionId.substring(0, 8)}...` : 'Ready to help'}
             </p>
           </div>
         </div>
-        <div className="text-right">
-          <div className="text-sm font-semibold">{messages.length - 1} messages</div>
-          <div className="text-xs opacity-75">Powered by Neurozic AI</div>
+        <div className="flex gap-2">
+          <button
+            onClick={handleNewSession}
+            className="px-4 py-2 bg-white text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors text-sm font-medium"
+            title="Start New Chat"
+          >
+            New Chat
+          </button>
+          <button
+            onClick={() => setShowSessions(!showSessions)}
+            className="px-4 py-2 bg-white text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors text-sm font-medium"
+            title="View Chat History"
+          >
+            History
+          </button>
         </div>
       </div>
 
@@ -202,6 +323,28 @@ const ChatBot: React.FC<{ token?: string; toast: ReturnType<typeof useToast> }> 
                 ))}
               </div>
             </motion.div>
+          )}
+          
+          {/* Show Sessions Modal */}
+          {showSessions && (
+            <div className="mt-6 bg-white rounded-xl border-2 border-indigo-200 p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900">Recent Sessions</h3>
+                <button
+                  onClick={() => setShowSessions(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+              <SessionsList 
+                onSelectSession={(sid) => {
+                  setSessionId(sid);
+                  loadChatHistory(sid);
+                  setShowSessions(false);
+                }}
+              />
+            </div>
           )}
           
           <div ref={messagesEndRef} />

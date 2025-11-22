@@ -12,11 +12,18 @@ namespace SchoolAiChatbotBackend.Services
     /// SQL-backed chat history service
     /// Replaces in-memory ConversationMemory from Azure Functions migration
     /// </summary>
+    public class SessionSummary
+    {
+        public string SessionId { get; set; } = string.Empty;
+        public string LastMessage { get; set; } = string.Empty;
+        public DateTime Timestamp { get; set; }
+    }
+
     public interface IChatHistoryService
     {
         Task<ChatHistory> SaveChatHistoryAsync(string userId, string sessionId, string message, string reply, string? contextUsed, int contextCount);
         Task<List<ChatHistory>> GetChatHistoryBySessionAsync(string userId, string sessionId, int limit = 10);
-        Task<List<string>> GetUserChatSessionsAsync(string userId, int limit = 20);
+        Task<List<SessionSummary>> GetUserChatSessionsAsync(string userId, int limit = 20);
         Task<int> DeleteOldHistoryAsync(TimeSpan olderThan);
         Task<ChatHistory?> GetLastMessageAsync(string userId, string sessionId);
         /// <summary>
@@ -80,12 +87,18 @@ namespace SchoolAiChatbotBackend.Services
         /// <summary>
         /// Get all session IDs for a user (most recent first)
         /// </summary>
-        public async Task<List<string>> GetUserChatSessionsAsync(string userId, int limit = 20)
+        public async Task<List<SessionSummary>> GetUserChatSessionsAsync(string userId, int limit = 20)
         {
             return await _dbContext.ChatHistories
                 .Where(c => c.UserId == userId)
-                .Select(c => c.SessionId)
-                .Distinct()
+                .GroupBy(c => c.SessionId)
+                .Select(g => new SessionSummary
+                {
+                    SessionId = g.Key,
+                    LastMessage = g.OrderByDescending(c => c.Timestamp).First().Message,
+                    Timestamp = g.Max(c => c.Timestamp)
+                })
+                .OrderByDescending(s => s.Timestamp)
                 .Take(limit)
                 .ToListAsync();
         }

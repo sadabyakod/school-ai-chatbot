@@ -75,10 +75,15 @@ namespace SchoolAiChatbotBackend.Controllers
                 }
                 catch (Exception ragEx)
                 {
-                    _logger.LogError(ragEx, "RAG service failed, falling back to direct AI");
-                    // Fallback to direct AI if RAG fails completely
-                    var openAIService = HttpContext.RequestServices.GetRequiredService<IOpenAIService>();
-                    answer = await openAIService.GetChatCompletionAsync($"You are a helpful study assistant. Answer this question: {question}");
+                    _logger.LogError(ragEx, "RAG service failed, using fallback response");
+                    
+                    // Provide a helpful fallback message when Azure OpenAI is not configured
+                    answer = "I'm currently running in local development mode without Azure OpenAI configured. " +
+                             "To get AI-powered answers:\n\n" +
+                             "1. Configure Azure OpenAI credentials in appsettings.json\n" +
+                             "2. Or deploy to Azure where configuration is automatically applied\n\n" +
+                             $"Your question was: \"{question}\"\n\n" +
+                             "In production, I would search through uploaded study materials and provide an intelligent answer using RAG (Retrieval-Augmented Generation).";
                     
                     // Try to save to history
                     try
