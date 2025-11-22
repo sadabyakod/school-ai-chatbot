@@ -59,17 +59,26 @@ interface SubmitAnswerResponse {
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 async function startExam(studentId: string, examTemplateId: number): Promise<StartExamResponse> {
-  const response = await fetch(`${API_URL}/api/exams/start`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ studentId, examTemplateId }),
-  });
+  // Try plural route first (local), fallback to singular (production)
+  const routes = [`${API_URL}/api/exams/start`, `${API_URL}/api/exam/start`];
   
-  if (!response.ok) {
-    throw new Error(`Failed to start exam: ${response.statusText}`);
+  for (const route of routes) {
+    try {
+      const response = await fetch(route, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId, examTemplateId }),
+      });
+      
+      if (response.ok) {
+        return response.json();
+      }
+    } catch (error) {
+      // Try next route
+    }
   }
   
-  return response.json();
+  throw new Error('Failed to start exam');
 }
 
 async function submitAnswer(
@@ -78,15 +87,30 @@ async function submitAnswer(
   selectedOptionId: number,
   timeTakenSeconds: number
 ): Promise<SubmitAnswerResponse> {
-  const response = await fetch(`${API_URL}/api/exams/${attemptId}/answer`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ questionId, selectedOptionId, timeTakenSeconds }),
-  });
+  // Try plural route first (local), fallback to singular (production)
+  const routes = [
+    `${API_URL}/api/exams/${attemptId}/answer`,
+    `${API_URL}/api/exam/${attemptId}/answer`
+  ];
   
-  if (!response.ok) {
-    throw new Error(`Failed to submit answer: ${response.statusText}`);
+  for (const route of routes) {
+    try {
+      const response = await fetch(route, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionId, selectedOptionId, timeTakenSeconds }),
+      });
+      
+      if (response.ok) {
+        return response.json();
+      }
+    } catch (error) {
+      // Try next route
+    }
   }
+  
+  throw new Error('Failed to submit answer');
+}
   
   return response.json();
 }

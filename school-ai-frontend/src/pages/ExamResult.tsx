@@ -47,7 +47,32 @@ interface ExamSummary {
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
-async function getExamSummary(attemptId: number): Promise<ExamSummary> {
+async function getExamSummary(attemptId: number): Promise<ExamSummaryResponse> {
+  // Try plural route first (local), fallback to singular (production)
+  const routes = [
+    `${API_URL}/api/exams/${attemptId}/summary`,
+    `${API_URL}/api/exam/${attemptId}/summary`
+  ];
+  
+  for (const route of routes) {
+    try {
+      const response = await fetch(route, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      if (response.ok) {
+        return response.json();
+      }
+    } catch (error) {
+      // Try next route
+    }
+  }
+  
+  throw new Error('Failed to fetch exam summary');
+}
+
+async function getExamSummaryOld(attemptId: number): Promise<ExamSummaryResponse> {
   const response = await fetch(`${API_URL}/api/exams/${attemptId}/summary`, {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },

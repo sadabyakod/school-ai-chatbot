@@ -39,16 +39,25 @@ interface ExamHistory {
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 async function getExamHistory(studentId: string): Promise<ExamHistory[]> {
-  const response = await fetch(`${API_URL}/api/exams/history?studentId=${studentId}`, {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
-  });
+  // Try plural route first (local), fallback to singular (production)
+  const routes = [`${API_URL}/api/exams/history`, `${API_URL}/api/exam/history`];
   
-  if (!response.ok) {
-    throw new Error(`Failed to fetch exam history: ${response.statusText}`);
+  for (const route of routes) {
+    try {
+      const response = await fetch(`${route}?studentId=${studentId}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      if (response.ok) {
+        return response.json();
+      }
+    } catch (error) {
+      // Try next route
+    }
   }
   
-  return response.json();
+  throw new Error('Failed to fetch exam history from both endpoints');
 }
 
 // Mock function to get available templates (you should create this endpoint in backend)
