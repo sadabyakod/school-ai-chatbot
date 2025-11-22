@@ -10,9 +10,7 @@ out/
 *.log
 
 # Configuration files with secrets
-appsettings.Development.json
-appsettings.Production.json
-appsettings.local.json
+appsettings*.json
 local.settings.json
 
 # Database
