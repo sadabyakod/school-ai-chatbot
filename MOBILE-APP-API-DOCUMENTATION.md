@@ -29,6 +29,7 @@ Currently using IP-based identification. Future versions will support JWT tokens
   "sessionId": "912408cc-2dd0-46f7-a111-65c0736b6543",
   "question": "What subjects are available?",
   "reply": "Based on the uploaded materials, the following subjects are available: Mathematics, Science, English...",
+  "followUpQuestion": "Would you like to know more about any specific subject's curriculum?",
   "timestamp": "2025-11-22T10:54:33.0000000Z"
 }
 ```
@@ -686,7 +687,23 @@ Future<void> sendMessage(String question) async {
   
   final data = jsonDecode(response.body);
   currentSessionId = data['sessionId']; // Save for next message
+  
+  // Handle follow-up question if present
+  if (data['followUpQuestion'] != null && data['followUpQuestion'].isNotEmpty) {
+    showFollowUpQuestion(data['followUpQuestion']);
+  }
 }
+
+// Display follow-up question as a suggestion chip
+void showFollowUpQuestion(String question) {
+  // Show as a clickable chip/button in UI
+  // When tapped, send this question automatically
+}
+
+// Handle user responses to follow-ups
+// Positive: "yes", "sure", "ok", "tell me more" -> Continues topic
+// Negative: "no", "nope", "different topic" -> Suggests 3 alternative topics
+// The API automatically detects these responses and adjusts its reply accordingly
 ```
 
 ### 2. File Upload

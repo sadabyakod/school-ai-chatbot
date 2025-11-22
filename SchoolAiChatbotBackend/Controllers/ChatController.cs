@@ -53,11 +53,18 @@ namespace SchoolAiChatbotBackend.Controllers
 
             try
             {
-                // Check for follow-up questions
+                // Check for follow-up question responses
                 string question = request.Question;
-                if (question.ToLower().Contains("yes") || 
-                    question.ToLower().Contains("explain more") || 
-                    question.ToLower().Contains("continue"))
+                string userInput = question.ToLower().Trim();
+                
+                // Handle positive responses (continue topic)
+                if (userInput.Contains("yes") || 
+                    userInput.Contains("explain more") || 
+                    userInput.Contains("tell me more") ||
+                    userInput.Contains("continue") ||
+                    userInput == "sure" ||
+                    userInput == "ok" ||
+                    userInput == "okay")
                 {
                     var lastMessage = await _chatHistoryService.GetLastMessageAsync(userId, sessionId);
                     if (lastMessage != null)
@@ -66,12 +73,41 @@ namespace SchoolAiChatbotBackend.Controllers
                         _logger.LogInformation("Continuing topic for session {SessionId}", sessionId);
                     }
                 }
+                // Handle negative responses (suggest alternatives)
+                else if (userInput.Contains("no") || 
+                         userInput.Contains("not interested") ||
+                         userInput.Contains("don't") ||
+                         userInput.Contains("different") ||
+                         userInput.Contains("something else") ||
+                         userInput.Contains("change topic") ||
+                         userInput.Contains("nope") ||
+                         userInput == "nah")
+                {
+                    var lastMessage = await _chatHistoryService.GetLastMessageAsync(userId, sessionId);
+                    if (lastMessage != null)
+                    {
+                        question = $"The user declined to continue with '{lastMessage.Message}'. Suggest 3 different related topics they might be interested in instead. Keep it brief and engaging.";
+                        _logger.LogInformation("User declined follow-up for session {SessionId}, suggesting alternatives", sessionId);
+                    }
+                }
 
                 // Use RAG service to get answer (handles retrieval, prompt building, and saving)
                 string answer;
+                string? followUpQuestion = null;
                 try
                 {
                     answer = await _ragService.GetRAGAnswerAsync(question, userId, sessionId);
+                    
+                    // Extract follow-up question if present
+                    if (answer.Contains("💡"))
+                    {
+                        var parts = answer.Split("💡", 2);
+                        if (parts.Length == 2)
+                        {
+                            answer = parts[0].Trim();
+                            followUpQuestion = parts[1].Trim();
+                        }
+                    }
                 }
                 catch (Exception ragEx)
                 {
@@ -102,6 +138,7 @@ namespace SchoolAiChatbotBackend.Controllers
                     sessionId = sessionId,
                     question = request.Question,
                     reply = answer,
+                    followUpQuestion = followUpQuestion,
                     timestamp = DateTime.UtcNow
                 });
             }

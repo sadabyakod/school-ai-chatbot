@@ -9,6 +9,7 @@ interface Message {
   text: string;
   timestamp: Date;
   id?: number;
+  followUpQuestion?: string;
 }
 
 interface ChatHistory {
@@ -173,7 +174,8 @@ const ChatBot: React.FC<{ token?: string; toast: ReturnType<typeof useToast> }> 
         const botMessage: Message = {
           sender: "bot",
           text: data.reply || "I apologize, but I couldn't generate a response. Please try again.",
-          timestamp: new Date(data.timestamp)
+          timestamp: new Date(data.timestamp),
+          followUpQuestion: data.followUpQuestion
         };
         setMessages((msgs) => [...msgs, botMessage]);
       } else {
@@ -264,9 +266,9 @@ const ChatBot: React.FC<{ token?: string; toast: ReturnType<typeof useToast> }> 
               transition={{ duration: 0.3 }}
             >
               {msg.sender === "bot" && <div className="flex-shrink-0 mb-1">{botAvatar}</div>}
-              <div className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}>
+              <div className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"} max-w-[75vw] sm:max-w-xl`}>
                 <div
-                  className={`px-5 py-3 rounded-2xl text-base max-w-[75vw] sm:max-w-xl break-words shadow-md transition-all duration-300 hover:shadow-lg ${
+                  className={`px-5 py-3 rounded-2xl text-base break-words shadow-md transition-all duration-300 hover:shadow-lg ${
                     msg.sender === "user"
                       ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-br-sm"
                       : "bg-white text-gray-800 border border-gray-200 rounded-bl-sm"
@@ -274,6 +276,16 @@ const ChatBot: React.FC<{ token?: string; toast: ReturnType<typeof useToast> }> 
                 >
                   {msg.text}
                 </div>
+                {msg.sender === "bot" && msg.followUpQuestion && (
+                  <motion.button
+                    onClick={() => handleSend(msg.followUpQuestion!)}
+                    className="mt-2 px-4 py-2 bg-gradient-to-r from-purple-100 to-pink-100 hover:from-purple-200 hover:to-pink-200 text-purple-900 rounded-xl text-sm border border-purple-300 transition-all duration-200 text-left shadow-sm hover:shadow-md"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <span className="font-medium">💡 {msg.followUpQuestion}</span>
+                  </motion.button>
+                )}
                 <span className="text-xs text-gray-400 mt-1 px-2">{formatTime(msg.timestamp)}</span>
               </div>
               {msg.sender === "user" && <div className="flex-shrink-0 mb-1">{userAvatar}</div>}
@@ -338,7 +350,7 @@ const ChatBot: React.FC<{ token?: string; toast: ReturnType<typeof useToast> }> 
                 </button>
               </div>
               <SessionsList 
-                onSelectSession={(sid) => {
+                onSelectSession={(sid: string) => {
                   setSessionId(sid);
                   loadChatHistory(sid);
                   setShowSessions(false);

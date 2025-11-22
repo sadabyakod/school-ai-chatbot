@@ -204,10 +204,42 @@ namespace SchoolAiChatbotBackend.Services
                     // Step 2: Build context
                     var contextText = await BuildContextTextAsync(relevantChunks);
 
-                    // Step 3: Build RAG prompt
-                    var prompt = $@"### ROLE: You are a helpful AI study assistant.
+                    // Step 3: Detect if this is a response to a follow-up (suggesting alternatives)
+                    bool isSuggestingAlternatives = question.Contains("declined to continue") || 
+                                                   question.Contains("Suggest 3 different");
 
-### TASK: Answer the student's question using the provided educational content.
+                    string prompt;
+                    if (isSuggestingAlternatives)
+                    {
+                        // Special prompt for when user says "no" to follow-up
+                        prompt = $@"### ROLE: You are a helpful AI study assistant.
+
+### TASK: The student declined to continue with the previous topic. Suggest 3 alternative topics they might find interesting.
+
+### CONTEXT (Educational Content):
+{contextText}
+
+### SITUATION:
+{question}
+
+### YOUR RESPONSE:
+Acknowledge their choice politely and suggest 3 different but related topics they might be interested in instead. Keep it brief, friendly, and engaging. Format as:
+
+No problem! Let me suggest some other topics you might enjoy:
+1. [Topic 1] - [brief description]
+2. [Topic 2] - [brief description]  
+3. [Topic 3] - [brief description]
+
+Which one interests you, or would you like to explore something completely different?
+
+DO NOT add a follow-up question with 💡 for alternative suggestions.";
+                    }
+                    else
+                    {
+                        // Normal prompt with follow-up question
+                        prompt = $@"### ROLE: You are a helpful AI study assistant.
+
+### TASK: Answer the student's question using the provided educational content and ALWAYS end with an engaging follow-up question.
 
 ### CONTEXT (Educational Content):
 {contextText}
@@ -216,20 +248,51 @@ namespace SchoolAiChatbotBackend.Services
 {question}
 
 ### YOUR ANSWER:
-Provide a clear, accurate answer based on the context above. If the context doesn't contain relevant information, say so and provide general guidance.";
+Provide a clear, accurate answer based on the context above. If the context doesn't contain relevant information, say so and provide general guidance.
+
+### IMPORTANT: 
+At the end of your answer, ALWAYS ask ONE engaging follow-up question that:
+1. Helps deepen understanding of the topic
+2. Connects to related concepts
+3. Encourages critical thinking
+4. Is specific and relevant to what was just explained
+
+Format the follow-up question on a new line starting with ""💡 "".";
+                    }
 
                     // Step 4: Get AI response
                     answer = await _openAIService.GetChatCompletionAsync(prompt);
                 }
                 catch (Exception ex)
                 {
-                    // If RAG fails, fall back to direct AI response without context
+                    // If RAG fails, fall back to direct AI response
                     _logger.LogWarning(ex, "RAG pipeline failed, using direct AI response");
-                    answer = await _openAIService.GetChatCompletionAsync($"Answer this student question: {question}");
+                    
+                    bool isSuggestingAlternatives = question.Contains("declined to continue") || 
+                                                   question.Contains("Suggest 3 different");
+                    
+                    string fallbackPrompt;
+                    if (isSuggestingAlternatives)
+                    {
+                        fallbackPrompt = $@"The student declined to continue with the previous topic. Politely acknowledge this and suggest 3 different related topics they might be interested in instead. Format as:
 
-                    // If RAG fails, fall back to direct AI response without context
-                    _logger.LogWarning(ex, "RAG pipeline failed, using direct AI response");
-                    answer = await _openAIService.GetChatCompletionAsync($"Answer this student question: {question}");
+No problem! Let me suggest some other topics:
+1. [Topic 1]
+2. [Topic 2]
+3. [Topic 3]
+
+Which one interests you?
+
+DO NOT add a follow-up question with 💡.";
+                    }
+                    else
+                    {
+                        fallbackPrompt = $@"Answer this student question clearly and concisely: {question}
+
+IMPORTANT: At the end of your answer, ALWAYS ask ONE engaging follow-up question that helps deepen understanding. Format it on a new line starting with ""💡 "".";
+                    }
+                    
+                    answer = await _openAIService.GetChatCompletionAsync(fallbackPrompt);
                     chunksFound = 0;
                 }
 
