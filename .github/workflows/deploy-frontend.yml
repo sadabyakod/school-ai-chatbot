@@ -33,10 +33,10 @@ jobs:
     - name: Set Backend API URL
       id: get-api-url
       run: |
-        # Use the correct Azure Function App URL
-        API_URL="studyai-ingestion-345.azurewebsites.net"
-        echo "API_URL=https://$API_URL/api" >> $GITHUB_OUTPUT
-        echo "Using API URL: https://$API_URL/api"
+        # Use the correct Azure App Service URL
+        API_URL="app-wlanqwy7vuwmu.azurewebsites.net"
+        echo "API_URL=https://$API_URL" >> $GITHUB_OUTPUT
+        echo "Using API URL: https://$API_URL"
     
     - name: Install dependencies
       working-directory: ./school-ai-frontend
@@ -46,8 +46,7 @@ jobs:
       working-directory: ./school-ai-frontend
       run: |
         echo "VITE_API_URL=${{ steps.get-api-url.outputs.API_URL }}" > .env.production
-        echo "VITE_AZURE_FUNCTION_KEY=${{ secrets.AZURE_FUNCTION_KEY }}" >> .env.production
-        echo "Production environment file created (function key hidden for security)"
+        echo "Production environment file created"
     
     - name: Build React App
       working-directory: ./school-ai-frontend
