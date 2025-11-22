@@ -61,6 +61,8 @@ interface ResultSummary {
   weakChapters?: WeakChapter[];
 }
 
+type ExamSummaryResponse = ResultSummary;
+
 // ==========================================
 // API FUNCTIONS
 // ==========================================
@@ -90,19 +92,6 @@ async function getExamSummary(attemptId: number): Promise<ExamSummaryResponse> {
   }
   
   throw new Error('Failed to fetch exam summary');
-}
-
-async function getExamSummaryOld(attemptId: number): Promise<ExamSummaryResponse> {
-  const response = await fetch(`${API_URL}/api/exams/${attemptId}/summary`, {
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch exam summary: ${response.statusText}`);
-  }
-
-  return response.json();
 }
 
 // ==========================================
