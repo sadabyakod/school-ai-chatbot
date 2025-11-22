@@ -38,9 +38,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
-    environment:
-      name: 'Production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
       id-token: write #This is required for requesting the JWT
       contents: read #This is required for actions/checkout
@@ -54,16 +51,10 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_1876F396951C4FE2B9E23DFD1762BD01 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_D38AE201E9BC4728B9E5508C950E7C84 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_043079530DFE4F598D040AB25349298D }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_98D93C649C024C4CA3D3A94EFFA47797 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_28190AB0D35043A6BE37C4474679E205 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_FBE8F5F0FD834A89A4A23F437F617171 }}
 
-      - name: Stop Azure Web App
-        uses: azure/cli@v2
-        with:
-          inlineScript: |
-            az webapp stop --name app-wlanqwy7vuwmu --resource-group DefaultResourceGroup-EUS
-      
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
@@ -71,11 +62,4 @@ jobs:
           app-name: 'app-wlanqwy7vuwmu'
           slot-name: 'Production'
           package: .
-          clean: true
-      
-      - name: Start Azure Web App
-        uses: azure/cli@v2
-        with:
-          inlineScript: |
-            az webapp start --name app-wlanqwy7vuwmu --resource-group DefaultResourceGroup-EUS
           
