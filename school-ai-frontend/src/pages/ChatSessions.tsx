@@ -13,7 +13,7 @@ interface ChatSessionsProps {
   onSelectSession: (sessionId: string) => void;
 }
 
-export default function ChatSessions({ token, toast, onSelectSession }: ChatSessionsProps) {
+export default function ChatSessions({ toast, onSelectSession }: ChatSessionsProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
 

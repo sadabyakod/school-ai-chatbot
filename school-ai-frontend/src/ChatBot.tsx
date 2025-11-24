@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { sendChat, ApiException } from "./api";
+import { ApiException } from "./api";
 import { motion } from "framer-motion";
 import { useToast } from "./hooks/useToast";
 import SessionsList from "./components/SessionsList";
@@ -44,7 +44,7 @@ const suggestedQuestions = [
   "What are the school timings?"
 ];
 
-const ChatBot: React.FC<{ token?: string; toast: ReturnType<typeof useToast> }> = ({ token, toast }) => {
+const ChatBot: React.FC<{ token?: string; toast: ReturnType<typeof useToast> }> = ({ toast }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
