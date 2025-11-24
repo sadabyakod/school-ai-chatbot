@@ -3,6 +3,7 @@ import FileUpload from './FileUpload';
 import Faqs from './Faqs';
 import Analytics from './Analytics';
 import ExamHub from './pages/ExamHub';
+import ApiSwitcher from './components/ApiSwitcher';
 import { ToastContainer } from './components/Toast';
 import { useToast } from './hooks/useToast';
 import { useState } from "react";
@@ -70,6 +71,7 @@ function App() {
         </div>
       </nav>
       <ToastContainer toasts={toast.toasts} onClose={toast.removeToast} />
+      <ApiSwitcher />
       <div className="py-4">
         {PAGES[page].component(token || "", toast)}
       </div>
