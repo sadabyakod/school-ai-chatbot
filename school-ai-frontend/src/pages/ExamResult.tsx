@@ -41,6 +41,8 @@ interface ExamSummary {
   };
 }
 
+type ExamSummaryResponse = ExamSummary;
+
 // ==========================================
 // API FUNCTIONS
 // ==========================================

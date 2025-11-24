@@ -8,5 +8,10 @@ export default defineConfig({
     target: 'es2015',
     minify: 'esbuild',
     sourcemap: false
+  },
+  define: {
+    'import.meta.env.VITE_API_URL': JSON.stringify(
+      process.env.VITE_API_URL || 'https://app-wlanqwy7vuwmu-hpbwbfgqbybqg7dp.centralindia-01.azurewebsites.net'
+    )
   }
 })
