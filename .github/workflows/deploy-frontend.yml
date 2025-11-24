@@ -34,7 +34,7 @@ jobs:
       id: get-api-url
       run: |
         # Use the correct Azure App Service URL
-        API_URL="app-wlanqwy7vuwmu.azurewebsites.net"
+        API_URL="app-wlanqwy7vuwmu-hpbwbfgqbybqg7dp.centralindia-01.azurewebsites.net"
         echo "API_URL=https://$API_URL" >> $GITHUB_OUTPUT
         echo "Using API URL: https://$API_URL"
     

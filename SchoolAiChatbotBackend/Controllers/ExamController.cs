@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Http;
 namespace SchoolAiChatbotBackend.Controllers;
 
 [ApiController]
-[Route("api/exam")]
+[Route("api/exams")]
 [Produces("application/json")]
 [Tags("Exam System")]
 public class ExamController : ControllerBase
