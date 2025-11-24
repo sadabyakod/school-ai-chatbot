@@ -12,7 +12,7 @@ const getSavedEnvironment = (): Environment => {
 // API endpoints
 const API_ENDPOINTS = {
   local: 'http://localhost:8080',
-  production: 'https://app-wlanqwy7vuwmu-hpbwbfgqbybqg7dp.centralindia-01.azurewebsites.net'
+  production: import.meta.env.VITE_API_URL || 'https://app-wlanqwy7vuwmu-hpbwbfgqbybqg7dp.centralindia-01.azurewebsites.net'
 };
 
 class ApiConfig {
