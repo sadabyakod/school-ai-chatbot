@@ -5,5 +5,13 @@
   "routes": [],
   "globalHeaders": {
     "cache-control": "no-cache, no-store, must-revalidate"
+  },
+  "mimeTypes": {
+    ".js": "text/javascript",
+    ".mjs": "text/javascript",
+    ".json": "application/json",
+    ".css": "text/css",
+    ".wasm": "application/wasm",
+    ".svg": "image/svg+xml"
   }
 }
