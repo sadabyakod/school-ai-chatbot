@@ -1,8 +1,6 @@
 // API utility for backend calls
 // ASP.NET Core backend (not Azure Functions - no function key needed)
-import { apiConfig } from './config';
-
-export const API_URL = apiConfig.getApiUrl();
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 // Helper to build API URLs
 export const buildApiUrl = (endpoint: string): string => {
