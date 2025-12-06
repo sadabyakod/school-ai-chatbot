@@ -2,7 +2,20 @@
   "navigationFallback": {
     "rewrite": "/index.html"
   },
-  "routes": [],
+  "routes": [
+    {
+      "route": "/*.js",
+      "headers": {
+        "Content-Type": "text/javascript"
+      }
+    },
+    {
+      "route": "/assets/*.js",
+      "headers": {
+        "Content-Type": "text/javascript"
+      }
+    }
+  ],
   "globalHeaders": {
     "cache-control": "no-cache, no-store, must-revalidate"
   },
