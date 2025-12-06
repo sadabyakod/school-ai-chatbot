@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { apiConfig, Environment } from '../config';
+import { apiConfig } from '../config';
+import type { Environment } from '../config';
 
 export default function ApiSwitcher() {
   const [currentEnv, setCurrentEnv] = useState<Environment>(apiConfig.getCurrentEnvironment());
