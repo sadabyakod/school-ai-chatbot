@@ -39,29 +39,30 @@ namespace SchoolAiChatbotBackend.Controllers
         [HttpPost("upload")]
         public async Task<IActionResult> Upload(
             [FromForm] IFormFile file,
-            [FromForm] string? subject,
-            [FromForm] string? grade,
-            [FromForm] string? chapter)
+            [FromForm] string? medium,
+            [FromForm] string? className,
+            [FromForm] string? subject)
         {
             if (file == null || file.Length == 0)
                 return BadRequest(new { status = "error", message = "No file uploaded." });
 
-            _logger.LogInformation("Uploading file: {FileName}, Size: {Size} bytes", file.FileName, file.Length);
+            _logger.LogInformation("Uploading file: {FileName}, Size: {Size} bytes, Medium: {Medium}, Class: {Class}, Subject: {Subject}", 
+                file.FileName, file.Length, medium, className, subject);
 
             try
             {
                 string blobUrl;
 
-                // Upload to Azure Blob Storage with folder structure: grade/subject/chapter/
+                // Upload to Azure Blob Storage with folder structure (keeping existing blob storage logic)
                 using (var stream = file.OpenReadStream())
                 {
                     blobUrl = await _blobStorageService.UploadFileToBlobAsync(
                         file.FileName, 
                         stream, 
                         file.ContentType,
-                        grade,
+                        className,  // grade parameter maps to className
                         subject,
-                        chapter);
+                        null);      // chapter is now null (removed)
                 }
 
                 // Save metadata to UploadedFiles table (Azure Functions schema)
@@ -70,9 +71,9 @@ namespace SchoolAiChatbotBackend.Controllers
                     FileName = file.FileName,
                     BlobUrl = blobUrl,
                     UploadedAt = DateTime.UtcNow,
+                    Medium = medium,
                     Subject = subject,
-                    Grade = grade,
-                    Chapter = chapter,
+                    Grade = className,
                     UploadedBy = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                     Status = "Pending", // Azure Functions will update this to "Processing" -> "Completed"
                     TotalChunks = 0 // Will be set by Azure Functions after processing

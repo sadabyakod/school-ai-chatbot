@@ -34,6 +34,9 @@ namespace SchoolAiChatbotBackend.Models
         [StringLength(50)]
         public string? Grade { get; set; }
 
+        [StringLength(50)]
+        public string? Medium { get; set; }
+
         [StringLength(200)]
         public string? Chapter { get; set; }
 

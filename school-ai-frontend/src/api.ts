@@ -186,12 +186,12 @@ export async function sendChat({message, token }: {
   };
 }
 
-export async function uploadFile(file: File, subject: string, grade: string, chapter: string, token?: string): Promise<any> {
+export async function uploadFile(file: File, medium: string, className: string, subject: string, token?: string): Promise<any> {
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('medium', medium);
+  formData.append('className', className);
   formData.append('subject', subject);
-  formData.append('grade', grade);
-  formData.append('chapter', chapter);
 
   const response = await fetchWithRetry(
     buildApiUrl('/api/file/upload'),
