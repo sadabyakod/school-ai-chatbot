@@ -37,7 +37,7 @@ namespace SchoolAiChatbotBackend.Models
         [StringLength(200)]
         public string? Chapter { get; set; }
 
-        public int? TotalChunks { get; set; }
+        public int TotalChunks { get; set; } = 0;
 
         [StringLength(50)]
         public string Status { get; set; } = "Pending";

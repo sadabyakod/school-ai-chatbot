@@ -75,7 +75,7 @@ namespace SchoolAiChatbotBackend.Controllers
                     Chapter = chapter,
                     UploadedBy = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                     Status = "Pending", // Azure Functions will update this to "Processing" -> "Completed"
-                    TotalChunks = null // Will be set by Azure Functions after processing
+                    TotalChunks = 0 // Will be set by Azure Functions after processing
                 };
 
                 _dbContext.UploadedFiles.Add(uploadedFile);
@@ -98,11 +98,12 @@ namespace SchoolAiChatbotBackend.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error uploading file: {FileName}", file.FileName);
+                var innerMessage = ex.InnerException?.Message ?? ex.Message;
                 return StatusCode(500, new
                 {
                     status = "error",
                     message = "Failed to upload file.",
-                    details = ex.Message
+                    details = innerMessage
                 });
             }
         }
