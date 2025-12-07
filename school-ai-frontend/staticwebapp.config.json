@@ -9,6 +9,9 @@
   "mimeTypes": {
     ".js": "text/javascript",
     ".mjs": "text/javascript",
+    ".tsx": "text/javascript",
+    ".ts": "text/javascript",
+    ".jsx": "text/javascript",
     ".json": "application/json",
     ".css": "text/css",
     ".wasm": "application/wasm",
