@@ -2,8 +2,8 @@ import React, { useState, useMemo } from "react";
 import { uploadFile, ApiException } from "./api";
 import { useToast } from "./hooks/useToast";
 
-// Subject options based on medium and class
-const getSubjectsForClass = (medium: string, className: string): string[] => {
+// Subject options based on medium
+const getSubjectsForClass = (medium: string, _className: string): string[] => {
   // Common subjects for all classes
   const commonSubjects = ["Mathematics", "Science", "Social Science", "English"];
   
