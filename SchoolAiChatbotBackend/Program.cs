@@ -48,7 +48,7 @@ namespace SchoolAiChatbotBackend
                     options.AddPolicy("AllowFrontend",
                         policy => policy
                             .WithOrigins(
-                                "https://proud-hill-07ee6991e.3.azurestaticapps.net",
+                                "https://proud-hill-07ee6991e3.azurestaticapps.net",
                                 "https://nice-ocean-0bd32c110.3.azurestaticapps.net",
                                 "http://localhost:5173",
                                 "http://localhost:5174",
