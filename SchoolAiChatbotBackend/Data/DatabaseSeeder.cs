@@ -171,7 +171,6 @@ namespace SchoolAiChatbotBackend.Data
                     UploadedAt = new DateTime(2024, 9, 1, 10, 0, 0),
                     Subject = "Math",
                     Grade = "Grade 5",
-                    Chapter = "Curriculum",
                     Status = "Processed",
                     TotalChunks = 10
                 },
@@ -182,7 +181,6 @@ namespace SchoolAiChatbotBackend.Data
                     UploadedAt = new DateTime(2024, 9, 2, 14, 30, 0),
                     Subject = "Science",
                     Grade = "Grade 8",
-                    Chapter = "Syllabus",
                     Status = "Processed",
                     TotalChunks = 12
                 },
@@ -193,7 +191,6 @@ namespace SchoolAiChatbotBackend.Data
                     UploadedAt = new DateTime(2024, 9, 3, 9, 15, 0),
                     Subject = "English",
                     Grade = "Grade 10",
-                    Chapter = "Literature",
                     Status = "Processed",
                     TotalChunks = 15
                 },
@@ -204,7 +201,6 @@ namespace SchoolAiChatbotBackend.Data
                     UploadedAt = new DateTime(2024, 9, 4, 16, 45, 0),
                     Subject = "History",
                     Grade = "Grade 7",
-                    Chapter = "Textbook",
                     Status = "Processed",
                     TotalChunks = 8
                 }

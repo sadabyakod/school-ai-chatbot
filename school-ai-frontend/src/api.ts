@@ -40,8 +40,8 @@ interface RetryOptions {
 }
 
 const DEFAULT_RETRY_OPTIONS: RetryOptions = {
-  maxRetries: 3,
-  retryDelay: 1000,
+  maxRetries: 5,
+  retryDelay: 2000,
   retryOn: [408, 429, 500, 502, 503, 504],
   exponentialBackoff: true,
 };
@@ -65,10 +65,7 @@ async function fetchWithRetry(
 
   for (let attempt = 0; attempt <= (opts.maxRetries || 0); attempt++) {
     try {
-      const response = await fetch(url, {
-        ...options,
-        signal: AbortSignal.timeout(30000), // 30s timeout
-      });
+      const response = await fetch(url, options);
 
       // If response is OK or error is not retryable, return immediately
       if (response.ok || !opts.retryOn?.includes(response.status)) {
@@ -186,6 +183,227 @@ export async function sendChat({message, token }: {
   };
 }
 
+// ==========================================
+// CHUNKED FILE UPLOAD FOR LARGE FILES
+// ==========================================
+
+const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks
+const MAX_SIMPLE_UPLOAD_SIZE = 10 * 1024 * 1024; // 10MB - use simple upload for smaller files
+
+export interface UploadProgress {
+  loaded: number;
+  total: number;
+  percentage: number;
+  status: 'preparing' | 'uploading' | 'processing' | 'completed' | 'error';
+  message: string;
+}
+
+export type ProgressCallback = (progress: UploadProgress) => void;
+
+/**
+ * Generate a unique upload ID for tracking chunked uploads
+ */
+function generateUploadId(): string {
+  return `upload_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+}
+
+/**
+ * Upload a single chunk to the server
+ */
+async function uploadChunk(
+  chunk: Blob,
+  uploadId: string,
+  chunkIndex: number,
+  totalChunks: number,
+  fileName: string,
+  medium: string,
+  className: string,
+  subject: string,
+  token?: string
+): Promise<Response> {
+  const formData = new FormData();
+  formData.append('chunk', chunk);
+  formData.append('uploadId', uploadId);
+  formData.append('chunkIndex', chunkIndex.toString());
+  formData.append('totalChunks', totalChunks.toString());
+  formData.append('fileName', fileName);
+  formData.append('medium', medium);
+  formData.append('className', className);
+  formData.append('subject', subject);
+
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(buildApiUrl('/api/file/upload-chunk'), {
+    method: 'POST',
+    headers: headers,
+    body: formData
+  });
+
+  return response;
+}
+
+/**
+ * Finalize chunked upload - tells server to assemble chunks
+ */
+async function finalizeChunkedUpload(
+  uploadId: string,
+  fileName: string,
+  totalChunks: number,
+  fileSize: number,
+  medium: string,
+  className: string,
+  subject: string,
+  token?: string
+): Promise<Response> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json'
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(buildApiUrl('/api/file/finalize-upload'), {
+    method: 'POST',
+    headers: headers,
+    body: JSON.stringify({
+      uploadId,
+      fileName,
+      totalChunks,
+      fileSize,
+      medium,
+      className,
+      subject
+    })
+  });
+
+  return response;
+}
+
+/**
+ * Upload file with chunking support for large files
+ * Uses simple upload for files < 10MB, chunked for larger files
+ */
+export async function uploadFileWithProgress(
+  file: File,
+  medium: string,
+  className: string,
+  subject: string,
+  onProgress?: ProgressCallback,
+  token?: string
+): Promise<any> {
+  const updateProgress = (progress: Partial<UploadProgress>) => {
+    if (onProgress) {
+      onProgress({
+        loaded: 0,
+        total: file.size,
+        percentage: 0,
+        status: 'preparing',
+        message: 'Preparing upload...',
+        ...progress
+      });
+    }
+  };
+
+  // For smaller files, use simple upload
+  if (file.size <= MAX_SIMPLE_UPLOAD_SIZE) {
+
+    updateProgress({ status: 'uploading', message: 'Uploading file...', percentage: 0 });
+    
+    const result = await uploadFile(file, medium, className, subject, token);
+    
+    updateProgress({ 
+      status: 'completed', 
+      message: 'Upload complete!', 
+      percentage: 100,
+      loaded: file.size 
+    });
+    
+    return result;
+  }
+
+  // For large files, use chunked upload
+  const uploadId = generateUploadId();
+  const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+  
+  updateProgress({ 
+    status: 'preparing', 
+    message: `Preparing to upload ${totalChunks} chunks...`,
+    percentage: 0
+  });
+
+  // Upload chunks sequentially
+  for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+    const start = chunkIndex * CHUNK_SIZE;
+    const end = Math.min(start + CHUNK_SIZE, file.size);
+    const chunk = file.slice(start, end);
+    
+    const chunkProgress = Math.round((chunkIndex / totalChunks) * 90); // Reserve 10% for finalization
+    updateProgress({
+      status: 'uploading',
+      message: `Uploading chunk ${chunkIndex + 1} of ${totalChunks}...`,
+      loaded: start,
+      percentage: chunkProgress
+    });
+
+    const response = await uploadChunk(
+      chunk,
+      uploadId,
+      chunkIndex,
+      totalChunks,
+      file.name,
+      medium,
+      className,
+      subject,
+      token
+    );
+
+    if (!response.ok) {
+      const error = await parseErrorResponse(response);
+      updateProgress({ status: 'error', message: `Chunk ${chunkIndex + 1} failed: ${error.message}` });
+      throw new ApiException(error);
+    }
+  }
+
+  // Finalize upload
+  updateProgress({
+    status: 'processing',
+    message: 'Assembling file on server...',
+    loaded: file.size,
+    percentage: 95
+  });
+
+  const finalizeResponse = await finalizeChunkedUpload(
+    uploadId,
+    file.name,
+    totalChunks,
+    file.size,
+    medium,
+    className,
+    subject,
+    token
+  );
+
+  if (!finalizeResponse.ok) {
+    const error = await parseErrorResponse(finalizeResponse);
+    updateProgress({ status: 'error', message: `Finalization failed: ${error.message}` });
+    throw new ApiException(error);
+  }
+
+  const result = await finalizeResponse.json();
+  
+  updateProgress({
+    status: 'completed',
+    message: 'Upload complete!',
+    loaded: file.size,
+    percentage: 100
+  });
+
+  return result;
+}
+
 export async function uploadFile(file: File, medium: string, className: string, subject: string, token?: string): Promise<any> {
   const formData = new FormData();
   formData.append('file', file);
@@ -193,24 +411,28 @@ export async function uploadFile(file: File, medium: string, className: string, 
   formData.append('className', className);
   formData.append('subject', subject);
 
-  const response = await fetchWithRetry(
-    buildApiUrl('/api/file/upload'),
-    {
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(buildApiUrl('/api/file/upload'), {
       method: 'POST',
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      },
+      headers: headers,
       body: formData
-    },
-    { maxRetries: 1 } // Files can be large, limit retries
-  );
+    });
 
-  if (!response.ok) {
-    const error = await parseErrorResponse(response);
-    throw new ApiException(error);
+    if (!response.ok) {
+      const error = await parseErrorResponse(response);
+      throw new ApiException(error);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Upload error:', error);
+    throw error;
   }
-
-  return await response.json();
 }
 
 export async function getFaqs(token?: string): Promise<any> {
@@ -256,8 +478,7 @@ export async function getAnalytics(schoolId: string, token?: string): Promise<an
 export async function checkHealth(): Promise<boolean> {
   try {
     const response = await fetch(buildApiUrl('/health'), {
-      method: 'GET',
-      signal: AbortSignal.timeout(5000), // 5s timeout for health check
+      method: 'GET'
     });
     return response.ok;
   } catch {

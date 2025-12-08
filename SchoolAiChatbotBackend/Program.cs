@@ -60,7 +60,12 @@ namespace SchoolAiChatbotBackend
                 });
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.Limits.MaxRequestBodySize = 50_000_000; // 50 MB
+    options.Limits.MaxRequestBodySize = 524_288_000; // 500 MB for chunked uploads
+    options.Limits.MinRequestBodyDataRate = null; // Disable minimum data rate for large uploads
+    options.Limits.MinResponseDataRate = null;
+    options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(10); // 10 minutes for large file uploads
+    options.Limits.RequestHeadersTimeout = TimeSpan.FromMinutes(5);
+    
     // Azure App Service will set the PORT environment variable
     var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
     options.ListenAnyIP(int.Parse(port)); // Listen on Azure's expected port

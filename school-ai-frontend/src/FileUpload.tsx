@@ -55,8 +55,10 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
     }
     
     setUploading(true);
+    
     try {
       const data = await uploadFile(file, medium, className, subject, token);
+      
       toast.success(`File uploaded successfully: ${data.message || 'Processing started'}`);
       
       // Reset form
@@ -74,6 +76,13 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
     } finally {
       setUploading(false);
     }
+  };
+
+  // Format file size for display
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   return (
@@ -129,6 +138,11 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
       <div className="mb-4">
         <label className="block text-sm font-medium mb-1">File</label>
         <input type="file" onChange={handleFileChange} className="w-full" accept=".pdf" />
+        {file && (
+          <p className="text-sm text-gray-500 mt-1">
+            Selected: {file.name} ({formatFileSize(file.size)})
+          </p>
+        )}
       </div>
 
       {/* Upload Button */}

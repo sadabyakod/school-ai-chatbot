@@ -37,9 +37,6 @@ namespace SchoolAiChatbotBackend.Models
         [StringLength(50)]
         public string? Medium { get; set; }
 
-        [StringLength(200)]
-        public string? Chapter { get; set; }
-
         public int TotalChunks { get; set; } = 0;
 
         [StringLength(50)]

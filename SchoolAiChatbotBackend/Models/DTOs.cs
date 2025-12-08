@@ -52,4 +52,25 @@ namespace SchoolAiChatbotBackend.Models
         public string? Chapter { get; set; }
         public string? UploadedBy { get; set; }
     }
+
+    /// <summary>
+    /// Request DTO for finalizing chunked upload
+    /// </summary>
+    public class FinalizeUploadRequest
+    {
+        [Required]
+        public string UploadId { get; set; } = string.Empty;
+
+        [Required]
+        public string FileName { get; set; } = string.Empty;
+
+        [Required]
+        public int TotalChunks { get; set; }
+
+        public long FileSize { get; set; }
+
+        public string? ClassName { get; set; }
+        public string? Subject { get; set; }
+        public string? Medium { get; set; }
+    }
 }
