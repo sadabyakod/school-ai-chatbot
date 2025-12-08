@@ -1,0 +1,988 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+using SchoolAiChatbotBackend.Services;
+using SchoolAiChatbotBackend.DTOs;
+using System;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+
+namespace SchoolAiChatbotBackend.Controllers
+{
+    [ApiController]
+    [Route("api/exam")]
+    [Produces("application/json")]
+    [Tags("AI Exam Generator")]
+    public class ExamGeneratorController : ControllerBase
+    {
+        private readonly IOpenAIService _openAIService;
+        private readonly ISubjectiveRubricService _rubricService;
+        private readonly IExamStorageService _examStorageService;
+        private readonly ILogger<ExamGeneratorController> _logger;
+
+        public ExamGeneratorController(
+            IOpenAIService openAIService,
+            ISubjectiveRubricService rubricService,
+            IExamStorageService examStorageService,
+            ILogger<ExamGeneratorController> logger)
+        {
+            _openAIService = openAIService;
+            _rubricService = rubricService;
+            _examStorageService = examStorageService;
+            _logger = logger;
+        }
+
+        /// <summary>
+        /// Generate a Karnataka 2nd PUC style exam paper using AI
+        /// POST /api/exam/generate
+        /// </summary>
+        /// <remarks>
+        /// Generates ORIGINAL MODEL QUESTION PAPERS following Karnataka State Government 2nd PUC Mathematics exam style.
+        /// Returns a mix of MCQ, fill-in-the-blank, short answer, and long answer questions.
+        /// Follows the official Karnataka 2nd PUC model paper format with 1-mark to 5-mark questions.
+        /// </remarks>
+        [HttpPost("generate")]
+        public async Task<IActionResult> GenerateExam([FromBody] GenerateExamRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            _logger.LogInformation(
+                "Generating Karnataka 2nd PUC exam: Subject={Subject}, Grade={Grade}",
+                request.Subject, request.Grade);
+
+            try
+            {
+                // Build the AI prompt
+                var prompt = BuildExamGenerationPrompt(request);
+
+                // Call OpenAI to generate the exam with higher token limit
+                var aiResponse = await _openAIService.GetExamGenerationAsync(prompt);
+
+                // Parse and validate the JSON response
+                var examPaper = ParseExamResponse(aiResponse, request);
+
+                // Generate and save rubrics for all subjective questions
+                await GenerateAndSaveRubricsAsync(examPaper);
+
+                // Store the exam for later retrieval (for MCQ submission, written answer upload, etc.)
+                _examStorageService.StoreExam(examPaper);
+                _logger.LogInformation("Exam {ExamId} stored for later retrieval", examPaper.ExamId);
+
+                _logger.LogInformation(
+                    "Exam generated successfully: ExamId={ExamId}, Questions={QuestionCount}, TotalMarks={TotalMarks}",
+                    examPaper.ExamId, examPaper.Questions?.Count ?? 0, examPaper.TotalMarks);
+
+                return Ok(examPaper);
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "Failed to parse AI response as JSON");
+                return StatusCode(500, new
+                {
+                    status = "error",
+                    message = "Failed to generate valid exam format.",
+                    details = "AI response was not valid JSON."
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating exam");
+                return StatusCode(500, new
+                {
+                    status = "error",
+                    message = "Failed to generate exam.",
+                    details = ex.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// Submit and evaluate exam answers (text or image)
+        /// POST /api/exam/submit
+        /// </summary>
+        /// <remarks>
+        /// Students can submit their answers as text or upload images of handwritten answers.
+        /// Each answer is evaluated by AI and scored against the correct answer.
+        /// Returns individual scores per question and total score.
+        /// </remarks>
+        [HttpPost("submit")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> SubmitExamAnswers([FromForm] SubmitExamRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            _logger.LogInformation(
+                "Evaluating exam submission: ExamId={ExamId}, AnswerCount={AnswerCount}",
+                request.ExamId, request.Answers?.Count ?? 0);
+
+            try
+            {
+                var results = new List<AnswerEvaluationResult>();
+                var totalScore = 0;
+                var totalMaxScore = 0;
+
+                if (request.Answers == null || request.Answers.Count == 0)
+                {
+                    return BadRequest(new { status = "error", message = "No answers provided" });
+                }
+
+                foreach (var answer in request.Answers)
+                {
+                    try
+                    {
+                        string evaluationJson;
+
+                        // Check if image is provided
+                        if (answer.ImageFile != null && answer.ImageFile.Length > 0)
+                        {
+                            // Read image data
+                            using var memoryStream = new MemoryStream();
+                            await answer.ImageFile.CopyToAsync(memoryStream);
+                            var imageData = memoryStream.ToArray();
+                            var mimeType = answer.ImageFile.ContentType ?? "image/jpeg";
+
+                            _logger.LogInformation(
+                                "Evaluating image answer for question {QuestionId}, ImageSize={Size} bytes",
+                                answer.QuestionId, imageData.Length);
+
+                            evaluationJson = await _openAIService.EvaluateAnswerFromImageAsync(
+                                answer.QuestionText,
+                                answer.CorrectAnswer,
+                                imageData,
+                                mimeType,
+                                answer.MaxMarks);
+                        }
+                        else if (!string.IsNullOrWhiteSpace(answer.TextAnswer))
+                        {
+                            // Evaluate text answer
+                            _logger.LogInformation(
+                                "Evaluating text answer for question {QuestionId}",
+                                answer.QuestionId);
+
+                            evaluationJson = await _openAIService.EvaluateAnswerAsync(
+                                answer.QuestionText,
+                                answer.CorrectAnswer,
+                                answer.TextAnswer,
+                                answer.MaxMarks);
+                        }
+                        else
+                        {
+                            // No answer provided - score 0
+                            results.Add(new AnswerEvaluationResult
+                            {
+                                QuestionId = answer.QuestionId,
+                                QuestionNumber = answer.QuestionNumber,
+                                Score = 0,
+                                MaxMarks = answer.MaxMarks,
+                                Feedback = "No answer provided",
+                                IsCorrect = false,
+                                ExtractedText = null
+                            });
+                            totalMaxScore += answer.MaxMarks;
+                            continue;
+                        }
+
+                        // Parse the evaluation response
+                        var evalResult = JsonSerializer.Deserialize<EvaluationJsonResponse>(
+                            evaluationJson, 
+                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                        var score = Math.Min(evalResult?.Score ?? 0, answer.MaxMarks);
+                        totalScore += score;
+                        totalMaxScore += answer.MaxMarks;
+
+                        results.Add(new AnswerEvaluationResult
+                        {
+                            QuestionId = answer.QuestionId,
+                            QuestionNumber = answer.QuestionNumber,
+                            Score = score,
+                            MaxMarks = answer.MaxMarks,
+                            Feedback = evalResult?.Feedback ?? "Evaluation completed",
+                            IsCorrect = evalResult?.IsCorrect ?? false,
+                            ExtractedText = evalResult?.ExtractedText
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error evaluating answer for question {QuestionId}", answer.QuestionId);
+                        
+                        // Add error result but continue with other answers
+                        results.Add(new AnswerEvaluationResult
+                        {
+                            QuestionId = answer.QuestionId,
+                            QuestionNumber = answer.QuestionNumber,
+                            Score = 0,
+                            MaxMarks = answer.MaxMarks,
+                            Feedback = "Error evaluating answer. Please try again.",
+                            IsCorrect = false,
+                            ExtractedText = null
+                        });
+                        totalMaxScore += answer.MaxMarks;
+                    }
+                }
+
+                // Calculate percentage
+                var percentage = totalMaxScore > 0 ? Math.Round((double)totalScore / totalMaxScore * 100, 1) : 0;
+
+                // Determine grade
+                var grade = percentage switch
+                {
+                    >= 90 => "A+",
+                    >= 80 => "A",
+                    >= 70 => "B+",
+                    >= 60 => "B",
+                    >= 50 => "C",
+                    >= 35 => "D",
+                    _ => "F"
+                };
+
+                var response = new ExamSubmissionResponse
+                {
+                    ExamId = request.ExamId,
+                    TotalScore = totalScore,
+                    TotalMaxScore = totalMaxScore,
+                    Percentage = percentage,
+                    Grade = grade,
+                    QuestionsAnswered = results.Count(r => r.Score > 0 || !string.IsNullOrEmpty(r.ExtractedText)),
+                    TotalQuestions = results.Count,
+                    Results = results,
+                    EvaluatedAt = DateTime.UtcNow.ToString("o")
+                };
+
+                _logger.LogInformation(
+                    "Exam evaluated: ExamId={ExamId}, Score={Score}/{MaxScore}, Grade={Grade}",
+                    request.ExamId, totalScore, totalMaxScore, grade);
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing exam submission");
+                return StatusCode(500, new
+                {
+                    status = "error",
+                    message = "Failed to evaluate exam.",
+                    details = ex.Message
+                });
+            }
+        }
+
+        private string BuildExamGenerationPrompt(GenerateExamRequest request)
+        {
+            return $@"You are an exam paper generator for a school mobile app.
+
+Your job is to generate ORIGINAL model question papers that follow the EXACT format and style of
+Karnataka State Government 2nd PUC Mathematics board exams (Model Question Paper 2024-25).
+
+Generate an exam with the following specifications:
+- Subject: {request.Subject}
+- Grade: {request.Grade}
+- Syllabus Scope: Full Syllabus (cover all chapters)
+- Overall Difficulty: Medium
+- Exam Type: Full Paper
+
+You MUST return exactly one VALID JSON object following this schema:
+
+{{
+  ""examId"": ""string"",
+  ""subject"": ""{request.Subject}"",
+  ""grade"": ""{request.Grade}"",
+  ""chapter"": ""Full Syllabus"",
+  ""difficulty"": ""Medium"",
+  ""examType"": ""Full Paper"",
+  ""totalMarks"": 80,
+  ""duration"": 195,
+  ""instructions"": [
+    ""Answer ALL 15 questions in Part A"",
+    ""Answer any SIX questions from Part B"",
+    ""Answer any SIX questions from Part C"",
+    ""Answer any FOUR questions from Part D"",
+    ""Answer any ONE question from Part E""
+  ],
+  ""parts"": [
+    {{
+      ""partName"": ""Part A"",
+      ""partDescription"": ""Answer ALL the following questions"",
+      ""questionType"": ""MCQ"",
+      ""marksPerQuestion"": 1,
+      ""totalQuestions"": 15,
+      ""questionsToAnswer"": 15,
+      ""questions"": [
+        {{
+          ""questionId"": ""A1"",
+          ""questionNumber"": 1,
+          ""questionText"": ""string"",
+          ""options"": [""A) option1"", ""B) option2"", ""C) option3"", ""D) option4""],
+          ""correctAnswer"": ""A) option1"",
+          ""topic"": ""string""
+        }}
+      ]
+    }},
+    {{
+      ""partName"": ""Part B"",
+      ""partDescription"": ""Answer any SIX of the following questions"",
+      ""questionType"": ""Short Answer (2 marks)"",
+      ""marksPerQuestion"": 2,
+      ""totalQuestions"": 8,
+      ""questionsToAnswer"": 6,
+      ""questions"": [
+        {{
+          ""questionId"": ""B1"",
+          ""questionNumber"": 16,
+          ""questionText"": ""string"",
+          ""options"": [],
+          ""correctAnswer"": ""Model answer text"",
+          ""topic"": ""string""
+        }}
+      ]
+    }},
+    {{
+      ""partName"": ""Part C"",
+      ""partDescription"": ""Answer any SIX of the following questions"",
+      ""questionType"": ""Short Answer (3 marks)"",
+      ""marksPerQuestion"": 3,
+      ""totalQuestions"": 8,
+      ""questionsToAnswer"": 6,
+      ""questions"": [
+        {{
+          ""questionId"": ""C1"",
+          ""questionNumber"": 24,
+          ""questionText"": ""string"",
+          ""options"": [],
+          ""correctAnswer"": ""Model answer text"",
+          ""topic"": ""string""
+        }}
+      ]
+    }},
+    {{
+      ""partName"": ""Part D"",
+      ""partDescription"": ""Answer any FOUR of the following questions"",
+      ""questionType"": ""Long Answer (5 marks)"",
+      ""marksPerQuestion"": 5,
+      ""totalQuestions"": 6,
+      ""questionsToAnswer"": 4,
+      ""questions"": [
+        {{
+          ""questionId"": ""D1"",
+          ""questionNumber"": 32,
+          ""questionText"": ""string"",
+          ""options"": [],
+          ""correctAnswer"": ""Model answer with steps"",
+          ""topic"": ""string""
+        }}
+      ]
+    }},
+    {{
+      ""partName"": ""Part E"",
+      ""partDescription"": ""Answer any ONE of the following questions"",
+      ""questionType"": ""Long Answer (10 marks)"",
+      ""marksPerQuestion"": 10,
+      ""totalQuestions"": 2,
+      ""questionsToAnswer"": 1,
+      ""questions"": [
+        {{
+          ""questionId"": ""E1"",
+          ""questionNumber"": 38,
+          ""questionText"": ""string"",
+          ""subParts"": [
+            {{
+              ""partLabel"": ""a"",
+              ""questionText"": ""sub-question a (5 marks)"",
+              ""correctAnswer"": ""Model answer for part a""
+            }},
+            {{
+              ""partLabel"": ""b"",
+              ""questionText"": ""sub-question b (5 marks)"",
+              ""correctAnswer"": ""Model answer for part b""
+            }}
+          ],
+          ""options"": [],
+          ""correctAnswer"": ""Combined model answer"",
+          ""topic"": ""string""
+        }}
+      ]
+    }}
+  ],
+  ""questionCount"": 39,
+  ""createdAt"": ""ISO 8601 string""
+}}
+
+--------------------
+KARNATAKA 2nd PUC MATHEMATICS MODEL PAPER FORMAT (EXACT):
+--------------------
+
+TOTAL MARKS: 80 marks
+TIME: 3 hours 15 minutes (195 minutes)
+
+STRUCTURE:
+1) PART A - Multiple Choice Questions (MCQ):
+   - 15 questions × 1 mark each = 15 marks
+   - Answer ALL 15 questions
+   - Each question has 4 options (A, B, C, D)
+   - Topics: Relations & Functions, Inverse Trigonometry, Matrices, Determinants, Continuity, Differentiability, Integrals, Differential Equations, Vectors, 3D Geometry, Linear Programming, Probability
+
+2) PART B - Short Answer Type (2 marks each):
+   - 8 questions given, answer ANY 6 = 12 marks
+   - Questions 16-23
+   - Direct calculation / short proof type
+   - Topics from all chapters
+
+3) PART C - Short Answer Type (3 marks each):
+   - 8 questions given, answer ANY 6 = 18 marks  
+   - Questions 24-31
+   - Application-based problems, proofs, derivations
+   - Topics from all chapters
+
+4) PART D - Long Answer Type (5 marks each):
+   - 6 questions given, answer ANY 4 = 20 marks
+   - Questions 32-37
+   - Detailed problem solving, proofs with steps
+   - Topics: Matrices (inverse), Calculus (maxima/minima), Integration, Differential Equations, Vectors/3D Geometry, Linear Programming
+
+5) PART E - Long Answer Type (10 marks each):
+   - 2 questions given, answer ANY 1 = 10 marks
+   - Questions 38-39
+   - Each question has 2 sub-parts: (a) 5 marks + (b) 5 marks
+   - OR choice between 2 full questions
+   - Topics: Integration with graphs, Area under curves, 3D Geometry
+
+TOTAL = 15 + 12 + 18 + 20 + 10 = 75 marks (answering minimum required)
+         15 + 12 + 18 + 20 + 15 = 80 marks maximum
+
+--------------------
+IMPORTANT RULES:
+--------------------
+
+1) GENERATE EXACTLY THIS STRUCTURE:
+   - Part A: Generate exactly 15 MCQ questions (1 mark each)
+   - Part B: Generate exactly 8 questions (2 marks each), student answers 6
+   - Part C: Generate exactly 8 questions (3 marks each), student answers 6
+   - Part D: Generate exactly 6 questions (5 marks each), student answers 4
+   - Part E: Generate exactly 2 questions (10 marks each with 2 sub-parts), student answers 1
+
+2) QUESTION NUMBERING:
+   - Part A: Questions 1-15
+   - Part B: Questions 16-23
+   - Part C: Questions 24-31
+   - Part D: Questions 32-37
+   - Part E: Questions 38-39
+
+3) MCQ FORMAT (Part A only):
+   - options MUST contain EXACTLY 4 choices formatted as: [""A) ..."", ""B) ..."", ""C) ..."", ""D) ...""]
+   - correctAnswer MUST be the full option text like ""A) answer""
+
+4) NON-MCQ FORMAT (Parts B, C, D, E):
+   - options MUST be an empty array []
+   - correctAnswer MUST contain the complete model answer/solution
+
+5) PART E SUB-PARTS:
+   - Each Part E question MUST have a ""subParts"" array with 2 sub-questions
+   - Each sub-part is worth 5 marks
+
+6) TOPICS TO COVER (Karnataka 2nd PUC Syllabus):
+   - Relations and Functions
+   - Inverse Trigonometric Functions
+   - Matrices and Determinants
+   - Continuity and Differentiability
+   - Applications of Derivatives
+   - Integrals (Indefinite and Definite)
+   - Applications of Integrals
+   - Differential Equations
+   - Vector Algebra
+   - Three Dimensional Geometry
+   - Linear Programming
+   - Probability
+
+7) SYLLABUS COVERAGE:
+   - Cover ALL topics from the full syllabus
+   - Distribute questions evenly across all chapters
+   - Ensure comprehensive coverage of the entire curriculum
+
+8) JSON-ONLY OUTPUT:
+   - Output MUST be valid JSON only
+   - No comments, no markdown, no extra text, no trailing commas
+
+Generate the complete Karnataka 2nd PUC Mathematics Model Question Paper now:";
+        }
+
+        private GeneratedExamResponse ParseExamResponse(string aiResponse, GenerateExamRequest request)
+        {
+            // Clean the response - remove any markdown or extra text
+            var cleanedResponse = aiResponse.Trim();
+            
+            // Remove markdown code blocks if present
+            if (cleanedResponse.StartsWith("```json"))
+                cleanedResponse = cleanedResponse.Substring(7);
+            else if (cleanedResponse.StartsWith("```"))
+                cleanedResponse = cleanedResponse.Substring(3);
+            
+            if (cleanedResponse.EndsWith("```"))
+                cleanedResponse = cleanedResponse.Substring(0, cleanedResponse.Length - 3);
+            
+            cleanedResponse = cleanedResponse.Trim();
+
+            // Find the JSON object
+            var startIndex = cleanedResponse.IndexOf('{');
+            var endIndex = cleanedResponse.LastIndexOf('}');
+            
+            if (startIndex >= 0 && endIndex > startIndex)
+            {
+                cleanedResponse = cleanedResponse.Substring(startIndex, endIndex - startIndex + 1);
+            }
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            var exam = JsonSerializer.Deserialize<GeneratedExamResponse>(cleanedResponse, options);
+
+            if (exam == null)
+                throw new JsonException("Failed to deserialize exam response");
+
+            // Ensure required fields match request
+            exam.Subject = request.Subject;
+            exam.Grade = request.Grade;
+            exam.Chapter = "Full Syllabus";
+            exam.Difficulty = "Medium";
+            exam.ExamType = "Full Paper";
+
+            // Generate examId if not present
+            if (string.IsNullOrEmpty(exam.ExamId))
+                exam.ExamId = $"KAR-2PUC-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString().Substring(0, 8).ToUpper()}";
+
+            // Set createdAt if not present
+            if (string.IsNullOrEmpty(exam.CreatedAt))
+                exam.CreatedAt = DateTime.UtcNow.ToString("o");
+
+            // Calculate totalMarks from parts if available
+            if (exam.Parts != null && exam.Parts.Count > 0)
+            {
+                var calculatedTotal = 0;
+                var totalQuestions = 0;
+                foreach (var part in exam.Parts)
+                {
+                    calculatedTotal += part.MarksPerQuestion * part.QuestionsToAnswer;
+                    totalQuestions += part.Questions?.Count ?? 0;
+                }
+                exam.TotalMarks = calculatedTotal;
+                exam.QuestionCount = totalQuestions;
+            }
+            // Fallback to old format if parts not present
+            else if (exam.Questions != null && exam.Questions.Count > 0)
+            {
+                var calculatedTotal = 0;
+                foreach (var q in exam.Questions)
+                {
+                    calculatedTotal += q.Marks;
+                }
+                exam.TotalMarks = calculatedTotal;
+                exam.QuestionCount = exam.Questions.Count;
+            }
+
+            return exam;
+        }
+
+        /// <summary>
+        /// Generate and save rubrics for all subjective questions in the exam.
+        /// This ensures consistent, auditable marking for all subjective questions.
+        /// </summary>
+        private async Task GenerateAndSaveRubricsAsync(GeneratedExamResponse exam)
+        {
+            if (exam?.Parts == null || exam.Parts.Count == 0)
+            {
+                _logger.LogInformation("No parts found in exam {ExamId}, skipping rubric generation", exam?.ExamId);
+                return;
+            }
+
+            var rubrics = new List<QuestionRubricDto>();
+            var subjectivePartsProcessed = 0;
+
+            foreach (var part in exam.Parts)
+            {
+                // Skip MCQ parts (Part A typically)
+                if (part.QuestionType.Contains("MCQ", StringComparison.OrdinalIgnoreCase) ||
+                    part.QuestionType.Contains("Multiple Choice", StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogDebug("Skipping MCQ part {PartName} for rubric generation", part.PartName);
+                    continue;
+                }
+
+                subjectivePartsProcessed++;
+                var marksPerQuestion = part.MarksPerQuestion;
+
+                foreach (var question in part.Questions)
+                {
+                    try
+                    {
+                        // Generate default rubric steps for this question
+                        var steps = await _rubricService.GenerateDefaultRubricAsync(
+                            question.QuestionText,
+                            question.CorrectAnswer,
+                            marksPerQuestion);
+
+                        rubrics.Add(new QuestionRubricDto
+                        {
+                            QuestionId = question.QuestionId,
+                            TotalMarks = marksPerQuestion,
+                            Steps = steps.Select(s => new StepRubricItemDto
+                            {
+                                StepNumber = s.StepNumber,
+                                Description = s.Description,
+                                Marks = s.Marks
+                            }).ToList(),
+                            QuestionText = question.QuestionText,
+                            ModelAnswer = question.CorrectAnswer
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to generate rubric for question {QuestionId} in exam {ExamId}",
+                            question.QuestionId, exam.ExamId);
+                        // Continue with other questions even if one fails
+                    }
+                }
+            }
+
+            if (rubrics.Count > 0)
+            {
+                try
+                {
+                    await _rubricService.SaveRubricsBatchAsync(exam.ExamId, rubrics);
+                    _logger.LogInformation(
+                        "Generated and saved {RubricCount} rubrics for exam {ExamId} ({PartsProcessed} subjective parts)",
+                        rubrics.Count, exam.ExamId, subjectivePartsProcessed);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to save rubrics for exam {ExamId}", exam.ExamId);
+                    // Don't throw - exam generation should still succeed even if rubric save fails
+                }
+            }
+            else
+            {
+                _logger.LogInformation("No subjective questions found in exam {ExamId}, no rubrics generated", exam.ExamId);
+            }
+        }
+    }
+
+    #region Request/Response Models
+
+    /// <summary>
+    /// Request model for generating Karnataka 2nd PUC style exam
+    /// </summary>
+    public class GenerateExamRequest
+    {
+        /// <summary>
+        /// Subject name (e.g., "Mathematics", "Physics", "Chemistry")
+        /// </summary>
+        [Required]
+        public string Subject { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Grade/Class (e.g., "12", "2nd PUC", "II PUC")
+        /// </summary>
+        [Required]
+        public string Grade { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Generated exam paper response following Karnataka 2nd PUC format
+    /// Structured with 5 parts (A, B, C, D, E) as per official model paper
+    /// </summary>
+    public class GeneratedExamResponse
+    {
+        [JsonPropertyName("examId")]
+        public string ExamId { get; set; } = string.Empty;
+
+        [JsonPropertyName("subject")]
+        public string Subject { get; set; } = string.Empty;
+
+        [JsonPropertyName("grade")]
+        public string Grade { get; set; } = string.Empty;
+
+        [JsonPropertyName("chapter")]
+        public string Chapter { get; set; } = string.Empty;
+
+        [JsonPropertyName("difficulty")]
+        public string Difficulty { get; set; } = string.Empty;
+
+        [JsonPropertyName("examType")]
+        public string ExamType { get; set; } = string.Empty;
+
+        [JsonPropertyName("totalMarks")]
+        public int TotalMarks { get; set; } = 80;
+
+        [JsonPropertyName("duration")]
+        public int Duration { get; set; } = 195;
+
+        [JsonPropertyName("instructions")]
+        public List<string> Instructions { get; set; } = new();
+
+        [JsonPropertyName("parts")]
+        public List<ExamPart> Parts { get; set; } = new();
+
+        [JsonPropertyName("questionCount")]
+        public int QuestionCount { get; set; } = 39;
+
+        [JsonPropertyName("questions")]
+        public List<GeneratedQuestion> Questions { get; set; } = new();
+
+        [JsonPropertyName("createdAt")]
+        public string CreatedAt { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Represents a part of the Karnataka 2nd PUC exam (Part A, B, C, D, or E)
+    /// </summary>
+    public class ExamPart
+    {
+        [JsonPropertyName("partName")]
+        public string PartName { get; set; } = string.Empty;
+
+        [JsonPropertyName("partDescription")]
+        public string PartDescription { get; set; } = string.Empty;
+
+        [JsonPropertyName("questionType")]
+        public string QuestionType { get; set; } = string.Empty;
+
+        [JsonPropertyName("marksPerQuestion")]
+        public int MarksPerQuestion { get; set; }
+
+        [JsonPropertyName("totalQuestions")]
+        public int TotalQuestions { get; set; }
+
+        [JsonPropertyName("questionsToAnswer")]
+        public int QuestionsToAnswer { get; set; }
+
+        [JsonPropertyName("questions")]
+        public List<PartQuestion> Questions { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Question within an exam part
+    /// </summary>
+    public class PartQuestion
+    {
+        [JsonPropertyName("questionId")]
+        public string QuestionId { get; set; } = string.Empty;
+
+        [JsonPropertyName("questionNumber")]
+        public int QuestionNumber { get; set; }
+
+        [JsonPropertyName("questionText")]
+        public string QuestionText { get; set; } = string.Empty;
+
+        [JsonPropertyName("options")]
+        public List<string> Options { get; set; } = new();
+
+        [JsonPropertyName("correctAnswer")]
+        public string CorrectAnswer { get; set; } = string.Empty;
+
+        [JsonPropertyName("topic")]
+        public string Topic { get; set; } = string.Empty;
+
+        [JsonPropertyName("subParts")]
+        public List<SubPart>? SubParts { get; set; }
+    }
+
+    /// <summary>
+    /// Sub-part of a question (for Part E questions with a and b parts)
+    /// </summary>
+    public class SubPart
+    {
+        [JsonPropertyName("partLabel")]
+        public string PartLabel { get; set; } = string.Empty;
+
+        [JsonPropertyName("questionText")]
+        public string QuestionText { get; set; } = string.Empty;
+
+        [JsonPropertyName("correctAnswer")]
+        public string CorrectAnswer { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Individual question (legacy format support)
+    /// For MCQ: options contains 4 choices, correctAnswer is one of the options
+    /// For Non-MCQ: options is empty array, correctAnswer contains the model answer
+    /// </summary>
+    public class GeneratedQuestion
+    {
+        [JsonPropertyName("questionId")]
+        public string QuestionId { get; set; } = string.Empty;
+
+        [JsonPropertyName("questionText")]
+        public string QuestionText { get; set; } = string.Empty;
+
+        [JsonPropertyName("options")]
+        public List<string> Options { get; set; } = new();
+
+        [JsonPropertyName("correctAnswer")]
+        public string CorrectAnswer { get; set; } = string.Empty;
+
+        [JsonPropertyName("difficulty")]
+        public string Difficulty { get; set; } = "Medium";
+
+        [JsonPropertyName("marks")]
+        public int Marks { get; set; } = 1;
+    }
+
+    #region Exam Submission Models
+
+    /// <summary>
+    /// Request model for submitting exam answers
+    /// Supports both text answers and image uploads of handwritten answers
+    /// </summary>
+    public class SubmitExamRequest
+    {
+        /// <summary>
+        /// The exam ID from the generated exam
+        /// </summary>
+        [Required]
+        public string ExamId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// List of answers submitted by the student
+        /// </summary>
+        [Required]
+        public List<AnswerSubmission> Answers { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Individual answer submission - can be text or image
+    /// </summary>
+    public class AnswerSubmission
+    {
+        /// <summary>
+        /// The question ID (e.g., "A1", "B2", "C3")
+        /// </summary>
+        [Required]
+        public string QuestionId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The question number (1-39)
+        /// </summary>
+        public int QuestionNumber { get; set; }
+
+        /// <summary>
+        /// The original question text (for AI evaluation context)
+        /// </summary>
+        [Required]
+        public string QuestionText { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The correct/model answer (for AI evaluation comparison)
+        /// </summary>
+        [Required]
+        public string CorrectAnswer { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Maximum marks for this question
+        /// </summary>
+        public int MaxMarks { get; set; } = 1;
+
+        /// <summary>
+        /// Student's text answer (optional - use either TextAnswer or ImageFile)
+        /// </summary>
+        public string? TextAnswer { get; set; }
+
+        /// <summary>
+        /// Image file of handwritten answer (optional - use either TextAnswer or ImageFile)
+        /// Supported formats: JPEG, PNG, GIF, WebP
+        /// </summary>
+        public IFormFile? ImageFile { get; set; }
+    }
+
+    /// <summary>
+    /// Response from AI evaluation (internal use)
+    /// </summary>
+    internal class EvaluationJsonResponse
+    {
+        [JsonPropertyName("score")]
+        public int Score { get; set; }
+
+        [JsonPropertyName("feedback")]
+        public string Feedback { get; set; } = string.Empty;
+
+        [JsonPropertyName("isCorrect")]
+        public bool IsCorrect { get; set; }
+
+        [JsonPropertyName("extractedText")]
+        public string? ExtractedText { get; set; }
+    }
+
+    /// <summary>
+    /// Complete exam submission response with scores
+    /// </summary>
+    public class ExamSubmissionResponse
+    {
+        [JsonPropertyName("examId")]
+        public string ExamId { get; set; } = string.Empty;
+
+        [JsonPropertyName("totalScore")]
+        public int TotalScore { get; set; }
+
+        [JsonPropertyName("totalMaxScore")]
+        public int TotalMaxScore { get; set; }
+
+        [JsonPropertyName("percentage")]
+        public double Percentage { get; set; }
+
+        [JsonPropertyName("grade")]
+        public string Grade { get; set; } = string.Empty;
+
+        [JsonPropertyName("questionsAnswered")]
+        public int QuestionsAnswered { get; set; }
+
+        [JsonPropertyName("totalQuestions")]
+        public int TotalQuestions { get; set; }
+
+        [JsonPropertyName("results")]
+        public List<AnswerEvaluationResult> Results { get; set; } = new();
+
+        [JsonPropertyName("evaluatedAt")]
+        public string EvaluatedAt { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Individual answer evaluation result
+    /// </summary>
+    public class AnswerEvaluationResult
+    {
+        [JsonPropertyName("questionId")]
+        public string QuestionId { get; set; } = string.Empty;
+
+        [JsonPropertyName("questionNumber")]
+        public int QuestionNumber { get; set; }
+
+        [JsonPropertyName("score")]
+        public int Score { get; set; }
+
+        [JsonPropertyName("maxMarks")]
+        public int MaxMarks { get; set; }
+
+        [JsonPropertyName("feedback")]
+        public string Feedback { get; set; } = string.Empty;
+
+        [JsonPropertyName("isCorrect")]
+        public bool IsCorrect { get; set; }
+
+        /// <summary>
+        /// Text extracted from image (only for image submissions)
+        /// </summary>
+        [JsonPropertyName("extractedText")]
+        public string? ExtractedText { get; set; }
+    }
+
+    #endregion
+
+    #endregion
+}

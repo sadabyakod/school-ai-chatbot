@@ -177,6 +177,20 @@ builder.Services.AddScoped<SchoolAiChatbotBackend.Services.IStudyNotesService, S
 // Register Exam System services
 builder.Services.AddScoped<SchoolAiChatbotBackend.Features.Exams.IExamService, SchoolAiChatbotBackend.Features.Exams.ExamService>();
 
+// Register Exam Submission services (New)
+builder.Services.AddScoped<IExamRepository, InMemoryExamRepository>();
+builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
+builder.Services.AddScoped<IMathOcrNormalizer, MathOcrNormalizer>();
+builder.Services.AddScoped<IOcrService, OcrService>();
+builder.Services.AddScoped<ISubjectiveEvaluator, SubjectiveEvaluator>();
+
+// Register Exam Storage service (Database-backed - persists exams to Azure SQL)
+builder.Services.AddSingleton<IExamStorageService, DatabaseExamStorageService>();
+
+// Register Subjective Rubric services (Step-based marking)
+builder.Services.AddScoped<SchoolAiChatbotBackend.Repositories.ISubjectiveRubricRepository, SchoolAiChatbotBackend.Repositories.SubjectiveRubricRepository>();
+builder.Services.AddScoped<ISubjectiveRubricService, SubjectiveRubricService>();
+
 // Register global exception handler
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();

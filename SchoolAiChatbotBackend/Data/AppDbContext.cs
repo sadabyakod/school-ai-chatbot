@@ -30,6 +30,12 @@ namespace SchoolAiChatbotBackend.Data
         public DbSet<ExamTemplate> ExamTemplates { get; set; }
         public DbSet<ExamAttempt> ExamAttempts { get; set; }
         public DbSet<ExamAnswer> ExamAnswers { get; set; }
+        
+        // Subjective rubric storage for step-based marking
+        public DbSet<SubjectiveRubric> SubjectiveRubrics { get; set; }
+
+        // Generated exams storage (persisted for MCQ/written answer submissions)
+        public DbSet<GeneratedExam> GeneratedExams { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -145,6 +151,25 @@ namespace SchoolAiChatbotBackend.Data
             
             modelBuilder.Entity<ExamAnswer>()
                 .HasIndex(ans => new { ans.ExamAttemptId, ans.QuestionId });
+            
+            // Configure SubjectiveRubric indexes for fast lookup
+            modelBuilder.Entity<SubjectiveRubric>()
+                .HasIndex(r => new { r.ExamId, r.QuestionId })
+                .IsUnique();
+            
+            modelBuilder.Entity<SubjectiveRubric>()
+                .HasIndex(r => r.ExamId);
+
+            // Configure GeneratedExam indexes for fast lookup
+            modelBuilder.Entity<GeneratedExam>()
+                .HasIndex(e => e.ExamId)
+                .IsUnique();
+            
+            modelBuilder.Entity<GeneratedExam>()
+                .HasIndex(e => new { e.Subject, e.Grade, e.Chapter });
+            
+            modelBuilder.Entity<GeneratedExam>()
+                .HasIndex(e => e.CreatedAt);
         }
     }
 }

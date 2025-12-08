@@ -15,6 +15,9 @@ namespace SchoolAiChatbotBackend.Data
             // Apply any pending migrations to create/update database schema
             await context.Database.MigrateAsync();
             
+            // Ensure GeneratedExams table exists (for exam persistence)
+            await EnsureGeneratedExamsTableAsync(context);
+            
             // Check if schools data already exists
             bool schoolsExist = await context.Schools.AnyAsync();
             
@@ -594,6 +597,52 @@ namespace SchoolAiChatbotBackend.Data
             await context.SaveChangesAsync();
 
             Console.WriteLine("Database seeded successfully!");
+        }
+        
+        /// <summary>
+        /// Ensures the GeneratedExams table exists for exam persistence
+        /// </summary>
+        private static async Task EnsureGeneratedExamsTableAsync(AppDbContext context)
+        {
+            const string createTableSql = @"
+                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='GeneratedExams' AND xtype='U')
+                BEGIN
+                    CREATE TABLE [dbo].[GeneratedExams] (
+                        [Id] INT IDENTITY(1,1) NOT NULL,
+                        [ExamId] NVARCHAR(200) NOT NULL,
+                        [Subject] NVARCHAR(100) NOT NULL,
+                        [Grade] NVARCHAR(50) NULL,
+                        [Chapter] NVARCHAR(200) NULL,
+                        [Difficulty] NVARCHAR(50) NULL,
+                        [TotalMarks] INT NOT NULL DEFAULT 0,
+                        [DurationMinutes] INT NOT NULL DEFAULT 0,
+                        [ExamContentJson] NVARCHAR(MAX) NOT NULL,
+                        [CreatedAt] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+                        [CreatedBy] NVARCHAR(100) NULL,
+                        [IsActive] BIT NOT NULL DEFAULT 1,
+                        CONSTRAINT [PK_GeneratedExams] PRIMARY KEY CLUSTERED ([Id] ASC)
+                    );
+
+                    CREATE UNIQUE NONCLUSTERED INDEX [IX_GeneratedExams_ExamId] 
+                    ON [dbo].[GeneratedExams] ([ExamId]);
+
+                    CREATE NONCLUSTERED INDEX [IX_GeneratedExams_Subject_Grade_Chapter] 
+                    ON [dbo].[GeneratedExams] ([Subject], [Grade], [Chapter]);
+
+                    CREATE NONCLUSTERED INDEX [IX_GeneratedExams_CreatedAt] 
+                    ON [dbo].[GeneratedExams] ([CreatedAt] DESC);
+                END";
+
+            try
+            {
+                await context.Database.ExecuteSqlRawAsync(createTableSql);
+                Console.WriteLine("GeneratedExams table verified/created successfully.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Note: GeneratedExams table check: {ex.Message}");
+                // Non-fatal - table may already exist or migration handles it
+            }
         }
     }
 }

@@ -19,6 +19,10 @@ namespace SchoolAiChatbotBackend.Services
     public interface IOpenAIService
     {
         Task<string> GetChatCompletionAsync(string prompt, string language = "en");
+        Task<string> GetExamGenerationAsync(string prompt);
+        Task<string> EvaluateAnswerAsync(string question, string correctAnswer, string studentAnswer, int maxMarks);
+        Task<string> EvaluateAnswerFromImageAsync(string question, string correctAnswer, byte[] imageData, string mimeType, int maxMarks);
+        Task<string> EvaluateSubjectiveAnswerAsync(string systemPrompt, string userPrompt);
         Task<List<float>> GetEmbeddingAsync(string text);
     }
 
@@ -149,6 +153,79 @@ namespace SchoolAiChatbotBackend.Services
         }
 
         /// <summary>
+        /// Get exam paper generation from OpenAI with higher token limit
+        /// Specifically designed for Karnataka 2nd PUC style exam generation
+        /// </summary>
+        public async Task<string> GetExamGenerationAsync(string prompt)
+        {
+            try
+            {
+                var requestBody = new
+                {
+                    messages = new[]
+                    {
+                        new { role = "system", content = "You are an exam paper generator for Karnataka 2nd PUC board exams. You MUST output ONLY valid JSON with no additional text, comments, or markdown formatting. Respond with a single JSON object only." },
+                        new { role = "user", content = prompt }
+                    },
+                    max_tokens = 8000,
+                    temperature = 0.3,
+                    response_format = new { type = "json_object" }
+                };
+
+                string url;
+                if (_useAzureOpenAI)
+                {
+                    url = $"{_endpoint}/openai/deployments/{_chatDeployment}/chat/completions?api-version=2024-08-01-preview";
+                }
+                else
+                {
+                    url = $"{_endpoint}/chat/completions";
+                }
+
+                var request = new HttpRequestMessage(HttpMethod.Post, url)
+                {
+                    Content = new StringContent(
+                        JsonSerializer.Serialize(requestBody),
+                        Encoding.UTF8,
+                        "application/json")
+                };
+
+                if (_useAzureOpenAI)
+                {
+                    request.Headers.Add("api-key", _apiKey);
+                }
+                else
+                {
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+                }
+
+                var response = await _httpClient.SendAsync(request);
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogError("OpenAI API error for exam generation: {Status} - {Content}", response.StatusCode, responseContent);
+                    throw new Exception($"OpenAI API returned {response.StatusCode}: {responseContent}");
+                }
+
+                var jsonResponse = JsonDocument.Parse(responseContent);
+                var messageContent = jsonResponse.RootElement
+                    .GetProperty("choices")[0]
+                    .GetProperty("message")
+                    .GetProperty("content")
+                    .GetString();
+
+                _logger.LogInformation("Exam generation completed successfully");
+                return messageContent ?? throw new Exception("Empty response from OpenAI");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error calling OpenAI for exam generation");
+                throw;
+            }
+        }
+
+        /// <summary>
         /// Get embedding vector from OpenAI or Azure OpenAI
         /// </summary>
         public async Task<List<float>> GetEmbeddingAsync(string text)
@@ -223,6 +300,283 @@ namespace SchoolAiChatbotBackend.Services
             {
                 _logger.LogError(ex, "Error generating embedding");
                 return GenerateMockEmbedding(text);
+            }
+        }
+
+        /// <summary>
+        /// Evaluate a student's text answer against the correct answer
+        /// Returns JSON with score and feedback
+        /// </summary>
+        public async Task<string> EvaluateAnswerAsync(string question, string correctAnswer, string studentAnswer, int maxMarks)
+        {
+            try
+            {
+                var systemPrompt = @"You are an exam evaluator for Karnataka 2nd PUC board exams. 
+Evaluate the student's answer against the correct answer and assign marks fairly.
+Consider partial credit for partially correct answers.
+Be strict but fair - award marks based on correctness and completeness.
+
+You MUST respond with ONLY valid JSON in this exact format:
+{
+  ""score"": <number between 0 and maxMarks>,
+  ""feedback"": ""<brief feedback explaining the score>"",
+  ""isCorrect"": <true if full marks, false otherwise>
+}";
+
+                var userPrompt = $@"Question: {question}
+
+Correct Answer: {correctAnswer}
+
+Student's Answer: {studentAnswer}
+
+Maximum Marks: {maxMarks}
+
+Evaluate the student's answer and provide score (0 to {maxMarks}) with feedback.";
+
+                var requestBody = new
+                {
+                    messages = new[]
+                    {
+                        new { role = "system", content = systemPrompt },
+                        new { role = "user", content = userPrompt }
+                    },
+                    max_tokens = 500,
+                    temperature = 0.3,
+                    response_format = new { type = "json_object" }
+                };
+
+                string url;
+                if (_useAzureOpenAI)
+                {
+                    url = $"{_endpoint}/openai/deployments/{_chatDeployment}/chat/completions?api-version=2024-08-01-preview";
+                }
+                else
+                {
+                    url = $"{_endpoint}/chat/completions";
+                }
+
+                var request = new HttpRequestMessage(HttpMethod.Post, url)
+                {
+                    Content = new StringContent(
+                        JsonSerializer.Serialize(requestBody),
+                        Encoding.UTF8,
+                        "application/json")
+                };
+
+                if (_useAzureOpenAI)
+                {
+                    request.Headers.Add("api-key", _apiKey);
+                }
+                else
+                {
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+                }
+
+                var response = await _httpClient.SendAsync(request);
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogError("OpenAI API error for answer evaluation: {Status} - {Content}", response.StatusCode, responseContent);
+                    throw new Exception($"OpenAI API returned {response.StatusCode}");
+                }
+
+                var jsonResponse = JsonDocument.Parse(responseContent);
+                var messageContent = jsonResponse.RootElement
+                    .GetProperty("choices")[0]
+                    .GetProperty("message")
+                    .GetProperty("content")
+                    .GetString();
+
+                return messageContent ?? throw new Exception("Empty response from OpenAI");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error evaluating answer");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Evaluate a student's handwritten answer from an image using GPT-4 Vision
+        /// Returns JSON with score and feedback
+        /// </summary>
+        public async Task<string> EvaluateAnswerFromImageAsync(string question, string correctAnswer, byte[] imageData, string mimeType, int maxMarks)
+        {
+            try
+            {
+                var base64Image = Convert.ToBase64String(imageData);
+                
+                var systemPrompt = @"You are an exam evaluator for Karnataka 2nd PUC board exams.
+First, read and extract the text from the student's handwritten answer in the image.
+Then evaluate the answer against the correct answer and assign marks fairly.
+Consider partial credit for partially correct answers.
+Be strict but fair - award marks based on correctness and completeness.
+
+You MUST respond with ONLY valid JSON in this exact format:
+{
+  ""extractedText"": ""<text extracted from the image>"",
+  ""score"": <number between 0 and maxMarks>,
+  ""feedback"": ""<brief feedback explaining the score>"",
+  ""isCorrect"": <true if full marks, false otherwise>
+}";
+
+                var userPrompt = $@"Question: {question}
+
+Correct Answer: {correctAnswer}
+
+Maximum Marks: {maxMarks}
+
+Please read the student's handwritten answer from the image, then evaluate it and provide score (0 to {maxMarks}) with feedback.";
+
+                // Build the message content with image
+                var messageContent = new object[]
+                {
+                    new { type = "text", text = userPrompt },
+                    new { 
+                        type = "image_url", 
+                        image_url = new { 
+                            url = $"data:{mimeType};base64,{base64Image}",
+                            detail = "high"
+                        } 
+                    }
+                };
+
+                var requestBody = new
+                {
+                    messages = new object[]
+                    {
+                        new { role = "system", content = systemPrompt },
+                        new { role = "user", content = messageContent }
+                    },
+                    max_tokens = 1000,
+                    temperature = 0.3
+                };
+
+                string url;
+                if (_useAzureOpenAI)
+                {
+                    url = $"{_endpoint}/openai/deployments/{_chatDeployment}/chat/completions?api-version=2024-08-01-preview";
+                }
+                else
+                {
+                    url = $"{_endpoint}/chat/completions";
+                }
+
+                var request = new HttpRequestMessage(HttpMethod.Post, url)
+                {
+                    Content = new StringContent(
+                        JsonSerializer.Serialize(requestBody),
+                        Encoding.UTF8,
+                        "application/json")
+                };
+
+                if (_useAzureOpenAI)
+                {
+                    request.Headers.Add("api-key", _apiKey);
+                }
+                else
+                {
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+                }
+
+                var response = await _httpClient.SendAsync(request);
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogError("OpenAI API error for image evaluation: {Status} - {Content}", response.StatusCode, responseContent);
+                    throw new Exception($"OpenAI API returned {response.StatusCode}");
+                }
+
+                var jsonResponse = JsonDocument.Parse(responseContent);
+                var content = jsonResponse.RootElement
+                    .GetProperty("choices")[0]
+                    .GetProperty("message")
+                    .GetProperty("content")
+                    .GetString();
+
+                return content ?? throw new Exception("Empty response from OpenAI");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error evaluating answer from image");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Evaluate subjective answer with custom system and user prompts
+        /// Returns JSON string with evaluation result
+        /// </summary>
+        public async Task<string> EvaluateSubjectiveAnswerAsync(string systemPrompt, string userPrompt)
+        {
+            try
+            {
+                _logger.LogInformation("Evaluating subjective answer with AI");
+
+                var requestBody = new
+                {
+                    messages = new[]
+                    {
+                        new { role = "system", content = systemPrompt },
+                        new { role = "user", content = userPrompt }
+                    },
+                    max_tokens = 2000,
+                    temperature = 0.3,
+                    response_format = new { type = "json_object" }
+                };
+
+                string url;
+                if (_useAzureOpenAI)
+                {
+                    url = $"{_endpoint}/openai/deployments/{_chatDeployment}/chat/completions?api-version=2024-08-01-preview";
+                }
+                else
+                {
+                    url = $"{_endpoint}/chat/completions";
+                }
+
+                var request = new HttpRequestMessage(HttpMethod.Post, url)
+                {
+                    Content = new StringContent(
+                        JsonSerializer.Serialize(requestBody),
+                        Encoding.UTF8,
+                        "application/json")
+                };
+
+                if (_useAzureOpenAI)
+                {
+                    request.Headers.Add("api-key", _apiKey);
+                }
+                else
+                {
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+                }
+
+                var response = await _httpClient.SendAsync(request);
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogError("OpenAI API error for subjective evaluation: {Status} - {Content}", 
+                        response.StatusCode, responseContent);
+                    throw new Exception($"OpenAI API returned {response.StatusCode}");
+                }
+
+                var jsonResponse = JsonDocument.Parse(responseContent);
+                var content = jsonResponse.RootElement
+                    .GetProperty("choices")[0]
+                    .GetProperty("message")
+                    .GetProperty("content")
+                    .GetString();
+
+                return content ?? throw new Exception("Empty response from OpenAI");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error evaluating subjective answer");
+                throw;
             }
         }
 
