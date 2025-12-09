@@ -4,6 +4,63 @@
 
 This guide provides a complete roadmap for building a mobile application (iOS & Android) that integrates with the School AI Chatbot backend API.
 
+**Last Updated**: December 8, 2025  
+**Backend API**: http://192.168.1.77:8080  
+**Swagger Docs**: http://localhost:8080/swagger
+
+## ✨ Latest Features (December 2025)
+
+- ✅ **AI-Powered Subjective Evaluation** - Upload answer sheets, get instant AI feedback
+- ✅ **Step-by-Step Scoring** - Detailed breakdown with marks per step
+- ✅ **Analytics Dashboard** - Track student performance and exam statistics
+- ✅ **Expected Answers** - Compare student responses with correct answers
+- ✅ **Improvement Suggestions** - AI-generated feedback for learning
+
+## 🚀 Quick Start
+
+### Prerequisites
+```bash
+node -v    # Should be v16 or higher
+npm -v     # Should be v8 or higher
+```
+
+### Create New Mobile App (React Native)
+```bash
+# Install React Native CLI
+npx react-native init SchoolAiMobile
+
+# Navigate to project
+cd SchoolAiMobile
+
+# Install dependencies
+npm install axios @react-native-async-storage/async-storage
+npm install @react-navigation/native @react-navigation/stack
+npm install react-native-image-picker
+npm install @reduxjs/toolkit react-redux
+
+# iOS specific
+cd ios && pod install && cd ..
+
+# Run the app
+npm run android  # For Android
+npm run ios      # For iOS
+```
+
+### Configure Backend URL
+Create `src/constants/config.js`:
+```javascript
+export const API_BASE_URL = 'http://192.168.1.77:8080'; // Your backend IP
+```
+
+### Test API Connection
+```javascript
+// Test if backend is accessible
+fetch(`${API_BASE_URL}/api/exam/list`)
+  .then(response => response.json())
+  .then(data => console.log('Connected:', data))
+  .catch(error => console.error('Connection failed:', error));
+```
+
 ## Technology Stack Options
 
 ### Option 1: React Native (Recommended)
@@ -152,9 +209,31 @@ export const examApi = {
     return response.data;
   },
 
-  // Submit written answer
-  submitWritten: async (submission) => {
-    const response = await apiClient.post('/api/exam/submit-written', submission);
+  // Upload written answer sheet (NEW - December 2025)
+  uploadWrittenAnswers: async (examId, studentId, files) => {
+    const formData = new FormData();
+    formData.append('examId', examId);
+    formData.append('studentId', studentId);
+    
+    files.forEach((file, index) => {
+      formData.append('files', {
+        uri: file.uri,
+        type: file.type || 'image/jpeg',
+        name: file.name || `answer_${index}.jpg`,
+      });
+    });
+
+    const response = await apiClient.post('/api/exam/upload-written', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // Get complete exam result with AI evaluation (NEW - December 2025)
+  getExamResult: async (examId, studentId) => {
+    const response = await apiClient.get(`/api/exam/result/${examId}/${studentId}`);
     return response.data;
   },
 
@@ -171,6 +250,21 @@ export const examApi = {
   getSubmissionDetails: async (examId, studentId) => {
     const response = await apiClient.get(
       `/api/exam/${examId}/submissions/${studentId}`
+    );
+    return response.data;
+  },
+
+  // Get exam summary statistics (NEW - December 2025)
+  getExamSummary: async (examId) => {
+    const response = await apiClient.get(`/api/exam/${examId}/summary`);
+    return response.data;
+  },
+
+  // List all submissions for an exam (NEW - December 2025)
+  getExamSubmissions: async (examId, page = 1, pageSize = 10) => {
+    const response = await apiClient.get(
+      `/api/exam/${examId}/submissions`,
+      { params: { page, pageSize } }
     );
     return response.data;
   },
@@ -525,6 +619,701 @@ const styles = StyleSheet.create({
 });
 
 export default ChatScreen;
+```
+
+### 4. Upload Subjective Answers Screen (NEW - December 2025)
+
+```javascript
+// src/screens/exam/UploadAnswerScreen.js
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { examApi } from '../../api/examApi';
+
+const UploadAnswerScreen = ({ route, navigation }) => {
+  const { examId, studentId } = route.params;
+  const [images, setImages] = useState([]);
+  const [uploading, setUploading] = useState(false);
+
+  const selectImage = () => {
+    Alert.alert(
+      'Select Answer Sheet',
+      'Choose how you want to upload your answers',
+      [
+        {
+          text: 'Take Photo',
+          onPress: () => openCamera(),
+        },
+        {
+          text: 'Choose from Gallery',
+          onPress: () => openGallery(),
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ]
+    );
+  };
+
+  const openCamera = () => {
+    launchCamera(
+      {
+        mediaType: 'photo',
+        quality: 0.8,
+        saveToPhotos: true,
+      },
+      (response) => {
+        if (response.didCancel) return;
+        if (response.errorCode) {
+          Alert.alert('Error', response.errorMessage);
+          return;
+        }
+        
+        if (response.assets && response.assets[0]) {
+          addImage(response.assets[0]);
+        }
+      }
+    );
+  };
+
+  const openGallery = () => {
+    launchImageLibrary(
+      {
+        mediaType: 'photo',
+        quality: 0.8,
+        selectionLimit: 10, // Allow multiple pages
+      },
+      (response) => {
+        if (response.didCancel) return;
+        if (response.errorCode) {
+          Alert.alert('Error', response.errorMessage);
+          return;
+        }
+        
+        if (response.assets) {
+          response.assets.forEach((asset) => addImage(asset));
+        }
+      }
+    );
+  };
+
+  const addImage = (asset) => {
+    const newImage = {
+      uri: asset.uri,
+      type: asset.type,
+      name: asset.fileName || `answer_${Date.now()}.jpg`,
+    };
+    setImages((prev) => [...prev, newImage]);
+  };
+
+  const removeImage = (index) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadAnswers = async () => {
+    if (images.length === 0) {
+      Alert.alert('Error', 'Please add at least one answer sheet image');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      
+      const result = await examApi.uploadWrittenAnswers(examId, studentId, images);
+      
+      Alert.alert(
+        'Success!',
+        'Your answers have been uploaded successfully. AI is now evaluating them. Results will be ready in a few moments.',
+        [
+          {
+            text: 'View Results',
+            onPress: () => {
+              navigation.navigate('ExamResult', {
+                examId,
+                studentId,
+                submissionId: result.writtenSubmissionId,
+              });
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      Alert.alert('Upload Failed', error.message || 'Please try again');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <ScrollView style={styles.container}>
+      <Text style={styles.title}>Upload Answer Sheet</Text>
+      <Text style={styles.subtitle}>
+        Take photos of your written answers or select from gallery
+      </Text>
+
+      <TouchableOpacity style={styles.selectButton} onPress={selectImage}>
+        <Text style={styles.selectButtonText}>+ Add Answer Sheet</Text>
+      </TouchableOpacity>
+
+      <View style={styles.imagesContainer}>
+        {images.map((image, index) => (
+          <View key={index} style={styles.imageWrapper}>
+            <Image source={{ uri: image.uri }} style={styles.image} />
+            <TouchableOpacity
+              style={styles.removeButton}
+              onPress={() => removeImage(index)}
+            >
+              <Text style={styles.removeButtonText}>×</Text>
+            </TouchableOpacity>
+            <Text style={styles.pageNumber}>Page {index + 1}</Text>
+          </View>
+        ))}
+      </View>
+
+      {images.length > 0 && (
+        <View style={styles.uploadSection}>
+          <Text style={styles.infoText}>
+            {images.length} page{images.length > 1 ? 's' : ''} ready to upload
+          </Text>
+          <TouchableOpacity
+            style={[styles.uploadButton, uploading && styles.uploadButtonDisabled]}
+            onPress={uploadAnswers}
+            disabled={uploading}
+          >
+            {uploading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.uploadButtonText}>Upload & Get AI Evaluation</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: '#f5f5f5',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 24,
+  },
+  selectButton: {
+    backgroundColor: '#2196f3',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  selectButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  imagesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  imageWrapper: {
+    position: 'relative',
+    width: '48%',
+    aspectRatio: 3 / 4,
+    marginBottom: 12,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+    backgroundColor: '#ddd',
+  },
+  removeButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(255, 0, 0, 0.8)',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeButtonText: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  pageNumber: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    color: '#fff',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    fontSize: 12,
+  },
+  uploadSection: {
+    marginTop: 24,
+    marginBottom: 32,
+  },
+  infoText: {
+    textAlign: 'center',
+    marginBottom: 12,
+    color: '#666',
+  },
+  uploadButton: {
+    backgroundColor: '#4caf50',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  uploadButtonDisabled: {
+    backgroundColor: '#9e9e9e',
+  },
+  uploadButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});
+
+export default UploadAnswerScreen;
+```
+
+### 5. Exam Results Screen with AI Feedback (NEW - December 2025)
+
+```javascript
+// src/screens/exam/ExamResultScreen.js
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native';
+import { examApi } from '../../api/examApi';
+
+const ExamResultScreen = ({ route }) => {
+  const { examId, studentId } = route.params;
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    loadResult();
+  }, []);
+
+  const loadResult = async () => {
+    try {
+      setLoading(true);
+      const data = await examApi.getExamResult(examId, studentId);
+      setResult(data);
+    } catch (error) {
+      console.error('Failed to load results:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadResult();
+  };
+
+  const getGradeColor = (grade) => {
+    if (grade === 'A+' || grade === 'A') return '#4caf50';
+    if (grade === 'B+' || grade === 'B') return '#8bc34a';
+    if (grade === 'C') return '#ffc107';
+    return '#f44336';
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#2196f3" />
+        <Text style={styles.loadingText}>Loading results...</Text>
+      </View>
+    );
+  }
+
+  if (!result) {
+    return (
+      <View style={styles.centered}>
+        <Text>No results found</Text>
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.examTitle}>{result.examTitle}</Text>
+        <View style={[styles.gradeCard, { backgroundColor: getGradeColor(result.grade) }]}>
+          <Text style={styles.gradeText}>{result.grade}</Text>
+          <Text style={styles.percentageText}>{result.percentage.toFixed(1)}%</Text>
+        </View>
+      </View>
+
+      {/* Score Summary */}
+      <View style={styles.summaryCard}>
+        <Text style={styles.sectionTitle}>Score Summary</Text>
+        <View style={styles.scoreRow}>
+          <Text style={styles.scoreLabel}>Total Score:</Text>
+          <Text style={styles.scoreValue}>
+            {result.grandScore} / {result.grandTotalMarks}
+          </Text>
+        </View>
+        <View style={styles.scoreRow}>
+          <Text style={styles.scoreLabel}>Status:</Text>
+          <Text style={[styles.statusText, result.passed ? styles.passed : styles.failed]}>
+            {result.passed ? 'PASSED ✓' : 'FAILED ✗'}
+          </Text>
+        </View>
+      </View>
+
+      {/* MCQ Results */}
+      {result.mcqResults && result.mcqResults.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>MCQ Results</Text>
+          <View style={styles.scoreRow}>
+            <Text>MCQ Score:</Text>
+            <Text style={styles.bold}>
+              {result.mcqScore} / {result.mcqTotalMarks}
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {/* Subjective Results with AI Feedback */}
+      {result.subjectiveResults && result.subjectiveResults.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            Subjective Answers - AI Evaluation
+          </Text>
+
+          {result.subjectiveResults.map((question, index) => (
+            <View key={index} style={styles.questionCard}>
+              {/* Question Header */}
+              <View style={styles.questionHeader}>
+                <Text style={styles.questionNumber}>Question {question.questionNumber}</Text>
+                <Text style={[
+                  styles.questionScore,
+                  question.isFullyCorrect ? styles.correctScore : styles.partialScore
+                ]}>
+                  {question.earnedMarks} / {question.maxMarks}
+                </Text>
+              </View>
+
+              <Text style={styles.questionText}>{question.questionText}</Text>
+
+              {/* Student's Answer */}
+              <View style={styles.answerSection}>
+                <Text style={styles.answerLabel}>Your Answer:</Text>
+                <View style={styles.answerBox}>
+                  <Text style={styles.answerText}>{question.studentAnswerEcho}</Text>
+                </View>
+              </View>
+
+              {/* Expected Answer */}
+              <View style={styles.answerSection}>
+                <Text style={styles.answerLabel}>Expected Answer:</Text>
+                <View style={[styles.answerBox, styles.expectedAnswerBox]}>
+                  <Text style={styles.answerText}>{question.expectedAnswer}</Text>
+                </View>
+              </View>
+
+              {/* Step-by-Step Analysis */}
+              {question.stepAnalysis && question.stepAnalysis.length > 0 && (
+                <View style={styles.stepsSection}>
+                  <Text style={styles.stepsTitle}>Step-by-Step Analysis:</Text>
+                  {question.stepAnalysis.map((step, stepIndex) => (
+                    <View
+                      key={stepIndex}
+                      style={[
+                        styles.stepCard,
+                        step.isCorrect ? styles.correctStep : styles.incorrectStep,
+                      ]}
+                    >
+                      <View style={styles.stepHeader}>
+                        <Text style={styles.stepNumber}>Step {step.step}</Text>
+                        <Text style={styles.stepScore}>
+                          {step.marksAwarded} / {step.maxMarksForStep}
+                        </Text>
+                      </View>
+                      <Text style={styles.stepDescription}>{step.description}</Text>
+                      <View style={styles.stepStatus}>
+                        <Text style={step.isCorrect ? styles.correctText : styles.incorrectText}>
+                          {step.isCorrect ? '✓ Correct' : '✗ Needs Improvement'}
+                        </Text>
+                      </View>
+                      <Text style={styles.stepFeedback}>{step.feedback}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {/* Overall Feedback */}
+              <View style={styles.feedbackSection}>
+                <Text style={styles.feedbackLabel}>Overall Feedback:</Text>
+                <Text style={styles.feedbackText}>{question.overallFeedback}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    color: '#666',
+  },
+  header: {
+    backgroundColor: '#2196f3',
+    padding: 20,
+    alignItems: 'center',
+  },
+  examTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  gradeCard: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  gradeText: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  percentageText: {
+    fontSize: 16,
+    color: '#fff',
+    marginTop: 4,
+  },
+  summaryCard: {
+    backgroundColor: '#fff',
+    padding: 16,
+    margin: 16,
+    borderRadius: 8,
+    elevation: 2,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  scoreRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  scoreLabel: {
+    fontSize: 16,
+  },
+  scoreValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  statusText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  passed: {
+    color: '#4caf50',
+  },
+  failed: {
+    color: '#f44336',
+  },
+  section: {
+    backgroundColor: '#fff',
+    padding: 16,
+    margin: 16,
+    marginTop: 0,
+    borderRadius: 8,
+    elevation: 2,
+  },
+  bold: {
+    fontWeight: 'bold',
+  },
+  questionCard: {
+    backgroundColor: '#f9f9f9',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  questionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  questionNumber: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2196f3',
+  },
+  questionScore: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  correctScore: {
+    color: '#4caf50',
+  },
+  partialScore: {
+    color: '#ff9800',
+  },
+  questionText: {
+    fontSize: 15,
+    marginBottom: 12,
+    lineHeight: 22,
+  },
+  answerSection: {
+    marginTop: 12,
+  },
+  answerLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 6,
+  },
+  answerBox: {
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 6,
+    borderLeftWidth: 3,
+    borderLeftColor: '#2196f3',
+  },
+  expectedAnswerBox: {
+    borderLeftColor: '#4caf50',
+  },
+  answerText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  stepsSection: {
+    marginTop: 16,
+  },
+  stepsTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  stepCard: {
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 6,
+    marginBottom: 8,
+    borderLeftWidth: 3,
+  },
+  correctStep: {
+    borderLeftColor: '#4caf50',
+  },
+  incorrectStep: {
+    borderLeftColor: '#f44336',
+  },
+  stepHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  stepNumber: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  stepScore: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  stepDescription: {
+    fontSize: 14,
+    marginBottom: 6,
+  },
+  stepStatus: {
+    marginBottom: 6,
+  },
+  correctText: {
+    color: '#4caf50',
+    fontWeight: '600',
+  },
+  incorrectText: {
+    color: '#f44336',
+    fontWeight: '600',
+  },
+  stepFeedback: {
+    fontSize: 13,
+    color: '#666',
+    fontStyle: 'italic',
+  },
+  feedbackSection: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: '#e3f2fd',
+    borderRadius: 6,
+  },
+  feedbackLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1976d2',
+    marginBottom: 6,
+  },
+  feedbackText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#333',
+  },
+});
+
+export default ExamResultScreen;
 ```
 
 ## State Management (Redux Toolkit)
