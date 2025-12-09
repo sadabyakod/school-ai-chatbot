@@ -17,6 +17,8 @@ namespace SchoolAiChatbotBackend.Services
         private static readonly ConcurrentDictionary<string, McqSubmission> _mcqSubmissions = new();
         private static readonly ConcurrentDictionary<string, WrittenSubmission> _writtenSubmissions = new();
         private static readonly ConcurrentDictionary<string, List<SubjectiveEvaluationResult>> _subjectiveEvaluations = new();
+        private static readonly ConcurrentDictionary<string, McqExtraction> _mcqExtractions = new();
+        private static readonly ConcurrentDictionary<string, McqEvaluationFromSheet> _mcqEvaluationsFromSheets = new();
         private readonly ILogger<InMemoryExamRepository> _logger;
 
         public InMemoryExamRepository(ILogger<InMemoryExamRepository> logger)
@@ -129,6 +131,49 @@ namespace SchoolAiChatbotBackend.Services
         {
             _subjectiveEvaluations.TryGetValue(writtenSubmissionId, out var evaluations);
             return Task.FromResult(evaluations ?? new List<SubjectiveEvaluationResult>());
+        }
+
+        // MCQ Extraction from Answer Sheets
+        public Task<string> SaveMcqExtractionAsync(McqExtraction extraction)
+        {
+            _mcqExtractions[extraction.WrittenSubmissionId] = extraction;
+            
+            _logger.LogInformation(
+                "Saved MCQ extraction {ExtractionId} for written submission {SubmissionId} with {Count} answers",
+                extraction.McqExtractionId,
+                extraction.WrittenSubmissionId,
+                extraction.ExtractedAnswers.Count);
+
+            return Task.FromResult(extraction.McqExtractionId);
+        }
+
+        public Task<McqExtraction?> GetMcqExtractionAsync(string writtenSubmissionId)
+        {
+            _mcqExtractions.TryGetValue(writtenSubmissionId, out var extraction);
+            return Task.FromResult(extraction);
+        }
+
+        public Task<string> SaveMcqEvaluationFromSheetAsync(McqEvaluationFromSheet evaluation)
+        {
+            var key = $"{evaluation.ExamId}_{evaluation.StudentId}";
+            _mcqEvaluationsFromSheets[key] = evaluation;
+            
+            _logger.LogInformation(
+                "Saved MCQ evaluation from sheet {EvaluationId} for exam {ExamId}, student {StudentId}: Score {Score}/{Total}",
+                evaluation.McqEvaluationId,
+                evaluation.ExamId,
+                evaluation.StudentId,
+                evaluation.TotalScore,
+                evaluation.TotalMarks);
+
+            return Task.FromResult(evaluation.McqEvaluationId);
+        }
+
+        public Task<McqEvaluationFromSheet?> GetMcqEvaluationFromSheetAsync(string examId, string studentId)
+        {
+            var key = $"{examId}_{studentId}";
+            _mcqEvaluationsFromSheets.TryGetValue(key, out var evaluation);
+            return Task.FromResult(evaluation);
         }
 
         // Analytics & Reporting Methods

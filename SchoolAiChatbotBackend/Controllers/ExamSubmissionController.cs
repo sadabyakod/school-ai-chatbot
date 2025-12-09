@@ -22,6 +22,8 @@ namespace SchoolAiChatbotBackend.Controllers
         private readonly IMathOcrNormalizer _mathNormalizer;
         private readonly ISubjectiveRubricService _rubricService;
         private readonly IExamStorageService _examStorageService;
+        private readonly IMcqExtractionService _mcqExtractionService;
+        private readonly IMcqEvaluationService _mcqEvaluationService;
         private readonly ILogger<ExamSubmissionController> _logger;
 
         public ExamSubmissionController(
@@ -32,6 +34,8 @@ namespace SchoolAiChatbotBackend.Controllers
             IMathOcrNormalizer mathNormalizer,
             ISubjectiveRubricService rubricService,
             IExamStorageService examStorageService,
+            IMcqExtractionService mcqExtractionService,
+            IMcqEvaluationService mcqEvaluationService,
             ILogger<ExamSubmissionController> logger)
         {
             _examRepository = examRepository;
@@ -41,6 +45,8 @@ namespace SchoolAiChatbotBackend.Controllers
             _mathNormalizer = mathNormalizer;
             _rubricService = rubricService;
             _examStorageService = examStorageService;
+            _mcqExtractionService = mcqExtractionService;
+            _mcqEvaluationService = mcqEvaluationService;
             _logger = logger;
         }
 
@@ -257,8 +263,11 @@ namespace SchoolAiChatbotBackend.Controllers
                     return NotFound(new { error = $"Exam {examId} not found. Please generate the exam first using /api/exam/generate" });
                 }
 
-                // Load MCQ submission
+                // Load MCQ submission (from direct MCQ submission)
                 var mcqSubmission = await _examRepository.GetMcqSubmissionAsync(examId, studentId);
+
+                // Load MCQ evaluation from sheet (from uploaded answer sheet)
+                var mcqEvaluationFromSheet = await _examRepository.GetMcqEvaluationFromSheetAsync(examId, studentId);
 
                 // Load written submission and evaluations
                 var writtenSubmission = await _examRepository.GetWrittenSubmissionByExamAndStudentAsync(examId, studentId);
@@ -271,14 +280,54 @@ namespace SchoolAiChatbotBackend.Controllers
                 }
 
                 // Check if any submission exists
-                if (mcqSubmission == null && writtenSubmission == null)
+                if (mcqSubmission == null && mcqEvaluationFromSheet == null && writtenSubmission == null)
                 {
                     return NotFound(new { error = "No submission found for this exam and student" });
                 }
 
                 // Calculate MCQ scores
-                int mcqScore = mcqSubmission?.Score ?? 0;
-                int mcqTotalMarks = mcqSubmission?.TotalMarks ?? 0;
+                // Prioritize MCQ from sheet extraction if available, otherwise use direct submission
+                int mcqScore = 0;
+                int mcqTotalMarks = 0;
+                List<McqResultDto> mcqResults = new();
+
+                if (mcqEvaluationFromSheet != null)
+                {
+                    // Use MCQ answers extracted from uploaded answer sheet
+                    mcqScore = mcqEvaluationFromSheet.TotalScore;
+                    mcqTotalMarks = mcqEvaluationFromSheet.TotalMarks;
+                    mcqResults = mcqEvaluationFromSheet.Evaluations.Select(e => new McqResultDto
+                    {
+                        QuestionId = e.QuestionId,
+                        SelectedOption = e.StudentAnswer,
+                        CorrectAnswer = e.CorrectAnswer,
+                        IsCorrect = e.IsCorrect,
+                        MarksAwarded = e.MarksAwarded
+                    }).ToList();
+
+                    _logger.LogInformation(
+                        "Using MCQ results from sheet extraction: {Score}/{Total}",
+                        mcqScore,
+                        mcqTotalMarks);
+                }
+                else if (mcqSubmission != null)
+                {
+                    // Use MCQ answers from direct submission
+                    mcqScore = mcqSubmission.Score;
+                    mcqTotalMarks = mcqSubmission.TotalMarks;
+                    mcqResults = mcqSubmission.Answers.Select(a => new McqResultDto
+                    {
+                        QuestionId = a.QuestionId,
+                        SelectedOption = a.SelectedOption,
+                        IsCorrect = a.IsCorrect,
+                        MarksAwarded = a.MarksAwarded
+                    }).ToList();
+
+                    _logger.LogInformation(
+                        "Using MCQ results from direct submission: {Score}/{Total}",
+                        mcqScore,
+                        mcqTotalMarks);
+                }
 
                 // Calculate subjective scores
                 double subjectiveScore = subjectiveEvaluations.Sum(e => e.EarnedMarks);
@@ -301,13 +350,7 @@ namespace SchoolAiChatbotBackend.Controllers
                     ExamTitle = $"{exam.Subject} - {exam.Chapter}",
                     McqScore = mcqScore,
                     McqTotalMarks = mcqTotalMarks,
-                    McqResults = mcqSubmission?.Answers.Select(a => new McqResultDto
-                    {
-                        QuestionId = a.QuestionId,
-                        SelectedOption = a.SelectedOption,
-                        IsCorrect = a.IsCorrect,
-                        MarksAwarded = a.MarksAwarded
-                    }).ToList() ?? new List<McqResultDto>(),
+                    McqResults = mcqResults,
                     SubjectiveScore = subjectiveScore,
                     SubjectiveTotalMarks = subjectiveTotalMarks,
                     SubjectiveResults = subjectiveEvaluations.Select(e => new SubjectiveResultDto
@@ -436,15 +479,6 @@ namespace SchoolAiChatbotBackend.Controllers
                     writtenSubmissionId,
                     SubmissionStatus.OcrProcessing);
 
-                // Extract text using OCR
-                var ocrText = await _ocrService.ExtractStudentAnswersTextAsync(submission);
-                await _examRepository.UpdateWrittenSubmissionOcrTextAsync(writtenSubmissionId, ocrText);
-
-                // Update status to evaluating
-                await _examRepository.UpdateWrittenSubmissionStatusAsync(
-                    writtenSubmissionId,
-                    SubmissionStatus.Evaluating);
-
                 // Load exam from storage service
                 var exam = _examStorageService.GetExam(submission.ExamId);
                 if (exam == null)
@@ -456,7 +490,49 @@ namespace SchoolAiChatbotBackend.Controllers
                     return;
                 }
 
-                // Evaluate subjective answers
+                // STEP 1: Extract MCQ answers from uploaded images
+                _logger.LogInformation("Extracting MCQ answers from submission {SubmissionId}", writtenSubmissionId);
+                var mcqExtraction = await _mcqExtractionService.ExtractMcqAnswersAsync(submission);
+                await _examRepository.SaveMcqExtractionAsync(mcqExtraction);
+
+                // STEP 2: Evaluate extracted MCQ answers
+                if (mcqExtraction.Status == ExtractionStatus.Completed && mcqExtraction.ExtractedAnswers.Count > 0)
+                {
+                    _logger.LogInformation(
+                        "Evaluating {Count} extracted MCQ answers for submission {SubmissionId}",
+                        mcqExtraction.ExtractedAnswers.Count,
+                        writtenSubmissionId);
+
+                    var mcqEvaluation = await _mcqEvaluationService.EvaluateExtractedAnswersAsync(mcqExtraction, exam);
+                    await _examRepository.SaveMcqEvaluationFromSheetAsync(mcqEvaluation);
+
+                    _logger.LogInformation(
+                        "MCQ evaluation completed: Score {Score}/{Total}",
+                        mcqEvaluation.TotalScore,
+                        mcqEvaluation.TotalMarks);
+                }
+                else
+                {
+                    _logger.LogWarning(
+                        "No MCQ answers extracted from submission {SubmissionId}, status: {Status}",
+                        writtenSubmissionId,
+                        mcqExtraction.Status);
+                }
+
+                // STEP 3: Extract text using OCR (for subjective answers)
+                var ocrText = mcqExtraction.RawOcrText ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(ocrText))
+                {
+                    ocrText = await _ocrService.ExtractStudentAnswersTextAsync(submission);
+                }
+                await _examRepository.UpdateWrittenSubmissionOcrTextAsync(writtenSubmissionId, ocrText);
+
+                // Update status to evaluating (subjective questions)
+                await _examRepository.UpdateWrittenSubmissionStatusAsync(
+                    writtenSubmissionId,
+                    SubmissionStatus.Evaluating);
+
+                // STEP 4: Evaluate subjective answers
                 var evaluations = await _subjectiveEvaluator.EvaluateSubjectiveAnswersAsync(exam, ocrText);
 
                 // Save evaluations
@@ -468,7 +544,7 @@ namespace SchoolAiChatbotBackend.Controllers
                     SubmissionStatus.Completed);
 
                 _logger.LogInformation(
-                    "Written submission {SubmissionId} processed successfully with {Count} evaluations",
+                    "Written submission {SubmissionId} processed successfully with {Count} subjective evaluations",
                     writtenSubmissionId,
                     evaluations.Count);
             }

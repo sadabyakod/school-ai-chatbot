@@ -183,6 +183,8 @@ builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
 builder.Services.AddScoped<IMathOcrNormalizer, MathOcrNormalizer>();
 builder.Services.AddScoped<IOcrService, OcrService>();
 builder.Services.AddScoped<ISubjectiveEvaluator, SubjectiveEvaluator>();
+builder.Services.AddScoped<IMcqExtractionService, McqExtractionService>();
+builder.Services.AddScoped<IMcqEvaluationService, McqEvaluationService>();
 
 // Register Exam Storage service (Database-backed - persists exams to Azure SQL)
 builder.Services.AddSingleton<IExamStorageService, DatabaseExamStorageService>();

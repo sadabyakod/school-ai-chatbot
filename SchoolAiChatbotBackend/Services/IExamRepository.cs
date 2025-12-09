@@ -24,6 +24,12 @@ namespace SchoolAiChatbotBackend.Services
         Task SaveSubjectiveEvaluationsAsync(string writtenSubmissionId, List<SubjectiveEvaluationResult> evaluations);
         Task<List<SubjectiveEvaluationResult>> GetSubjectiveEvaluationsAsync(string writtenSubmissionId);
 
+        // MCQ Extraction from Answer Sheets
+        Task<string> SaveMcqExtractionAsync(McqExtraction extraction);
+        Task<McqExtraction?> GetMcqExtractionAsync(string writtenSubmissionId);
+        Task<string> SaveMcqEvaluationFromSheetAsync(McqEvaluationFromSheet evaluation);
+        Task<McqEvaluationFromSheet?> GetMcqEvaluationFromSheetAsync(string examId, string studentId);
+
         // Analytics & Reporting
         Task<List<McqSubmission>> GetAllMcqSubmissionsByExamAsync(string examId);
         Task<List<WrittenSubmission>> GetAllWrittenSubmissionsByExamAsync(string examId);
