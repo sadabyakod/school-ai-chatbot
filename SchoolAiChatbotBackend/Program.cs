@@ -161,8 +161,14 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// Register HttpClient for OpenAIService
-builder.Services.AddHttpClient<IOpenAIService, OpenAIService>();
+// Register HttpClient for OpenAIService with extended timeout for exam generation
+builder.Services.AddHttpClient<IOpenAIService, OpenAIService>()
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler())
+    .ConfigureHttpClient(client =>
+    {
+        // Set timeout to 5 minutes for complex exam generation (Full PUC papers)
+        client.Timeout = TimeSpan.FromMinutes(5);
+    });
 
 // Register core services
 builder.Services.AddScoped<SchoolAiChatbotBackend.Services.JwtService>();
