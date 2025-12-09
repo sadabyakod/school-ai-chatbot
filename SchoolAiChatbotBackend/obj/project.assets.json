@@ -5080,19 +5080,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\aravi\\.nuget\\packages\\": {}
+    "C:\\Users\\HP\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\school-ai-chatbot\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj",
+      "projectUniqueName": "C:\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj",
       "projectName": "SchoolAiChatbotBackend",
-      "projectPath": "C:\\school-ai-chatbot\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj",
-      "packagesPath": "C:\\Users\\aravi\\.nuget\\packages\\",
-      "outputPath": "C:\\school-ai-chatbot\\school-ai-chatbot\\SchoolAiChatbotBackend\\obj\\",
+      "projectPath": "C:\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj",
+      "packagesPath": "C:\\Users\\HP\\.nuget\\packages\\",
+      "outputPath": "C:\\school-ai-chatbot\\SchoolAiChatbotBackend\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\aravi\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\HP\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
