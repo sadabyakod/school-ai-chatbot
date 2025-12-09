@@ -26,36 +26,52 @@ namespace SchoolAiChatbotBackend.Services
             "- The model correct answer or solution idea\n" +
             "- The maximum marks (maxMarks)\n" +
             "- The student's answer (may contain OCR/spelling issues)\n\n" +
-            "You MUST:\n" +
-            "1) Break the student's work into 2–5 logical steps and judge each.\n" +
-            "2) Award marks for correct steps, even if final answer is wrong.\n" +
-            "3) Provide a full expected correct answer.\n" +
-            "4) Provide clear feedback for each step and overall.\n\n" +
+            "EVALUATION REQUIREMENTS:\n" +
+            "1) STUDENT'S ANSWER ANALYSIS:\n" +
+            "   - Echo back the student's answer in studentAnswerEcho (cleaned up for clarity)\n" +
+            "   - Identify what the student attempted to do\n" +
+            "   - Break their work into 2-5 logical steps\n\n" +
+            "2) EXPECTED ANSWER:\n" +
+            "   - Provide a COMPLETE, DETAILED expected answer with ALL steps shown\n" +
+            "   - Include formulas, calculations, and explanations\n" +
+            "   - Show the complete working, not just the final answer\n" +
+            "   - Format it clearly with proper mathematical notation\n\n" +
+            "3) STEP-BY-STEP COMPARISON:\n" +
+            "   - For each step, compare what student wrote vs what was expected\n" +
+            "   - Award marks for correct steps, even if final answer is wrong\n" +
+            "   - Provide specific feedback mentioning both student's work and expected approach\n\n" +
+            "4) OVERALL FEEDBACK:\n" +
+            "   - Summarize: 'Student wrote: [brief summary]'\n" +
+            "   - Then: 'Expected answer: [complete solution with all steps]'\n" +
+            "   - Highlight key differences and missing elements\n" +
+            "   - Provide constructive guidance\n\n" +
             "Output JSON only with this schema:\n" +
             "{\n" +
             "  \"earnedMarks\": number,\n" +
             "  \"maxMarks\": number,\n" +
             "  \"isFullyCorrect\": boolean,\n" +
-            "  \"expectedAnswer\": \"string\",\n" +
-            "  \"studentAnswerEcho\": \"string\",\n" +
+            "  \"expectedAnswer\": \"string (MUST be detailed with all steps)\",\n" +
+            "  \"studentAnswerEcho\": \"string (cleaned version of what student wrote)\",\n" +
             "  \"stepAnalysis\": [\n" +
             "    {\n" +
             "      \"step\": number,\n" +
-            "      \"description\": \"string\",\n" +
+            "      \"description\": \"string (what this step should accomplish)\",\n" +
             "      \"isCorrect\": boolean,\n" +
             "      \"marksAwarded\": number,\n" +
             "      \"maxMarksForStep\": number,\n" +
-            "      \"feedback\": \"string\"\n" +
+            "      \"feedback\": \"string (compare student's work vs expected for this step)\"\n" +
             "    }\n" +
             "  ],\n" +
-            "  \"overallFeedback\": \"string\"\n" +
+            "  \"overallFeedback\": \"string (MUST include: Student wrote [X], Expected [Y with full steps], Key differences)\"\n" +
             "}\n" +
             "Rules:\n" +
-            "- earnedMarks MUST be between 0 and maxMarks.\n" +
-            "- Sum of marksAwarded in stepAnalysis MUST equal earnedMarks.\n" +
-            "- expectedAnswer MUST always contain the full correct final answer.\n" +
-            "- overallFeedback MUST clearly mention the expected final answer if the student's answer is not fully correct.\n" +
-            "- Return ONLY JSON, no extra text.";
+            "- earnedMarks MUST be between 0 and maxMarks\n" +
+            "- Sum of marksAwarded MUST equal earnedMarks\n" +
+            "- expectedAnswer MUST contain COMPLETE solution with ALL steps, not just final answer\n" +
+            "- studentAnswerEcho MUST contain what student actually wrote (cleaned up)\n" +
+            "- Each step feedback MUST compare student vs expected\n" +
+            "- overallFeedback MUST start with 'Student wrote:' and include 'Expected:'\n" +
+            "- Return ONLY JSON, no extra text";
 
         // System prompt for subjective evaluation WITH stored rubric
         private const string RUBRIC_EVALUATION_SYSTEM_PROMPT = 
@@ -66,36 +82,51 @@ namespace SchoolAiChatbotBackend.Services
             "- The marking rubric with steps and marks for each step\n" +
             "- The model correct answer\n" +
             "- The student's answer (may contain OCR/spelling issues)\n\n" +
-            "You MUST:\n" +
-            "1) Evaluate each rubric step IN ORDER and award marks based on rubric.\n" +
-            "2) Award partial marks for partially correct steps.\n" +
-            "3) Provide clear feedback for each step.\n" +
-            "4) Be fair and consistent with the rubric.\n\n" +
+            "EVALUATION REQUIREMENTS:\n" +
+            "1) STUDENT'S ANSWER:\n" +
+            "   - Echo back what student wrote in studentAnswerEcho (cleaned up)\n" +
+            "   - Identify what approach they took\n\n" +
+            "2) EXPECTED ANSWER:\n" +
+            "   - Provide COMPLETE solution with ALL steps detailed\n" +
+            "   - Include all formulas, calculations, and explanations\n" +
+            "   - Show complete working, not just final answer\n\n" +
+            "3) RUBRIC-BASED STEP EVALUATION:\n" +
+            "   - Evaluate each rubric step IN ORDER\n" +
+            "   - For each step feedback, mention: 'Student: [what they did], Expected: [what was needed]'\n" +
+            "   - Award partial marks for partially correct steps\n\n" +
+            "4) OVERALL FEEDBACK FORMAT:\n" +
+            "   - Start with: 'Student's approach: [brief description]'\n" +
+            "   - Then: 'Complete expected solution:\\n[full step-by-step solution]'\n" +
+            "   - Then: 'Key gaps: [what was missing]'\n" +
+            "   - End with constructive guidance\n\n" +
             "Output JSON only with this schema:\n" +
             "{\n" +
             "  \"earnedMarks\": number,\n" +
             "  \"maxMarks\": number,\n" +
             "  \"isFullyCorrect\": boolean,\n" +
-            "  \"expectedAnswer\": \"string\",\n" +
-            "  \"studentAnswerEcho\": \"string\",\n" +
+            "  \"expectedAnswer\": \"string (MUST be complete solution with all steps)\",\n" +
+            "  \"studentAnswerEcho\": \"string (what student actually wrote, cleaned)\",\n" +
             "  \"stepAnalysis\": [\n" +
             "    {\n" +
             "      \"step\": number,\n" +
-            "      \"description\": \"string\",\n" +
+            "      \"description\": \"string (from rubric)\",\n" +
             "      \"isCorrect\": boolean,\n" +
             "      \"marksAwarded\": number,\n" +
             "      \"maxMarksForStep\": number,\n" +
-            "      \"feedback\": \"string\"\n" +
+            "      \"feedback\": \"string (Student: [X], Expected: [Y])\"\n" +
             "    }\n" +
             "  ],\n" +
-            "  \"overallFeedback\": \"string\"\n" +
+            "  \"overallFeedback\": \"string (MUST include student's approach and complete expected solution)\"\n" +
             "}\n" +
             "Rules:\n" +
-            "- earnedMarks MUST be between 0 and maxMarks.\n" +
-            "- stepAnalysis MUST follow the rubric steps exactly.\n" +
-            "- For each step, marksAwarded must not exceed maxMarksForStep from rubric.\n" +
-            "- Sum of marksAwarded in stepAnalysis MUST equal earnedMarks.\n" +
-            "- Return ONLY JSON, no extra text.";
+            "- earnedMarks MUST be between 0 and maxMarks\n" +
+            "- stepAnalysis MUST follow rubric steps exactly\n" +
+            "- marksAwarded must not exceed maxMarksForStep from rubric\n" +
+            "- Sum of marksAwarded MUST equal earnedMarks\n" +
+            "- expectedAnswer MUST contain COMPLETE solution with ALL steps\n" +
+            "- Each feedback MUST compare 'Student: [X], Expected: [Y]'\n" +
+            "- overallFeedback MUST include both student's work and complete expected solution\n" +
+            "- Return ONLY JSON, no extra text";
 
         public SubjectiveEvaluator(
             IOpenAIService openAIService,
