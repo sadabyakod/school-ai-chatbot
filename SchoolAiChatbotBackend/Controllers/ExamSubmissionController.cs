@@ -313,14 +313,22 @@ namespace SchoolAiChatbotBackend.Controllers
                 else if (mcqSubmission != null)
                 {
                     // Use MCQ answers from direct submission
+                    // Get MCQ questions with correct answers
+                    var mcqQuestions = GetMcqQuestions(exam);
+                    
                     mcqScore = mcqSubmission.Score;
                     mcqTotalMarks = mcqSubmission.TotalMarks;
-                    mcqResults = mcqSubmission.Answers.Select(a => new McqResultDto
+                    mcqResults = mcqSubmission.Answers.Select(a =>
                     {
-                        QuestionId = a.QuestionId,
-                        SelectedOption = a.SelectedOption,
-                        IsCorrect = a.IsCorrect,
-                        MarksAwarded = a.MarksAwarded
+                        var question = mcqQuestions.FirstOrDefault(q => q.QuestionId == a.QuestionId);
+                        return new McqResultDto
+                        {
+                            QuestionId = a.QuestionId,
+                            SelectedOption = a.SelectedOption,
+                            CorrectAnswer = question?.CorrectAnswer ?? "",
+                            IsCorrect = a.IsCorrect,
+                            MarksAwarded = a.MarksAwarded
+                        };
                     }).ToList();
 
                     _logger.LogInformation(
