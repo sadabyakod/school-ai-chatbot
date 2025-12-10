@@ -185,7 +185,45 @@ builder.Services.AddScoped<SchoolAiChatbotBackend.Features.Exams.IExamService, S
 
 // Register Exam Submission services (New)
 builder.Services.AddScoped<IExamRepository, InMemoryExamRepository>();
-builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
+
+// Configure File Storage based on appsettings
+var fileStorageProvider = builder.Configuration["FileStorage:Provider"] ?? "Local";
+if (fileStorageProvider.Equals("AzureBlob", StringComparison.OrdinalIgnoreCase))
+{
+    var blobConnectionString = builder.Configuration["BlobStorage:ConnectionString"] 
+        ?? throw new InvalidOperationException("BlobStorage:ConnectionString not configured");
+    var containerName = builder.Configuration["BlobStorage:ContainerName"] 
+        ?? throw new InvalidOperationException("BlobStorage:ContainerName not configured");
+    
+    var storageOptions = new SchoolAiChatbotBackend.Services.FileStorageOptions
+    {
+        DeleteAfterProcessing = bool.Parse(builder.Configuration["FileStorage:DeleteAfterProcessing"] ?? "false"),
+        OnDemandStorage = bool.Parse(builder.Configuration["FileStorage:OnDemandStorage"] ?? "false"),
+        RetentionDays = int.Parse(builder.Configuration["FileStorage:RetentionDays"] ?? "90"),
+        ArchiveAfterRetention = bool.Parse(builder.Configuration["FileStorage:ArchiveAfterRetention"] ?? "false")
+    };
+
+    builder.Services.AddScoped<IFileStorageService>(sp =>
+        new SchoolAiChatbotBackend.Services.AzureBlobStorageService(
+            blobConnectionString,
+            containerName,
+            storageOptions,
+            sp.GetRequiredService<ILogger<SchoolAiChatbotBackend.Services.AzureBlobStorageService>>()));
+    
+    // Log configuration (after app is built)
+    Console.WriteLine($"[INFO] Using Azure Blob Storage - DeleteAfterProcessing: {storageOptions.DeleteAfterProcessing}, OnDemandStorage: {storageOptions.OnDemandStorage}, RetentionDays: {storageOptions.RetentionDays}");
+    
+    // Register background service for periodic file cleanup
+    if (storageOptions.RetentionDays > 0)
+    {
+        builder.Services.AddHostedService<SchoolAiChatbotBackend.Services.FileCleanupBackgroundService>();
+    }
+}
+else
+{
+    builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
+}
+
 builder.Services.AddScoped<IMathOcrNormalizer, MathOcrNormalizer>();
 builder.Services.AddScoped<IOcrService, OcrService>();
 builder.Services.AddScoped<ISubjectiveEvaluator, SubjectiveEvaluator>();

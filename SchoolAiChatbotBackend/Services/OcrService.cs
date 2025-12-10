@@ -4,7 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using SchoolAiChatbotBackend.Models;
+using Google.Cloud.Vision.V1;
+using UglyToad.PdfPig;
+using UglyToad.PdfPig.Content;
 
 namespace SchoolAiChatbotBackend.Services
 {
@@ -12,20 +16,42 @@ namespace SchoolAiChatbotBackend.Services
     {
         private readonly ILogger<OcrService> _logger;
         private readonly IMathOcrNormalizer _mathNormalizer;
+        private readonly IConfiguration _configuration;
+        private readonly ImageAnnotatorClient _visionClient;
 
         public OcrService(
             ILogger<OcrService> logger,
-            IMathOcrNormalizer mathNormalizer)
+            IMathOcrNormalizer mathNormalizer,
+            IConfiguration configuration)
         {
             _logger = logger;
             _mathNormalizer = mathNormalizer;
+            _configuration = configuration;
+            
+            // Initialize Google Cloud Vision client
+            try
+            {
+                var credentialsPath = _configuration["GoogleCloud:CredentialsPath"] 
+                    ?? Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS");
+                
+                if (!string.IsNullOrEmpty(credentialsPath) && File.Exists(credentialsPath))
+                {
+                    Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", credentialsPath);
+                    _logger.LogInformation("Google Cloud credentials configured from: {Path}", credentialsPath);
+                }
+                
+                _visionClient = ImageAnnotatorClient.Create();
+                _logger.LogInformation("Google Cloud Vision client initialized successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to initialize Google Cloud Vision client. OCR will not be available.");
+                _visionClient = null;
+            }
         }
 
         public async Task<string> ExtractStudentAnswersTextAsync(WrittenSubmission submission)
         {
-            // TODO: Integrate with Azure Computer Vision OCR or similar service
-            // For now, this is a placeholder implementation
-            
             _logger.LogInformation(
                 "Starting OCR extraction for submission {SubmissionId} with {FileCount} files",
                 submission.WrittenSubmissionId,
@@ -83,58 +109,126 @@ namespace SchoolAiChatbotBackend.Services
 
         private async Task<string> ExtractTextFromImageAsync(string imagePath)
         {
-            // TODO: Integrate Azure Computer Vision OCR
-            // Example integration code:
-            /*
-            var client = new ComputerVisionClient(
-                new ApiKeyServiceClientCredentials(apiKey))
-                { Endpoint = endpoint };
-
-            using var stream = File.OpenRead(imagePath);
-            var result = await client.RecognizePrintedTextInStreamAsync(true, stream);
-            
-            var text = new StringBuilder();
-            foreach (var region in result.Regions)
+            if (_visionClient == null)
             {
-                foreach (var line in region.Lines)
-                {
-                    text.AppendLine(string.Join(" ", line.Words.Select(w => w.Text)));
-                }
+                _logger.LogError("Google Vision client not initialized. Cannot extract text from image: {ImagePath}", imagePath);
+                return string.Empty;
             }
-            return text.ToString();
-            */
 
-            _logger.LogInformation("Simulating OCR extraction from image: {ImagePath}", imagePath);
-            
-            // Placeholder: Return simulated OCR text
-            await Task.Delay(100); // Simulate processing delay
-            
-            return $"[Simulated OCR text from {Path.GetFileName(imagePath)}]\n" +
-                   "Q1. Answer to question 1 goes here.\n" +
-                   "Q2. Answer to question 2 goes here.\n";
+            try
+            {
+                _logger.LogInformation("Starting Google Vision OCR for image: {ImagePath}", imagePath);
+                
+                // Load image and send to Google Cloud Vision
+                var image = await Google.Cloud.Vision.V1.Image.FromFileAsync(imagePath);
+                var response = await _visionClient.DetectTextAsync(image);
+                
+                if (response == null || response.Count == 0)
+                {
+                    _logger.LogWarning("No text detected in image: {ImagePath}", imagePath);
+                    return string.Empty;
+                }
+
+                // First annotation contains the entire detected text
+                var fullText = response[0].Description;
+                
+                _logger.LogInformation(
+                    "Google Vision OCR completed for {ImagePath}. Extracted {CharCount} characters",
+                    Path.GetFileName(imagePath),
+                    fullText?.Length ?? 0);
+                
+                return fullText ?? string.Empty;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during Google Vision OCR for image: {ImagePath}", imagePath);
+                return string.Empty;
+            }
         }
 
         private async Task<string> ExtractTextFromPdfAsync(string pdfPath)
         {
-            // TODO: Integrate PDF text extraction library (e.g., PdfPig, iTextSharp)
-            // Example code:
-            /*
-            using var document = PdfDocument.Open(pdfPath);
-            var text = new StringBuilder();
-            foreach (var page in document.GetPages())
+            try
             {
-                text.AppendLine(page.Text);
-            }
-            return text.ToString();
-            */
+                _logger.LogInformation("Starting PDF text extraction: {PdfPath}", pdfPath);
+                
+                // First, try direct text extraction with PdfPig (for text-based PDFs)
+                using var document = PdfDocument.Open(pdfPath);
+                var extractedText = new StringBuilder();
+                var hasText = false;
 
-            _logger.LogInformation("Simulating text extraction from PDF: {PdfPath}", pdfPath);
-            
-            await Task.Delay(100);
-            
-            return $"[Simulated text from PDF: {Path.GetFileName(pdfPath)}]\n" +
-                   "Q1. Student's answer for question 1.\n" +
-                   "Q2. Student's answer for question 2.\n";
+                foreach (var page in document.GetPages())
+                {
+                    var pageText = page.Text?.Trim() ?? string.Empty;
+                    if (!string.IsNullOrWhiteSpace(pageText))
+                    {
+                        extractedText.AppendLine(pageText);
+                        hasText = true;
+                    }
+                }
+
+                // If we extracted meaningful text, return it (text-based PDF)
+                if (hasText && extractedText.Length > 50)
+                {
+                    _logger.LogInformation(
+                        "PdfPig extracted {CharCount} characters from text-based PDF: {PdfPath}",
+                        extractedText.Length,
+                        Path.GetFileName(pdfPath));
+                    return extractedText.ToString();
+                }
+
+                // If no text or very little text, treat as image-based/scanned PDF
+                _logger.LogInformation(
+                    "PDF appears to be image-based or scanned. Using Google Vision OCR: {PdfPath}",
+                    pdfPath);
+                
+                return await ExtractTextFromImageBasedPdfAsync(pdfPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error extracting text from PDF: {PdfPath}", pdfPath);
+                return string.Empty;
+            }
+        }
+
+        private async Task<string> ExtractTextFromImageBasedPdfAsync(string pdfPath)
+        {
+            if (_visionClient == null)
+            {
+                _logger.LogError("Google Vision client not initialized. Cannot extract text from image-based PDF: {PdfPath}", pdfPath);
+                return string.Empty;
+            }
+
+            try
+            {
+                _logger.LogInformation("Starting Google Vision OCR for image-based PDF: {PdfPath}", pdfPath);
+                
+                // For image-based PDFs, we can send the PDF directly to Google Vision
+                // Google Vision supports PDF files and will process all pages
+                var image = await Google.Cloud.Vision.V1.Image.FromFileAsync(pdfPath);
+                var response = await _visionClient.DetectTextAsync(image);
+                
+                if (response == null || response.Count == 0)
+                {
+                    _logger.LogWarning("No text detected in image-based PDF: {PdfPath}", pdfPath);
+                    return string.Empty;
+                }
+
+                // First annotation contains the entire detected text from all pages
+                var fullText = response[0].Description;
+                
+                _logger.LogInformation(
+                    "Google Vision OCR completed for image-based PDF: {PdfPath}. Extracted {CharCount} characters",
+                    Path.GetFileName(pdfPath),
+                    fullText?.Length ?? 0);
+                
+                return fullText ?? string.Empty;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during Google Vision OCR for image-based PDF: {PdfPath}", pdfPath);
+                return string.Empty;
+            }
         }
 
         private bool IsImageFile(string extension)

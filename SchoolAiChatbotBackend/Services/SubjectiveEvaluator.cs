@@ -36,15 +36,21 @@ namespace SchoolAiChatbotBackend.Services
             "   - Include formulas, calculations, and explanations\n" +
             "   - Show the complete working, not just the final answer\n" +
             "   - Format it clearly with proper mathematical notation\n\n" +
-            "3) STEP-BY-STEP COMPARISON:\n" +
+            "3) STEP-BY-STEP COMPARISON WITH DETAILED FEEDBACK:\n" +
             "   - For each step, compare what student wrote vs what was expected\n" +
             "   - Award marks for correct steps, even if final answer is wrong\n" +
-            "   - Provide specific feedback mentioning both student's work and expected approach\n\n" +
-            "4) OVERALL FEEDBACK:\n" +
-            "   - Summarize: 'Student wrote: [brief summary]'\n" +
-            "   - Then: 'Expected answer: [complete solution with all steps]'\n" +
-            "   - Highlight key differences and missing elements\n" +
-            "   - Provide constructive guidance\n\n" +
+            "   - For EACH step feedback, you MUST include:\n" +
+            "     a) What the student wrote/did in this step\n" +
+            "     b) The correct approach/answer for this step\n" +
+            "     c) If incorrect or incomplete: specific improvement needed\n" +
+            "     d) If correct: acknowledgment and encouragement\n" +
+            "   - Format: 'Your answer: [X]. Correct answer: [Y]. Improvement needed: [Z]' OR 'Your answer: [X] is correct!'\n\n" +
+            "4) OVERALL FEEDBACK WITH IMPROVEMENT GUIDANCE:\n" +
+            "   - Start: 'Your Answer: [brief summary of what student wrote]'\n" +
+            "   - Then: 'Correct Answer: [complete solution with all steps clearly shown]'\n" +
+            "   - Compare: 'Key Differences: [list what was missing, incorrect, or could be improved]'\n" +
+            "   - Guide: 'Improvements Needed: [specific, actionable advice on how to improve]'\n" +
+            "   - Encourage: [positive note about what was done well, if anything]\n\n" +
             "Output JSON only with this schema:\n" +
             "{\n" +
             "  \"earnedMarks\": number,\n" +
@@ -59,18 +65,20 @@ namespace SchoolAiChatbotBackend.Services
             "      \"isCorrect\": boolean,\n" +
             "      \"marksAwarded\": number,\n" +
             "      \"maxMarksForStep\": number,\n" +
-            "      \"feedback\": \"string (compare student's work vs expected for this step)\"\n" +
+            "      \"feedback\": \"string (MUST include: Your answer: [X], Correct answer: [Y], Improvement: [Z] or Your answer is correct!)\"\n" +
             "    }\n" +
             "  ],\n" +
-            "  \"overallFeedback\": \"string (MUST include: Student wrote [X], Expected [Y with full steps], Key differences)\"\n" +
+            "  \"overallFeedback\": \"string (MUST include: Your Answer: [X], Correct Answer: [Y with full steps], Key Differences: [Z], Improvements Needed: [W])\"\n" +
             "}\n" +
             "Rules:\n" +
             "- earnedMarks MUST be between 0 and maxMarks\n" +
             "- Sum of marksAwarded MUST equal earnedMarks\n" +
             "- expectedAnswer MUST contain COMPLETE solution with ALL steps, not just final answer\n" +
             "- studentAnswerEcho MUST contain what student actually wrote (cleaned up)\n" +
-            "- Each step feedback MUST compare student vs expected\n" +
-            "- overallFeedback MUST start with 'Student wrote:' and include 'Expected:'\n" +
+            "- Each step feedback MUST include: 'Your answer: [what student did]', 'Correct answer: [expected]', 'Improvement: [specific guidance]'\n" +
+            "- If step is correct, feedback should say 'Your answer: [X] is correct! Well done.'\n" +
+            "- overallFeedback MUST follow format: 'Your Answer: [X]\\nCorrect Answer: [Y with steps]\\nKey Differences: [Z]\\nImprovements Needed: [specific actionable advice]'\n" +
+            "- Be encouraging and constructive in all feedback\n" +
             "- Return ONLY JSON, no extra text";
 
         // System prompt for subjective evaluation WITH stored rubric
@@ -90,15 +98,20 @@ namespace SchoolAiChatbotBackend.Services
             "   - Provide COMPLETE solution with ALL steps detailed\n" +
             "   - Include all formulas, calculations, and explanations\n" +
             "   - Show complete working, not just final answer\n\n" +
-            "3) RUBRIC-BASED STEP EVALUATION:\n" +
+            "3) RUBRIC-BASED STEP EVALUATION WITH DETAILED FEEDBACK:\n" +
             "   - Evaluate each rubric step IN ORDER\n" +
-            "   - For each step feedback, mention: 'Student: [what they did], Expected: [what was needed]'\n" +
+            "   - For EACH step, provide comprehensive feedback including:\n" +
+            "     a) What the student actually did: 'Your answer: [X]'\n" +
+            "     b) What was expected per rubric: 'Correct approach: [Y]'\n" +
+            "     c) If wrong/incomplete: 'Improvement needed: [specific guidance]'\n" +
+            "     d) If correct: 'Your answer is correct! [encouragement]'\n" +
             "   - Award partial marks for partially correct steps\n\n" +
-            "4) OVERALL FEEDBACK FORMAT:\n" +
-            "   - Start with: 'Student's approach: [brief description]'\n" +
-            "   - Then: 'Complete expected solution:\\n[full step-by-step solution]'\n" +
-            "   - Then: 'Key gaps: [what was missing]'\n" +
-            "   - End with constructive guidance\n\n" +
+            "4) OVERALL FEEDBACK WITH IMPROVEMENT GUIDANCE:\n" +
+            "   - Start: 'Your Approach: [what student attempted]'\n" +
+            "   - Then: 'Correct Solution:\\n[complete step-by-step solution with all details]'\n" +
+            "   - Compare: 'Key Gaps: [specific missing elements or errors]'\n" +
+            "   - Guide: 'How to Improve: [actionable, specific advice for each gap]'\n" +
+            "   - Encourage: [positive feedback on what was done well]\n\n" +
             "Output JSON only with this schema:\n" +
             "{\n" +
             "  \"earnedMarks\": number,\n" +
@@ -113,10 +126,10 @@ namespace SchoolAiChatbotBackend.Services
             "      \"isCorrect\": boolean,\n" +
             "      \"marksAwarded\": number,\n" +
             "      \"maxMarksForStep\": number,\n" +
-            "      \"feedback\": \"string (Student: [X], Expected: [Y])\"\n" +
+            "      \"feedback\": \"string (MUST include: Your answer: [X], Correct approach: [Y], Improvement needed: [Z] OR Your answer is correct!)\"\n" +
             "    }\n" +
             "  ],\n" +
-            "  \"overallFeedback\": \"string (MUST include student's approach and complete expected solution)\"\n" +
+            "  \"overallFeedback\": \"string (MUST include: Your Approach: [X], Correct Solution: [Y with all steps], Key Gaps: [Z], How to Improve: [W])\"\n" +
             "}\n" +
             "Rules:\n" +
             "- earnedMarks MUST be between 0 and maxMarks\n" +
@@ -124,8 +137,10 @@ namespace SchoolAiChatbotBackend.Services
             "- marksAwarded must not exceed maxMarksForStep from rubric\n" +
             "- Sum of marksAwarded MUST equal earnedMarks\n" +
             "- expectedAnswer MUST contain COMPLETE solution with ALL steps\n" +
-            "- Each feedback MUST compare 'Student: [X], Expected: [Y]'\n" +
-            "- overallFeedback MUST include both student's work and complete expected solution\n" +
+            "- Each step feedback MUST include: 'Your answer: [X]', 'Correct approach: [Y]', and if wrong: 'Improvement needed: [Z]'\n" +
+            "- If step is correct, say: 'Your answer: [X] is correct! [encouragement]'\n" +
+            "- overallFeedback MUST follow format: 'Your Approach: [X]\\nCorrect Solution: [Y]\\nKey Gaps: [Z]\\nHow to Improve: [actionable advice]'\n" +
+            "- Be specific, constructive, and encouraging in all feedback\n" +
             "- Return ONLY JSON, no extra text";
 
         public SubjectiveEvaluator(
@@ -298,14 +313,27 @@ Evaluate this answer using the marking rubric. For each step in the rubric, dete
                 RUBRIC_EVALUATION_SYSTEM_PROMPT,
                 userPrompt);
 
+            _logger.LogInformation("AI Response for question {QuestionId} with rubric: {Response}", 
+                question.QuestionId, evaluationJson);
+
             // Parse JSON response
-            var evaluation = JsonSerializer.Deserialize<SubjectiveEvaluationResult>(
-                evaluationJson,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            SubjectiveEvaluationResult? evaluation;
+            try
+            {
+                evaluation = JsonSerializer.Deserialize<SubjectiveEvaluationResult>(
+                    evaluationJson,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "Failed to parse rubric AI response as JSON. Response was: {Response}", evaluationJson);
+                throw new Exception($"Failed to parse rubric evaluation response: {ex.Message}");
+            }
 
             if (evaluation == null)
             {
-                throw new Exception("Failed to parse rubric-based evaluation response");
+                _logger.LogError("Deserialization returned null for rubric response: {Response}", evaluationJson);
+                throw new Exception("Failed to parse rubric-based evaluation response - result was null");
             }
 
             // Set metadata
@@ -339,14 +367,27 @@ Evaluate this answer step by step and provide detailed feedback.";
                 EVALUATION_SYSTEM_PROMPT,
                 userPrompt);
 
+            _logger.LogInformation("AI Response for question {QuestionId}: {Response}", 
+                question.QuestionId, evaluationJson);
+
             // Parse JSON response
-            var evaluation = JsonSerializer.Deserialize<SubjectiveEvaluationResult>(
-                evaluationJson,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            SubjectiveEvaluationResult? evaluation;
+            try
+            {
+                evaluation = JsonSerializer.Deserialize<SubjectiveEvaluationResult>(
+                    evaluationJson,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "Failed to parse AI response as JSON. Response was: {Response}", evaluationJson);
+                throw new Exception($"Failed to parse evaluation response: {ex.Message}");
+            }
 
             if (evaluation == null)
             {
-                throw new Exception("Failed to parse evaluation response");
+                _logger.LogError("Deserialization returned null for response: {Response}", evaluationJson);
+                throw new Exception("Failed to parse evaluation response - result was null");
             }
 
             // Set metadata

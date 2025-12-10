@@ -25,6 +25,7 @@ namespace SchoolAiChatbotBackend.Controllers
         private readonly IMcqExtractionService _mcqExtractionService;
         private readonly IMcqEvaluationService _mcqEvaluationService;
         private readonly ILogger<ExamSubmissionController> _logger;
+        private readonly IConfiguration _configuration;
 
         public ExamSubmissionController(
             IExamRepository examRepository,
@@ -36,7 +37,8 @@ namespace SchoolAiChatbotBackend.Controllers
             IExamStorageService examStorageService,
             IMcqExtractionService mcqExtractionService,
             IMcqEvaluationService mcqEvaluationService,
-            ILogger<ExamSubmissionController> logger)
+            ILogger<ExamSubmissionController> logger,
+            IConfiguration configuration)
         {
             _examRepository = examRepository;
             _fileStorageService = fileStorageService;
@@ -48,6 +50,7 @@ namespace SchoolAiChatbotBackend.Controllers
             _mcqExtractionService = mcqExtractionService;
             _mcqEvaluationService = mcqEvaluationService;
             _logger = logger;
+            _configuration = configuration;
         }
 
         /// <summary>
@@ -540,12 +543,17 @@ namespace SchoolAiChatbotBackend.Controllers
                     writtenSubmissionId,
                     SubmissionStatus.Evaluating);
 
-                // STEP 4: Evaluate subjective answers
-                var evaluations = await _subjectiveEvaluator.EvaluateSubjectiveAnswersAsync(exam, ocrText);
+                // STEP 4: Evaluate subjective answers with rubrics (falls back to dynamic evaluation if no rubric found)
+                _logger.LogInformation(
+                    "Evaluating subjective answers for exam {ExamId} using rubric-based evaluation",
+                    submission.ExamId);
+                var evaluations = await _subjectiveEvaluator.EvaluateWithRubricsAsync(
+                    submission.ExamId,
+                    exam,
+                    ocrText);
 
                 // Save evaluations
                 await _examRepository.SaveSubjectiveEvaluationsAsync(writtenSubmissionId, evaluations);
-
                 // Update status to completed
                 await _examRepository.UpdateWrittenSubmissionStatusAsync(
                     writtenSubmissionId,
@@ -555,6 +563,45 @@ namespace SchoolAiChatbotBackend.Controllers
                     "Written submission {SubmissionId} processed successfully with {Count} subjective evaluations",
                     writtenSubmissionId,
                     evaluations.Count);
+
+                // STEP 5: Process-then-Delete Strategy - Delete files after successful processing
+                var deleteAfterProcessing = bool.Parse(_configuration["FileStorage:DeleteAfterProcessing"] ?? "false");
+                if (deleteAfterProcessing && submission.FilePaths != null && submission.FilePaths.Count > 0)
+                {
+                    _logger.LogInformation(
+                        "DeleteAfterProcessing enabled. Deleting {Count} files for submission {SubmissionId}",
+                        submission.FilePaths.Count,
+                        writtenSubmissionId);
+
+                    foreach (var filePath in submission.FilePaths)
+                    {
+                        try
+                        {
+                            var deleted = await _fileStorageService.DeleteFileAsync(filePath);
+                            if (deleted)
+                            {
+                                _logger.LogInformation("Successfully deleted file after processing: {FilePath}", filePath);
+                            }
+                            else
+                            {
+                                _logger.LogWarning("File not found or already deleted: {FilePath}", filePath);
+                            }
+                        }
+                        catch (Exception deleteEx)
+                        {
+                            _logger.LogError(deleteEx, "Error deleting file {FilePath} after processing", filePath);
+                            // Continue with other files even if one fails
+                        }
+                    }
+
+                    // Clear file paths from database since files are deleted
+                    submission.FilePaths.Clear();
+                    await _examRepository.SaveWrittenSubmissionAsync(submission);
+                    
+                    _logger.LogInformation(
+                        "Files deleted and submission updated for {SubmissionId}. OCR text and evaluations preserved in database.",
+                        writtenSubmissionId);
+                }
             }
             catch (Exception ex)
             {
