@@ -18,26 +18,59 @@ namespace SchoolAiChatbotBackend.Services
         private readonly IMathOcrNormalizer _mathNormalizer;
         private readonly IConfiguration _configuration;
         private readonly ImageAnnotatorClient _visionClient;
+        private readonly IFileStorageService _fileStorageService;
 
         public OcrService(
             ILogger<OcrService> logger,
             IMathOcrNormalizer mathNormalizer,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IFileStorageService fileStorageService)
         {
             _logger = logger;
             _mathNormalizer = mathNormalizer;
             _configuration = configuration;
+            _fileStorageService = fileStorageService;
             
             // Initialize Google Cloud Vision client
             try
             {
-                var credentialsPath = _configuration["GoogleCloud:CredentialsPath"] 
-                    ?? Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS");
+                // Try to get credentials from base64 environment variable (for Azure)
+                var credentialsBase64 = Environment.GetEnvironmentVariable("GOOGLE_CREDENTIALS_BASE64");
                 
-                if (!string.IsNullOrEmpty(credentialsPath) && File.Exists(credentialsPath))
+                if (!string.IsNullOrEmpty(credentialsBase64))
                 {
-                    Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", credentialsPath);
-                    _logger.LogInformation("Google Cloud credentials configured from: {Path}", credentialsPath);
+                    // Decode and write credentials to a temporary file
+                    var credentialsJson = Encoding.UTF8.GetString(Convert.FromBase64String(credentialsBase64));
+                    var tempPath = Path.Combine(Path.GetTempPath(), "google-credentials.json");
+                    File.WriteAllText(tempPath, credentialsJson);
+                    Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", tempPath);
+                    _logger.LogInformation("Google Cloud credentials configured from base64 environment variable");
+                }
+                else
+                {
+                    // Try to get credentials from JSON environment variable
+                    var credentialsJson = Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS_JSON");
+                    
+                    if (!string.IsNullOrEmpty(credentialsJson))
+                    {
+                        // Write credentials to a temporary file
+                        var tempPath = Path.Combine(Path.GetTempPath(), "google-credentials.json");
+                        File.WriteAllText(tempPath, credentialsJson);
+                        Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", tempPath);
+                        _logger.LogInformation("Google Cloud credentials configured from JSON environment variable");
+                    }
+                    else
+                    {
+                        // Fallback to file path (for local development)
+                        var credentialsPath = _configuration["GoogleCloud:CredentialsPath"] 
+                            ?? Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS");
+                        
+                        if (!string.IsNullOrEmpty(credentialsPath) && File.Exists(credentialsPath))
+                        {
+                            Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", credentialsPath);
+                            _logger.LogInformation("Google Cloud credentials configured from: {Path}", credentialsPath);
+                        }
+                    }
                 }
                 
                 _visionClient = ImageAnnotatorClient.Create();
@@ -63,27 +96,60 @@ namespace SchoolAiChatbotBackend.Services
             {
                 try
                 {
-                    if (!File.Exists(filePath))
+                    string localFilePath = filePath;
+                    bool isTemporaryFile = false;
+
+                    // Check if this is an Azure Blob URL (starts with http/https)
+                    if (filePath.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || 
+                        filePath.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
                     {
-                        _logger.LogWarning("File not found: {FilePath}", filePath);
+                        _logger.LogInformation("Detected Azure Blob URL, downloading file: {BlobUrl}", filePath);
+                        
+                        // Download the blob to a temporary file
+                        var tempFileName = $"{Guid.NewGuid()}{Path.GetExtension(filePath)}";
+                        localFilePath = Path.Combine(Path.GetTempPath(), tempFileName);
+                        
+                        await _fileStorageService.DownloadFileAsync(filePath, localFilePath);
+                        isTemporaryFile = true;
+                        
+                        _logger.LogInformation("Downloaded blob to temporary file: {TempPath}", localFilePath);
+                    }
+
+                    if (!File.Exists(localFilePath))
+                    {
+                        _logger.LogWarning("File not found: {FilePath}", localFilePath);
                         continue;
                     }
 
-                    var fileExtension = Path.GetExtension(filePath).ToLowerInvariant();
+                    var fileExtension = Path.GetExtension(localFilePath).ToLowerInvariant();
 
                     if (fileExtension == ".pdf")
                     {
-                        var text = await ExtractTextFromPdfAsync(filePath);
+                        var text = await ExtractTextFromPdfAsync(localFilePath);
                         extractedText.AppendLine(text);
                     }
                     else if (IsImageFile(fileExtension))
                     {
-                        var text = await ExtractTextFromImageAsync(filePath);
+                        var text = await ExtractTextFromImageAsync(localFilePath);
                         extractedText.AppendLine(text);
                     }
                     else
                     {
                         _logger.LogWarning("Unsupported file type: {Extension}", fileExtension);
+                    }
+
+                    // Clean up temporary file if we downloaded it
+                    if (isTemporaryFile && File.Exists(localFilePath))
+                    {
+                        try
+                        {
+                            File.Delete(localFilePath);
+                            _logger.LogInformation("Deleted temporary file: {TempPath}", localFilePath);
+                        }
+                        catch (Exception deleteEx)
+                        {
+                            _logger.LogWarning(deleteEx, "Failed to delete temporary file: {TempPath}", localFilePath);
+                        }
                     }
                 }
                 catch (Exception ex)

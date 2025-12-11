@@ -55,6 +55,11 @@ namespace SchoolAiChatbotBackend.Services
         Task<Stream> GetFileAsync(string filePath);
 
         /// <summary>
+        /// Downloads a file to a local path
+        /// </summary>
+        Task DownloadFileAsync(string sourceUrl, string destinationPath);
+
+        /// <summary>
         /// Checks if a file exists in storage
         /// </summary>
         Task<bool> FileExistsAsync(string filePath);
@@ -137,6 +142,20 @@ namespace SchoolAiChatbotBackend.Services
                 throw new FileNotFoundException($"File not found: {filePath}");
             }
             return Task.FromResult<Stream>(File.OpenRead(filePath));
+        }
+
+        public async Task DownloadFileAsync(string sourceUrl, string destinationPath)
+        {
+            // For local storage, sourceUrl is just a file path
+            if (File.Exists(sourceUrl))
+            {
+                File.Copy(sourceUrl, destinationPath, overwrite: true);
+            }
+            else
+            {
+                throw new FileNotFoundException($"Source file not found: {sourceUrl}");
+            }
+            await Task.CompletedTask;
         }
 
         public Task<bool> FileExistsAsync(string filePath)
@@ -282,6 +301,29 @@ namespace SchoolAiChatbotBackend.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error downloading blob: {BlobUrl}", blobUrl);
+                throw;
+            }
+        }
+
+        public async Task DownloadFileAsync(string blobUrl, string destinationPath)
+        {
+            try
+            {
+                var blobClient = new BlobClient(new Uri(blobUrl));
+                var blobName = blobClient.Name;
+                
+                var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
+                var blobToDownload = containerClient.GetBlobClient(blobName);
+
+                _logger.LogInformation("Downloading blob {BlobName} to {DestinationPath}", blobName, destinationPath);
+                
+                await blobToDownload.DownloadToAsync(destinationPath);
+                
+                _logger.LogInformation("Successfully downloaded blob to {DestinationPath}", destinationPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error downloading blob {BlobUrl} to {DestinationPath}", blobUrl, destinationPath);
                 throw;
             }
         }
