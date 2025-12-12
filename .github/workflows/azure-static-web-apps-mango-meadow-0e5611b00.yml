@@ -32,6 +32,14 @@ jobs:
             echo "API URL is required. Set repo variable VITE_API_URL or provide workflow_dispatch input api_url." >&2
             exit 1
           fi
+          if ! echo "$api" | grep -Eq '^https?://'; then
+            echo "API URL must include protocol (http/https). Got: $api" >&2
+            exit 1
+          fi
+          if ! echo "$api" | grep -q '\\.'; then
+            echo "API URL must include a valid host (found no dot). Got: $api" >&2
+            exit 1
+          fi
           echo "VITE_API_URL=$api" >> $GITHUB_ENV
           echo "Using API URL: $api"
         env:
