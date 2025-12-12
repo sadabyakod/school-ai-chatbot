@@ -242,6 +242,7 @@ namespace SchoolAiChatbotBackend
                 builder.Services.AddScoped<OpenAiChatService>(sp =>
                 {
                     var config = sp.GetRequiredService<IConfiguration>();
+                    var logger = sp.GetRequiredService<ILogger<Program>>();
 
                     var apiKey = config["OpenAI:ApiKey"] ??
                                  config["OpenAI__ApiKey"] ??
@@ -250,7 +251,10 @@ namespace SchoolAiChatbotBackend
                                  "YOUR_OPENAI_API_KEY";
 
                     if (string.IsNullOrWhiteSpace(apiKey) || apiKey == "YOUR_OPENAI_API_KEY")
-                        throw new InvalidOperationException("OpenAI ApiKey not found. Set OPENAI_API_KEY environment variable or OpenAI:ApiKey in configuration.");
+                    {
+                        logger.LogWarning("OpenAI ApiKey not configured - chat features will not work. Set OPENAI_API_KEY environment variable.");
+                        return new OpenAiChatService("dummy-key-not-configured");
+                    }
 
                     return new OpenAiChatService(apiKey);
                 });
