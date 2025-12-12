@@ -36,7 +36,7 @@ jobs:
             echo "API URL must include protocol (http/https). Got: $api" >&2
             exit 1
           fi
-          if ! echo "$api" | grep -q '\\.'; then
+          if ! echo "$api" | grep -q '\.'; then
             echo "API URL must include a valid host (found no dot). Got: $api" >&2
             exit 1
           fi
