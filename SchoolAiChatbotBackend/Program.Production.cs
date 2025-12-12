@@ -373,7 +373,6 @@ namespace SchoolAiChatbotBackend
             {
                 Log.CloseAndFlush();
             }
-            await app.RunAsync();
         }
     }
 }
