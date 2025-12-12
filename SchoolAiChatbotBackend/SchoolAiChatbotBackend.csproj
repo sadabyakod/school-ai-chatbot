@@ -7,7 +7,13 @@
     <UserSecretsId>b7cd7614-f9ba-4a76-8716-ddf92072b845</UserSecretsId>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <PublishWithAspNetCoreTargetManifest>false</PublishWithAspNetCoreTargetManifest>
   </PropertyGroup>
+
+  <!-- Ensure clean publish output - no nested api folders -->
+  <ItemGroup>
+    <Content Update="web.config" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
 
   <!-- Use same Program.cs for all configurations -->
 
