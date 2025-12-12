@@ -9,6 +9,11 @@ const getSubjectsForClass = (medium: string, className: string): string[] => {
     return ["Physics", "Chemistry", "Mathematics", "Biology", "Kannada", "English"];
   }
   
+  // Class 10 has specific subjects
+  if (className === "10") {
+    return ["English", "Kannada", "Hindi", "Mathematics", "Science", "Social Science"];
+  }
+  
   // Common subjects for other classes
   const commonSubjects = ["Mathematics", "Science", "Social Science", "English"];
   
