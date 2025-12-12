@@ -13,12 +13,14 @@ namespace SchoolAiChatbotBackend
     {
         public static async Task Main(string[] args)
         {
-            var builder = WebApplication.CreateBuilder(args);
+            try
+            {
+                var builder = WebApplication.CreateBuilder(args);
 
-            // Configure logging for production
-            builder.Logging.ClearProviders();
-            builder.Logging.AddConsole();
-            builder.Logging.SetMinimumLevel(LogLevel.Information);
+                // Configure logging for production
+                builder.Logging.ClearProviders();
+                builder.Logging.AddConsole();
+                builder.Logging.SetMinimumLevel(LogLevel.Information);
 
                 // CORS: Allow frontend origins
                 builder.Services.AddCors(options =>
@@ -112,7 +114,7 @@ namespace SchoolAiChatbotBackend
                     builder.Services.AddDbContext<AppDbContext>(options =>
                         options.UseInMemoryDatabase("TempSchoolAiDb"));
 
-                    Log.Warning("No database connection string found. Using in-memory database.");
+                    Console.WriteLine("WARNING: No database connection string found. Using in-memory database.");
                 }
 
                 // Configure JWT authentication
@@ -186,7 +188,7 @@ namespace SchoolAiChatbotBackend
                                 storageOptions,
                                 sp.GetRequiredService<ILogger<SchoolAiChatbotBackend.Services.AzureBlobStorageService>>()));
 
-                        Log.Information("Using Azure Blob Storage");
+                        Console.WriteLine("Using Azure Blob Storage");
 
                         if (storageOptions.RetentionDays > 0)
                         {
@@ -355,11 +357,11 @@ namespace SchoolAiChatbotBackend
                 app.MapControllers();
 
                 await app.RunAsync();
-            }Console.WriteLine($"FATAL: Application terminated unexpectedly: {ex}");
-                throw
-            finally
+            }
+            catch (Exception ex)
             {
-                Log.CloseAndFlush();
+                Console.WriteLine($"FATAL: Application terminated unexpectedly: {ex}");
+                throw;
             }
         }
     }
