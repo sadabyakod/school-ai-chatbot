@@ -6,8 +6,6 @@ using SchoolAiChatbotBackend.Middleware;
 using System.Text;
 using Microsoft.OpenApi.Models;
 using SchoolAiChatbotBackend.Services;
-using Serilog;
-using Serilog.Events;
 
 namespace SchoolAiChatbotBackend
 {
@@ -15,27 +13,12 @@ namespace SchoolAiChatbotBackend
     {
         public static async Task Main(string[] args)
         {
-            // Configure Serilog before creating the builder
-            Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Information()
-                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-                .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
-                .MinimumLevel.Override("System", LogEventLevel.Warning)
-                .Enrich.FromLogContext()
-                .Enrich.WithMachineName()
-                .Enrich.WithThreadId()
-                .WriteTo.Console(
-                    outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}")
-                .CreateLogger();
+            var builder = WebApplication.CreateBuilder(args);
 
-            try
-            {
-                Log.Information("Starting School AI Chatbot Backend (Production)");
-
-                var builder = WebApplication.CreateBuilder(args);
-
-                // Use Serilog for logging
-                builder.Host.UseSerilog();
+            // Configure logging for production
+            builder.Logging.ClearProviders();
+            builder.Logging.AddConsole();
+            builder.Logging.SetMinimumLevel(LogLevel.Information);
 
                 // CORS: Allow frontend origins
                 builder.Services.AddCors(options =>
@@ -213,7 +196,8 @@ namespace SchoolAiChatbotBackend
                     else
                     {
                         builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
-                        Log.Warning("Azure Blob Storage configuration incomplete, using local storage");
+                        var logger = builder.Services.BuildServiceProvider().GetService<ILogger<Program>>();
+                        logger?.LogWarning("Azure Blob Storage configuration incomplete, using local storage");
                     }
                 }
                 else
@@ -252,7 +236,7 @@ namespace SchoolAiChatbotBackend
 
                     if (string.IsNullOrWhiteSpace(apiKey) || apiKey == "YOUR_OPENAI_API_KEY")
                     {
-                        logger.LogWarning("OpenAI ApiKey not configured - chat features will not work. Set OPENAI_API_KEY environment variable.");
+                        logger.LogWarning("OpenAI ApiKey not configured - chat features will not work");
                         return new OpenAiChatService("dummy-key-not-configured");
                     }
 
@@ -325,16 +309,19 @@ namespace SchoolAiChatbotBackend
                         if (!string.IsNullOrEmpty(dbConnectionString))
                         {
                             await DatabaseSeeder.SeedAsync(scope.ServiceProvider);
-                            Log.Information("Database seeding completed successfully");
+                            var logger = app.Services.GetRequiredService<ILogger<Program>>();
+                            logger.LogInformation("Database seeding completed successfully");
                         }
                         else
                         {
-                            Log.Warning("Skipping database seeding - no connection string configured");
+                            var logger = app.Services.GetRequiredService<ILogger<Program>>();
+                            logger.LogWarning("Skipping database seeding - no connection string configured");
                         }
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex, "Error during database seeding - application will continue without seeded data");
+                        var logger = app.Services.GetRequiredService<ILogger<Program>>();
+                        logger.LogError(ex, "Error during database seeding - application will continue without seeded data");
                     }
                 }
 
@@ -368,11 +355,8 @@ namespace SchoolAiChatbotBackend
                 app.MapControllers();
 
                 await app.RunAsync();
-            }
-            catch (Exception ex)
-            {
-                Log.Fatal(ex, "Application terminated unexpectedly");
-            }
+            }Console.WriteLine($"FATAL: Application terminated unexpectedly: {ex}");
+                throw
             finally
             {
                 Log.CloseAndFlush();
