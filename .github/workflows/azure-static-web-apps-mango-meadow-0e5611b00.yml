@@ -41,6 +41,7 @@ jobs:
             exit 1
           fi
           echo "VITE_API_URL=$api" >> $GITHUB_ENV
+          echo "VITE_API_BASE_URL=$api" >> $GITHUB_ENV
           echo "Using API URL: $api"
         env:
           DISPATCH_API_URL: ${{ inputs.api_url }}
