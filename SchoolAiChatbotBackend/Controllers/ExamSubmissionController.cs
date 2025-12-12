@@ -26,6 +26,7 @@ namespace SchoolAiChatbotBackend.Controllers
         private readonly IMcqEvaluationService _mcqEvaluationService;
         private readonly ILogger<ExamSubmissionController> _logger;
         private readonly IConfiguration _configuration;
+        private readonly IServiceScopeFactory _serviceScopeFactory;
 
         public ExamSubmissionController(
             IExamRepository examRepository,
@@ -38,7 +39,8 @@ namespace SchoolAiChatbotBackend.Controllers
             IMcqExtractionService mcqExtractionService,
             IMcqEvaluationService mcqEvaluationService,
             ILogger<ExamSubmissionController> logger,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IServiceScopeFactory serviceScopeFactory)
         {
             _examRepository = examRepository;
             _fileStorageService = fileStorageService;
@@ -51,6 +53,7 @@ namespace SchoolAiChatbotBackend.Controllers
             _mcqEvaluationService = mcqEvaluationService;
             _logger = logger;
             _configuration = configuration;
+            _serviceScopeFactory = serviceScopeFactory;
         }
 
         /// <summary>
@@ -232,7 +235,7 @@ namespace SchoolAiChatbotBackend.Controllers
                 {
                     WrittenSubmissionId = submission.WrittenSubmissionId,
                     Status = "PendingEvaluation",
-                    Message = "Written answers uploaded successfully. Evaluation in progress."
+                    Message = "✅ Answer sheet uploaded successfully! AI evaluation in progress. Please check back in a few minutes for your results."
                 };
 
                 return Ok(response);
@@ -240,6 +243,72 @@ namespace SchoolAiChatbotBackend.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error uploading written answers");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+        }
+
+        /// <summary>
+        /// Check evaluation status of a written submission
+        /// GET /api/exam/submission-status/{writtenSubmissionId}
+        /// </summary>
+        [HttpGet("submission-status/{writtenSubmissionId}")]
+        [ProducesResponseType(typeof(SubmissionStatusResponse), 200)]
+        [ProducesResponseType(404)]
+        public async Task<ActionResult<SubmissionStatusResponse>> GetSubmissionStatus(string writtenSubmissionId)
+        {
+            try
+            {
+                _logger.LogInformation("Checking status for submission {SubmissionId}", writtenSubmissionId);
+
+                var submission = await _examRepository.GetWrittenSubmissionAsync(writtenSubmissionId);
+                if (submission == null)
+                {
+                    return NotFound(new { error = "Submission not found" });
+                }
+
+                // Map status to user-friendly message
+                string statusMessage = submission.Status switch
+                {
+                    SubmissionStatus.PendingEvaluation => "⏳ Your answer sheet is being processed...",
+                    SubmissionStatus.OcrProcessing => "📄 Extracting text from your answer sheet...",
+                    SubmissionStatus.Evaluating => "🤖 AI is evaluating your answers...",
+                    SubmissionStatus.Completed => "✅ Evaluation completed! Your results are ready.",
+                    SubmissionStatus.Failed => "❌ Evaluation failed. Please contact support.",
+                    _ => "Unknown status"
+                };
+
+                var response = new SubmissionStatusResponse
+                {
+                    WrittenSubmissionId = writtenSubmissionId,
+                    Status = submission.Status.ToString(),
+                    StatusMessage = statusMessage,
+                    SubmittedAt = submission.SubmittedAt,
+                    EvaluatedAt = submission.EvaluatedAt,
+                    IsComplete = submission.Status == SubmissionStatus.Completed,
+                    ExamId = submission.ExamId,
+                    StudentId = submission.StudentId
+                };
+
+                // If evaluation is completed, include the full results
+                if (submission.Status == SubmissionStatus.Completed)
+                {
+                    try
+                    {
+                        var examResult = await GetConsolidatedResultInternal(submission.ExamId, submission.StudentId);
+                        response.Result = examResult;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error fetching results for completed submission {SubmissionId}", writtenSubmissionId);
+                        // Continue without results - client can fetch separately
+                    }
+                }
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching submission status");
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
@@ -257,149 +326,162 @@ namespace SchoolAiChatbotBackend.Controllers
         {
             try
             {
-                _logger.LogInformation("Fetching result for exam {ExamId}, student {StudentId}", examId, studentId);
-
-                // Load exam from storage service
-                var exam = _examStorageService.GetExam(examId);
-                if (exam == null)
-                {
-                    return NotFound(new { error = $"Exam {examId} not found. Please generate the exam first using /api/exam/generate" });
-                }
-
-                // Load MCQ submission (from direct MCQ submission)
-                var mcqSubmission = await _examRepository.GetMcqSubmissionAsync(examId, studentId);
-
-                // Load MCQ evaluation from sheet (from uploaded answer sheet)
-                var mcqEvaluationFromSheet = await _examRepository.GetMcqEvaluationFromSheetAsync(examId, studentId);
-
-                // Load written submission and evaluations
-                var writtenSubmission = await _examRepository.GetWrittenSubmissionByExamAndStudentAsync(examId, studentId);
-                List<SubjectiveEvaluationResult> subjectiveEvaluations = new();
-
-                if (writtenSubmission != null)
-                {
-                    subjectiveEvaluations = await _examRepository.GetSubjectiveEvaluationsAsync(
-                        writtenSubmission.WrittenSubmissionId);
-                }
-
-                // Check if any submission exists
-                if (mcqSubmission == null && mcqEvaluationFromSheet == null && writtenSubmission == null)
-                {
-                    return NotFound(new { error = "No submission found for this exam and student" });
-                }
-
-                // Calculate MCQ scores
-                // Prioritize MCQ from sheet extraction if available, otherwise use direct submission
-                int mcqScore = 0;
-                int mcqTotalMarks = 0;
-                List<McqResultDto> mcqResults = new();
-
-                if (mcqEvaluationFromSheet != null)
-                {
-                    // Use MCQ answers extracted from uploaded answer sheet
-                    mcqScore = mcqEvaluationFromSheet.TotalScore;
-                    mcqTotalMarks = mcqEvaluationFromSheet.TotalMarks;
-                    mcqResults = mcqEvaluationFromSheet.Evaluations.Select(e => new McqResultDto
-                    {
-                        QuestionId = e.QuestionId,
-                        SelectedOption = e.StudentAnswer,
-                        CorrectAnswer = e.CorrectAnswer,
-                        IsCorrect = e.IsCorrect,
-                        MarksAwarded = e.MarksAwarded
-                    }).ToList();
-
-                    _logger.LogInformation(
-                        "Using MCQ results from sheet extraction: {Score}/{Total}",
-                        mcqScore,
-                        mcqTotalMarks);
-                }
-                else if (mcqSubmission != null)
-                {
-                    // Use MCQ answers from direct submission
-                    // Get MCQ questions with correct answers
-                    var mcqQuestions = GetMcqQuestions(exam);
-                    
-                    mcqScore = mcqSubmission.Score;
-                    mcqTotalMarks = mcqSubmission.TotalMarks;
-                    mcqResults = mcqSubmission.Answers.Select(a =>
-                    {
-                        var question = mcqQuestions.FirstOrDefault(q => q.QuestionId == a.QuestionId);
-                        return new McqResultDto
-                        {
-                            QuestionId = a.QuestionId,
-                            SelectedOption = a.SelectedOption,
-                            CorrectAnswer = question?.CorrectAnswer ?? "",
-                            IsCorrect = a.IsCorrect,
-                            MarksAwarded = a.MarksAwarded
-                        };
-                    }).ToList();
-
-                    _logger.LogInformation(
-                        "Using MCQ results from direct submission: {Score}/{Total}",
-                        mcqScore,
-                        mcqTotalMarks);
-                }
-
-                // Calculate subjective scores
-                double subjectiveScore = subjectiveEvaluations.Sum(e => e.EarnedMarks);
-                double subjectiveTotalMarks = subjectiveEvaluations.Sum(e => e.MaxMarks);
-
-                // Calculate grand total
-                double grandScore = mcqScore + subjectiveScore;
-                double grandTotalMarks = mcqTotalMarks + subjectiveTotalMarks;
-                double percentage = grandTotalMarks > 0 ? Math.Round(grandScore / grandTotalMarks * 100, 2) : 0;
-
-                // Calculate grade
-                string grade = CalculateGrade(percentage);
-                bool passed = percentage >= 35; // Karnataka 2nd PUC pass marks
-
-                // Build response
-                var result = new ConsolidatedExamResult
-                {
-                    ExamId = examId,
-                    StudentId = studentId,
-                    ExamTitle = $"{exam.Subject} - {exam.Chapter}",
-                    McqScore = mcqScore,
-                    McqTotalMarks = mcqTotalMarks,
-                    McqResults = mcqResults,
-                    SubjectiveScore = subjectiveScore,
-                    SubjectiveTotalMarks = subjectiveTotalMarks,
-                    SubjectiveResults = subjectiveEvaluations.Select(e => new SubjectiveResultDto
-                    {
-                        QuestionId = e.QuestionId,
-                        QuestionNumber = e.QuestionNumber,
-                        QuestionText = GetQuestionText(exam, e.QuestionId),
-                        EarnedMarks = e.EarnedMarks,
-                        MaxMarks = e.MaxMarks,
-                        IsFullyCorrect = e.IsFullyCorrect,
-                        ExpectedAnswer = e.ExpectedAnswer,
-                        StudentAnswerEcho = e.StudentAnswerEcho,
-                        StepAnalysis = e.StepAnalysis.Select(s => new StepAnalysisDto
-                        {
-                            Step = s.Step,
-                            Description = s.Description,
-                            IsCorrect = s.IsCorrect,
-                            MarksAwarded = s.MarksAwarded,
-                            MaxMarksForStep = s.MaxMarksForStep,
-                            Feedback = s.Feedback
-                        }).ToList(),
-                        OverallFeedback = e.OverallFeedback
-                    }).ToList(),
-                    GrandScore = grandScore,
-                    GrandTotalMarks = grandTotalMarks,
-                    Percentage = percentage,
-                    Grade = grade,
-                    Passed = passed,
-                    EvaluatedAt = writtenSubmission?.EvaluatedAt?.ToString("yyyy-MM-dd HH:mm:ss")
-                };
-
+                var result = await GetConsolidatedResultInternal(examId, studentId);
                 return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { error = ex.Message });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching exam result");
                 return StatusCode(500, new { error = "Internal server error" });
             }
+        }
+
+        /// <summary>
+        /// Internal method to get consolidated exam result (reusable for status endpoint)
+        /// </summary>
+        private async Task<ConsolidatedExamResult> GetConsolidatedResultInternal(string examId, string studentId)
+        {
+            _logger.LogInformation("Fetching result for exam {ExamId}, student {StudentId}", examId, studentId);
+
+            // Load exam from storage service
+            var exam = _examStorageService.GetExam(examId);
+            if (exam == null)
+            {
+                throw new KeyNotFoundException($"Exam {examId} not found. Please generate the exam first using /api/exam/generate");
+            }
+
+            // Load MCQ submission (from direct MCQ submission)
+            var mcqSubmission = await _examRepository.GetMcqSubmissionAsync(examId, studentId);
+
+            // Load MCQ evaluation from sheet (from uploaded answer sheet)
+            var mcqEvaluationFromSheet = await _examRepository.GetMcqEvaluationFromSheetAsync(examId, studentId);
+
+            // Load written submission and evaluations
+            var writtenSubmission = await _examRepository.GetWrittenSubmissionByExamAndStudentAsync(examId, studentId);
+            List<SubjectiveEvaluationResult> subjectiveEvaluations = new();
+
+            if (writtenSubmission != null)
+            {
+                subjectiveEvaluations = await _examRepository.GetSubjectiveEvaluationsAsync(
+                    writtenSubmission.WrittenSubmissionId);
+            }
+
+            // Check if any submission exists
+            if (mcqSubmission == null && mcqEvaluationFromSheet == null && writtenSubmission == null)
+            {
+                throw new KeyNotFoundException("No submission found for this exam and student");
+            }
+
+            // Calculate MCQ scores
+            // Prioritize MCQ from sheet extraction if available, otherwise use direct submission
+            int mcqScore = 0;
+            int mcqTotalMarks = 0;
+            List<McqResultDto> mcqResults = new();
+
+            if (mcqEvaluationFromSheet != null)
+            {
+                // Use MCQ answers extracted from uploaded answer sheet
+                mcqScore = mcqEvaluationFromSheet.TotalScore;
+                mcqTotalMarks = mcqEvaluationFromSheet.TotalMarks;
+                mcqResults = mcqEvaluationFromSheet.Evaluations.Select(e => new McqResultDto
+                {
+                    QuestionId = e.QuestionId,
+                    SelectedOption = e.StudentAnswer,
+                    CorrectAnswer = e.CorrectAnswer,
+                    IsCorrect = e.IsCorrect,
+                    MarksAwarded = e.MarksAwarded
+                }).ToList();
+
+                _logger.LogInformation(
+                    "Using MCQ results from sheet extraction: {Score}/{Total}",
+                    mcqScore,
+                    mcqTotalMarks);
+            }
+            else if (mcqSubmission != null)
+            {
+                // Use MCQ answers from direct submission
+                // Get MCQ questions with correct answers
+                var mcqQuestions = GetMcqQuestions(exam);
+                
+                mcqScore = mcqSubmission.Score;
+                mcqTotalMarks = mcqSubmission.TotalMarks;
+                mcqResults = mcqSubmission.Answers.Select(a =>
+                {
+                    var question = mcqQuestions.FirstOrDefault(q => q.QuestionId == a.QuestionId);
+                    return new McqResultDto
+                    {
+                        QuestionId = a.QuestionId,
+                        SelectedOption = a.SelectedOption,
+                        CorrectAnswer = question?.CorrectAnswer ?? "",
+                        IsCorrect = a.IsCorrect,
+                        MarksAwarded = a.MarksAwarded
+                    };
+                }).ToList();
+
+                _logger.LogInformation(
+                    "Using MCQ results from direct submission: {Score}/{Total}",
+                    mcqScore,
+                    mcqTotalMarks);
+            }
+
+            // Calculate subjective scores
+            double subjectiveScore = subjectiveEvaluations.Sum(e => e.EarnedMarks);
+            double subjectiveTotalMarks = subjectiveEvaluations.Sum(e => e.MaxMarks);
+
+            // Calculate grand total
+            double grandScore = mcqScore + subjectiveScore;
+            double grandTotalMarks = mcqTotalMarks + subjectiveTotalMarks;
+            double percentage = grandTotalMarks > 0 ? Math.Round(grandScore / grandTotalMarks * 100, 2) : 0;
+
+            // Calculate grade
+            string grade = CalculateGrade(percentage);
+            bool passed = percentage >= 35; // Karnataka 2nd PUC pass marks
+
+            // Build response
+            var result = new ConsolidatedExamResult
+            {
+                ExamId = examId,
+                StudentId = studentId,
+                ExamTitle = $"{exam.Subject} - {exam.Chapter}",
+                McqScore = mcqScore,
+                McqTotalMarks = mcqTotalMarks,
+                McqResults = mcqResults,
+                SubjectiveScore = subjectiveScore,
+                SubjectiveTotalMarks = subjectiveTotalMarks,
+                SubjectiveResults = subjectiveEvaluations.Select(e => new SubjectiveResultDto
+                {
+                    QuestionId = e.QuestionId,
+                    QuestionNumber = e.QuestionNumber,
+                    QuestionText = GetQuestionText(exam, e.QuestionId),
+                    EarnedMarks = e.EarnedMarks,
+                    MaxMarks = e.MaxMarks,
+                    IsFullyCorrect = e.IsFullyCorrect,
+                    ExpectedAnswer = e.ExpectedAnswer,
+                    StudentAnswerEcho = e.StudentAnswerEcho,
+                    StepAnalysis = e.StepAnalysis.Select(s => new StepAnalysisDto
+                    {
+                        Step = s.Step,
+                        Description = s.Description,
+                        IsCorrect = s.IsCorrect,
+                        MarksAwarded = s.MarksAwarded,
+                        MaxMarksForStep = s.MaxMarksForStep,
+                        Feedback = s.Feedback
+                    }).ToList(),
+                    OverallFeedback = e.OverallFeedback
+                }).ToList(),
+                GrandScore = grandScore,
+                GrandTotalMarks = grandTotalMarks,
+                Percentage = percentage,
+                Grade = grade,
+                Passed = passed,
+                EvaluatedAt = writtenSubmission?.EvaluatedAt?.ToString("yyyy-MM-dd HH:mm:ss")
+            };
+
+            return result;
         }
 
         /// <summary>
@@ -477,130 +559,142 @@ namespace SchoolAiChatbotBackend.Controllers
             {
                 _logger.LogInformation("Processing written submission {SubmissionId}", writtenSubmissionId);
 
-                // Load submission
-                var submission = await _examRepository.GetWrittenSubmissionAsync(writtenSubmissionId);
-                if (submission == null)
+                // Create a new scope for database operations in background task
+                using (var scope = _serviceScopeFactory.CreateScope())
                 {
-                    _logger.LogError("Submission {SubmissionId} not found", writtenSubmissionId);
-                    return;
-                }
+                    // Get scoped services
+                    var examRepository = scope.ServiceProvider.GetRequiredService<IExamRepository>();
+                    var fileStorageService = scope.ServiceProvider.GetRequiredService<IFileStorageService>();
+                    var ocrService = scope.ServiceProvider.GetRequiredService<IOcrService>();
+                    var subjectiveEvaluator = scope.ServiceProvider.GetRequiredService<ISubjectiveEvaluator>();
+                    var mcqExtractionService = scope.ServiceProvider.GetRequiredService<IMcqExtractionService>();
+                    var mcqEvaluationService = scope.ServiceProvider.GetRequiredService<IMcqEvaluationService>();
 
-                // Update status to OCR processing
-                await _examRepository.UpdateWrittenSubmissionStatusAsync(
-                    writtenSubmissionId,
-                    SubmissionStatus.OcrProcessing);
-
-                // Load exam from storage service
-                var exam = _examStorageService.GetExam(submission.ExamId);
-                if (exam == null)
-                {
-                    _logger.LogError("Exam {ExamId} not found in storage", submission.ExamId);
-                    await _examRepository.UpdateWrittenSubmissionStatusAsync(
-                        writtenSubmissionId,
-                        SubmissionStatus.Failed);
-                    return;
-                }
-
-                // STEP 1: Extract MCQ answers from uploaded images
-                _logger.LogInformation("Extracting MCQ answers from submission {SubmissionId}", writtenSubmissionId);
-                var mcqExtraction = await _mcqExtractionService.ExtractMcqAnswersAsync(submission);
-                await _examRepository.SaveMcqExtractionAsync(mcqExtraction);
-
-                // STEP 2: Evaluate extracted MCQ answers
-                if (mcqExtraction.Status == ExtractionStatus.Completed && mcqExtraction.ExtractedAnswers.Count > 0)
-                {
-                    _logger.LogInformation(
-                        "Evaluating {Count} extracted MCQ answers for submission {SubmissionId}",
-                        mcqExtraction.ExtractedAnswers.Count,
-                        writtenSubmissionId);
-
-                    var mcqEvaluation = await _mcqEvaluationService.EvaluateExtractedAnswersAsync(mcqExtraction, exam);
-                    await _examRepository.SaveMcqEvaluationFromSheetAsync(mcqEvaluation);
-
-                    _logger.LogInformation(
-                        "MCQ evaluation completed: Score {Score}/{Total}",
-                        mcqEvaluation.TotalScore,
-                        mcqEvaluation.TotalMarks);
-                }
-                else
-                {
-                    _logger.LogWarning(
-                        "No MCQ answers extracted from submission {SubmissionId}, status: {Status}",
-                        writtenSubmissionId,
-                        mcqExtraction.Status);
-                }
-
-                // STEP 3: Extract text using OCR (for subjective answers)
-                var ocrText = mcqExtraction.RawOcrText ?? string.Empty;
-                if (string.IsNullOrWhiteSpace(ocrText))
-                {
-                    ocrText = await _ocrService.ExtractStudentAnswersTextAsync(submission);
-                }
-                await _examRepository.UpdateWrittenSubmissionOcrTextAsync(writtenSubmissionId, ocrText);
-
-                // Update status to evaluating (subjective questions)
-                await _examRepository.UpdateWrittenSubmissionStatusAsync(
-                    writtenSubmissionId,
-                    SubmissionStatus.Evaluating);
-
-                // STEP 4: Evaluate subjective answers with rubrics (falls back to dynamic evaluation if no rubric found)
-                _logger.LogInformation(
-                    "Evaluating subjective answers for exam {ExamId} using rubric-based evaluation",
-                    submission.ExamId);
-                var evaluations = await _subjectiveEvaluator.EvaluateWithRubricsAsync(
-                    submission.ExamId,
-                    exam,
-                    ocrText);
-
-                // Save evaluations
-                await _examRepository.SaveSubjectiveEvaluationsAsync(writtenSubmissionId, evaluations);
-                // Update status to completed
-                await _examRepository.UpdateWrittenSubmissionStatusAsync(
-                    writtenSubmissionId,
-                    SubmissionStatus.Completed);
-
-                _logger.LogInformation(
-                    "Written submission {SubmissionId} processed successfully with {Count} subjective evaluations",
-                    writtenSubmissionId,
-                    evaluations.Count);
-
-                // STEP 5: Process-then-Delete Strategy - Delete files after successful processing
-                var deleteAfterProcessing = bool.Parse(_configuration["FileStorage:DeleteAfterProcessing"] ?? "false");
-                if (deleteAfterProcessing && submission.FilePaths != null && submission.FilePaths.Count > 0)
-                {
-                    _logger.LogInformation(
-                        "DeleteAfterProcessing enabled. Deleting {Count} files for submission {SubmissionId}",
-                        submission.FilePaths.Count,
-                        writtenSubmissionId);
-
-                    foreach (var filePath in submission.FilePaths)
+                    // Load submission
+                    var submission = await examRepository.GetWrittenSubmissionAsync(writtenSubmissionId);
+                    if (submission == null)
                     {
-                        try
-                        {
-                            var deleted = await _fileStorageService.DeleteFileAsync(filePath);
-                            if (deleted)
-                            {
-                                _logger.LogInformation("Successfully deleted file after processing: {FilePath}", filePath);
-                            }
-                            else
-                            {
-                                _logger.LogWarning("File not found or already deleted: {FilePath}", filePath);
-                            }
-                        }
-                        catch (Exception deleteEx)
-                        {
-                            _logger.LogError(deleteEx, "Error deleting file {FilePath} after processing", filePath);
-                            // Continue with other files even if one fails
-                        }
+                        _logger.LogError("Submission {SubmissionId} not found", writtenSubmissionId);
+                        return;
                     }
 
-                    // Clear file paths from database since files are deleted
-                    submission.FilePaths.Clear();
-                    await _examRepository.SaveWrittenSubmissionAsync(submission);
-                    
+                    // Update status to OCR processing
+                    await examRepository.UpdateWrittenSubmissionStatusAsync(
+                        writtenSubmissionId,
+                        SubmissionStatus.OcrProcessing);
+
+                    // Load exam from storage service
+                    var exam = _examStorageService.GetExam(submission.ExamId);
+                    if (exam == null)
+                    {
+                        _logger.LogError("Exam {ExamId} not found in storage", submission.ExamId);
+                        await examRepository.UpdateWrittenSubmissionStatusAsync(
+                            writtenSubmissionId,
+                            SubmissionStatus.Failed);
+                        return;
+                    }
+
+                    // STEP 1: Extract MCQ answers from uploaded images
+                    _logger.LogInformation("Extracting MCQ answers from submission {SubmissionId}", writtenSubmissionId);
+                    var mcqExtraction = await mcqExtractionService.ExtractMcqAnswersAsync(submission);
+                    await examRepository.SaveMcqExtractionAsync(mcqExtraction);
+
+                    // STEP 2: Evaluate extracted MCQ answers
+                    if (mcqExtraction.Status == ExtractionStatus.Completed && mcqExtraction.ExtractedAnswers.Count > 0)
+                    {
+                        _logger.LogInformation(
+                            "Evaluating {Count} extracted MCQ answers for submission {SubmissionId}",
+                            mcqExtraction.ExtractedAnswers.Count,
+                            writtenSubmissionId);
+
+                        var mcqEvaluation = await mcqEvaluationService.EvaluateExtractedAnswersAsync(mcqExtraction, exam);
+                        await examRepository.SaveMcqEvaluationFromSheetAsync(mcqEvaluation);
+
+                        _logger.LogInformation(
+                            "MCQ evaluation completed: Score {Score}/{Total}",
+                            mcqEvaluation.TotalScore,
+                            mcqEvaluation.TotalMarks);
+                    }
+                    else
+                    {
+                        _logger.LogWarning(
+                            "No MCQ answers extracted from submission {SubmissionId}, status: {Status}",
+                            writtenSubmissionId,
+                            mcqExtraction.Status);
+                    }
+
+                    // STEP 3: Extract text using OCR (for subjective answers)
+                    var ocrText = mcqExtraction.RawOcrText ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(ocrText))
+                    {
+                        ocrText = await ocrService.ExtractStudentAnswersTextAsync(submission);
+                    }
+                    await examRepository.UpdateWrittenSubmissionOcrTextAsync(writtenSubmissionId, ocrText);
+
+                    // Update status to evaluating (subjective questions)
+                    await examRepository.UpdateWrittenSubmissionStatusAsync(
+                        writtenSubmissionId,
+                        SubmissionStatus.Evaluating);
+
+                    // STEP 4: Evaluate subjective answers with rubrics (falls back to dynamic evaluation if no rubric found)
                     _logger.LogInformation(
-                        "Files deleted and submission updated for {SubmissionId}. OCR text and evaluations preserved in database.",
-                        writtenSubmissionId);
+                        "Evaluating subjective answers for exam {ExamId} using rubric-based evaluation",
+                        submission.ExamId);
+                    var evaluations = await subjectiveEvaluator.EvaluateWithRubricsAsync(
+                        submission.ExamId,
+                        exam,
+                        ocrText);
+
+                    // Save evaluations
+                    await examRepository.SaveSubjectiveEvaluationsAsync(writtenSubmissionId, evaluations);
+                    // Update status to completed
+                    await examRepository.UpdateWrittenSubmissionStatusAsync(
+                        writtenSubmissionId,
+                        SubmissionStatus.Completed);
+
+                    _logger.LogInformation(
+                        "Written submission {SubmissionId} processed successfully with {Count} subjective evaluations",
+                        writtenSubmissionId,
+                        evaluations.Count);
+
+                    // STEP 5: Process-then-Delete Strategy - Delete files after successful processing
+                    var deleteAfterProcessing = bool.Parse(_configuration["FileStorage:DeleteAfterProcessing"] ?? "false");
+                    if (deleteAfterProcessing && submission.FilePaths != null && submission.FilePaths.Count > 0)
+                    {
+                        _logger.LogInformation(
+                            "DeleteAfterProcessing enabled. Deleting {Count} files for submission {SubmissionId}",
+                            submission.FilePaths.Count,
+                            writtenSubmissionId);
+
+                        foreach (var filePath in submission.FilePaths)
+                        {
+                            try
+                            {
+                                var deleted = await fileStorageService.DeleteFileAsync(filePath);
+                                if (deleted)
+                                {
+                                    _logger.LogInformation("Successfully deleted file after processing: {FilePath}", filePath);
+                                }
+                                else
+                                {
+                                    _logger.LogWarning("File not found or already deleted: {FilePath}", filePath);
+                                }
+                            }
+                            catch (Exception deleteEx)
+                            {
+                                _logger.LogError(deleteEx, "Error deleting file {FilePath} after processing", filePath);
+                                // Continue with other files even if one fails
+                            }
+                        }
+
+                        // Clear file paths from database since files are deleted
+                        submission.FilePaths.Clear();
+                        await examRepository.SaveWrittenSubmissionAsync(submission);
+                        
+                        _logger.LogInformation(
+                            "Files deleted and submission updated for {SubmissionId}. OCR text and evaluations preserved in database.",
+                            writtenSubmissionId);
+                    }
                 }
             }
             catch (Exception ex)
@@ -609,9 +703,14 @@ namespace SchoolAiChatbotBackend.Controllers
                 
                 try
                 {
-                    await _examRepository.UpdateWrittenSubmissionStatusAsync(
-                        writtenSubmissionId,
-                        SubmissionStatus.Failed);
+                    // Create a new scope for exception handling
+                    using (var scope = _serviceScopeFactory.CreateScope())
+                    {
+                        var examRepository = scope.ServiceProvider.GetRequiredService<IExamRepository>();
+                        await examRepository.UpdateWrittenSubmissionStatusAsync(
+                            writtenSubmissionId,
+                            SubmissionStatus.Failed);
+                    }
                 }
                 catch { }
             }

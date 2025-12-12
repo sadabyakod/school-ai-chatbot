@@ -75,6 +75,26 @@ namespace SchoolAiChatbotBackend.DTOs
     }
 
     /// <summary>
+    /// Response for submission status check
+    /// </summary>
+    public class SubmissionStatusResponse
+    {
+        public string WrittenSubmissionId { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public string StatusMessage { get; set; } = string.Empty;
+        public DateTime SubmittedAt { get; set; }
+        public DateTime? EvaluatedAt { get; set; }
+        public bool IsComplete { get; set; }
+        public string ExamId { get; set; } = string.Empty;
+        public string StudentId { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// Complete exam result (only populated when IsComplete = true)
+        /// </summary>
+        public ConsolidatedExamResult? Result { get; set; }
+    }
+
+    /// <summary>
     /// Consolidated exam result
     /// </summary>
     public class ConsolidatedExamResult
