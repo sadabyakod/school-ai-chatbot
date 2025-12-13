@@ -11,49 +11,47 @@ using SchoolAiChatbotBackend.Services;
 
 namespace SchoolAiChatbotBackend.Controllers
 {
+    /// <summary>
+    /// Thin API controller for exam submissions
+    /// Heavy processing (OCR, AI evaluation) is handled by Azure Functions
+    /// </summary>
     [ApiController]
     [Route("api/exam")]
     public class ExamSubmissionController : ControllerBase
     {
+        // File upload constraints (production hardened)
+        private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".pdf", ".webp" };
+        private static readonly string[] AllowedMimeTypes = { "image/jpeg", "image/png", "image/webp", "application/pdf" };
+        private const long MaxFileSizeBytes = 10 * 1024 * 1024; // 10 MB per file
+        private const int MaxFilesPerUpload = 20;
+
         private readonly IExamRepository _examRepository;
         private readonly IFileStorageService _fileStorageService;
-        private readonly IOcrService _ocrService;
-        private readonly ISubjectiveEvaluator _subjectiveEvaluator;
+        private readonly IExamStorageService _examStorageService;
+        private readonly IQueueService _queueService;
         private readonly IMathOcrNormalizer _mathNormalizer;
         private readonly ISubjectiveRubricService _rubricService;
-        private readonly IExamStorageService _examStorageService;
-        private readonly IMcqExtractionService _mcqExtractionService;
-        private readonly IMcqEvaluationService _mcqEvaluationService;
         private readonly ILogger<ExamSubmissionController> _logger;
         private readonly IConfiguration _configuration;
-        private readonly IServiceScopeFactory _serviceScopeFactory;
 
         public ExamSubmissionController(
             IExamRepository examRepository,
             IFileStorageService fileStorageService,
-            IOcrService ocrService,
-            ISubjectiveEvaluator subjectiveEvaluator,
+            IExamStorageService examStorageService,
+            IQueueService queueService,
             IMathOcrNormalizer mathNormalizer,
             ISubjectiveRubricService rubricService,
-            IExamStorageService examStorageService,
-            IMcqExtractionService mcqExtractionService,
-            IMcqEvaluationService mcqEvaluationService,
             ILogger<ExamSubmissionController> logger,
-            IConfiguration configuration,
-            IServiceScopeFactory serviceScopeFactory)
+            IConfiguration configuration)
         {
             _examRepository = examRepository;
             _fileStorageService = fileStorageService;
-            _ocrService = ocrService;
-            _subjectiveEvaluator = subjectiveEvaluator;
+            _examStorageService = examStorageService;
+            _queueService = queueService;
             _mathNormalizer = mathNormalizer;
             _rubricService = rubricService;
-            _examStorageService = examStorageService;
-            _mcqExtractionService = mcqExtractionService;
-            _mcqEvaluationService = mcqEvaluationService;
             _logger = logger;
             _configuration = configuration;
-            _serviceScopeFactory = serviceScopeFactory;
         }
 
         /// <summary>
@@ -167,56 +165,140 @@ namespace SchoolAiChatbotBackend.Controllers
         }
 
         /// <summary>
-        /// Upload written answers for subjective questions
+        /// Upload written answers for subjective questions (THIN: validates, saves, enqueues only)
         /// </summary>
         /// <param name="examId">Exam ID</param>
         /// <param name="studentId">Student ID</param>
         /// <param name="files">Scanned answer images or PDF</param>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Submission ID and status</returns>
         [HttpPost("upload-written")]
         [Consumes("multipart/form-data")]
+        [RequestSizeLimit(100 * 1024 * 1024)] // 100 MB total request limit
+        [RequestFormLimits(MultipartBodyLengthLimit = 100 * 1024 * 1024)]
         [ProducesResponseType(typeof(UploadWrittenResponse), 200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
+        [ProducesResponseType(409)] // Conflict for duplicate
         public async Task<ActionResult<UploadWrittenResponse>> UploadWrittenAnswers(
             [FromForm] string examId,
             [FromForm] string studentId,
-            [FromForm] List<IFormFile> files)
+            [FromForm] List<IFormFile> files,
+            CancellationToken cancellationToken = default)
         {
+            // Generate correlation ID for this request
+            var correlationId = Guid.NewGuid().ToString("N")[..8];
+            
+            using var scope = _logger.BeginScope(new Dictionary<string, object>
+            {
+                ["CorrelationId"] = correlationId,
+                ["ExamId"] = examId ?? "null",
+                ["StudentId"] = studentId ?? "null"
+            });
+
             try
             {
                 _logger.LogInformation(
-                    "Received written answers upload for exam {ExamId} from student {StudentId} with {FileCount} files",
-                    examId,
-                    studentId,
-                    files?.Count ?? 0);
+                    "[UPLOAD_STARTED] Received {FileCount} files, total size {TotalSize} bytes",
+                    files?.Count ?? 0,
+                    files?.Sum(f => f.Length) ?? 0);
 
-                // Validate input
+                // === VALIDATION PHASE ===
+                
+                // 1. Validate required fields
                 if (string.IsNullOrWhiteSpace(examId) || string.IsNullOrWhiteSpace(studentId))
                 {
-                    return BadRequest(new { error = "ExamId and StudentId are required" });
+                    _logger.LogWarning("[VALIDATION_FAILED] Missing examId or studentId");
+                    return BadRequest(new { error = "ExamId and StudentId are required", correlationId });
                 }
 
+                // 2. Sanitize inputs (prevent injection)
+                examId = examId.Trim();
+                studentId = studentId.Trim();
+                
+                // Validate no path traversal characters
+                if (examId.Contains("..") || studentId.Contains("..") || 
+                    examId.Contains('/') || studentId.Contains('/') ||
+                    examId.Contains('\\') || studentId.Contains('\\'))
+                {
+                    _logger.LogWarning("[SECURITY] Path traversal attempt detected");
+                    return BadRequest(new { error = "Invalid characters in examId or studentId", correlationId });
+                }
+
+                // 3. Validate files exist
                 if (files == null || files.Count == 0)
                 {
-                    return BadRequest(new { error = "At least one file is required" });
+                    return BadRequest(new { error = "At least one file is required", correlationId });
                 }
 
-                // Validate exam exists in storage service
+                // 4. Validate file count
+                if (files.Count > MaxFilesPerUpload)
+                {
+                    return BadRequest(new { error = $"Maximum {MaxFilesPerUpload} files allowed per upload", correlationId });
+                }
+
+                // 5. Validate each file (extension, MIME type, size)
+                foreach (var file in files)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    
+                    var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                    if (!AllowedExtensions.Contains(extension))
+                    {
+                        _logger.LogWarning("[VALIDATION_FAILED] Invalid extension: {Extension}", extension);
+                        return BadRequest(new { error = $"File type '{extension}' not allowed. Allowed: {string.Join(", ", AllowedExtensions)}", correlationId });
+                    }
+
+                    if (!AllowedMimeTypes.Contains(file.ContentType?.ToLowerInvariant()))
+                    {
+                        _logger.LogWarning("[VALIDATION_FAILED] Invalid MIME type: {MimeType}", file.ContentType);
+                        return BadRequest(new { error = $"MIME type '{file.ContentType}' not allowed", correlationId });
+                    }
+
+                    if (file.Length > MaxFileSizeBytes)
+                    {
+                        return BadRequest(new { error = $"File '{file.FileName}' exceeds {MaxFileSizeBytes / 1024 / 1024}MB limit", correlationId });
+                    }
+
+                    if (file.Length == 0)
+                    {
+                        return BadRequest(new { error = $"File '{file.FileName}' is empty", correlationId });
+                    }
+                }
+
+                // 6. Validate exam exists
                 if (!_examStorageService.ExamExists(examId))
                 {
-                    return NotFound(new { error = $"Exam {examId} not found. Please generate the exam first using /api/exam/generate" });
+                    return NotFound(new { error = $"Exam {examId} not found. Please generate the exam first.", correlationId });
                 }
 
-                // Save files
+                // 7. Idempotency check - prevent duplicate submissions
+                var existingSubmission = await _examRepository.GetWrittenSubmissionByExamAndStudentAsync(examId, studentId);
+                if (existingSubmission != null && existingSubmission.Status != SubmissionStatus.Failed)
+                {
+                    _logger.LogWarning("[DUPLICATE] Submission already exists: {SubmissionId}", existingSubmission.WrittenSubmissionId);
+                    return Conflict(new { 
+                        error = "A submission already exists for this exam and student",
+                        existingSubmissionId = existingSubmission.WrittenSubmissionId,
+                        status = existingSubmission.Status.ToString(),
+                        correlationId
+                    });
+                }
+
+                // === STORAGE PHASE ===
+                
                 var filePaths = new List<string>();
                 foreach (var file in files)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     var path = await _fileStorageService.SaveFileAsync(file, examId, studentId);
                     filePaths.Add(path);
                 }
+                
+                _logger.LogInformation("[BLOB_UPLOADED] {FileCount} files saved to storage", filePaths.Count);
 
-                // Create submission record
+                // === DATABASE PHASE ===
+                
                 var submission = new WrittenSubmission
                 {
                     WrittenSubmissionId = Guid.NewGuid().ToString(),
@@ -227,23 +309,45 @@ namespace SchoolAiChatbotBackend.Controllers
                 };
 
                 await _examRepository.SaveWrittenSubmissionAsync(submission);
+                _logger.LogInformation("[DB_SAVED] Submission {SubmissionId} created", submission.WrittenSubmissionId);
 
-                // Trigger evaluation asynchronously (fire and forget)
-                _ = Task.Run(async () => await ProcessWrittenSubmissionAsync(submission.WrittenSubmissionId));
+                // === QUEUE PHASE ===
+                
+                var queueMessage = new WrittenSubmissionQueueMessage
+                {
+                    WrittenSubmissionId = submission.WrittenSubmissionId,
+                    ExamId = examId,
+                    StudentId = studentId,
+                    FilePaths = filePaths,
+                    SubmittedAt = DateTime.UtcNow,
+                    Priority = "normal",
+                    RetryCount = 0
+                };
+                await _queueService.EnqueueAsync(QueueNames.WrittenSubmissionProcessing, queueMessage);
 
-                var response = new UploadWrittenResponse
+                _logger.LogInformation(
+                    "[QUEUE_ENQUEUED] Submission {SubmissionId} sent to {QueueName}",
+                    submission.WrittenSubmissionId,
+                    QueueNames.WrittenSubmissionProcessing);
+
+                // === RESPONSE ===
+                
+                return Ok(new UploadWrittenResponse
                 {
                     WrittenSubmissionId = submission.WrittenSubmissionId,
                     Status = "PendingEvaluation",
-                    Message = "✅ Answer sheet uploaded successfully! AI evaluation in progress. Please check back in a few minutes for your results."
-                };
-
-                return Ok(response);
+                    Message = "✅ Answer sheet uploaded successfully! Processing will begin shortly. Check status for results."
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning("[CANCELLED] Upload cancelled by client");
+                return StatusCode(499, new { error = "Request cancelled", correlationId });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error uploading written answers");
-                return StatusCode(500, new { error = "Internal server error" });
+                _logger.LogError(ex, "[UPLOAD_FAILED] Unexpected error");
+                return StatusCode(500, new { error = "Internal server error", correlationId });
             }
         }
 
@@ -552,169 +656,8 @@ namespace SchoolAiChatbotBackend.Controllers
         }
 
         // Private helper methods
-
-        private async Task ProcessWrittenSubmissionAsync(string writtenSubmissionId)
-        {
-            try
-            {
-                _logger.LogInformation("Processing written submission {SubmissionId}", writtenSubmissionId);
-
-                // Create a new scope for database operations in background task
-                using (var scope = _serviceScopeFactory.CreateScope())
-                {
-                    // Get scoped services
-                    var examRepository = scope.ServiceProvider.GetRequiredService<IExamRepository>();
-                    var fileStorageService = scope.ServiceProvider.GetRequiredService<IFileStorageService>();
-                    var ocrService = scope.ServiceProvider.GetRequiredService<IOcrService>();
-                    var subjectiveEvaluator = scope.ServiceProvider.GetRequiredService<ISubjectiveEvaluator>();
-                    var mcqExtractionService = scope.ServiceProvider.GetRequiredService<IMcqExtractionService>();
-                    var mcqEvaluationService = scope.ServiceProvider.GetRequiredService<IMcqEvaluationService>();
-
-                    // Load submission
-                    var submission = await examRepository.GetWrittenSubmissionAsync(writtenSubmissionId);
-                    if (submission == null)
-                    {
-                        _logger.LogError("Submission {SubmissionId} not found", writtenSubmissionId);
-                        return;
-                    }
-
-                    // Update status to OCR processing
-                    await examRepository.UpdateWrittenSubmissionStatusAsync(
-                        writtenSubmissionId,
-                        SubmissionStatus.OcrProcessing);
-
-                    // Load exam from storage service
-                    var exam = _examStorageService.GetExam(submission.ExamId);
-                    if (exam == null)
-                    {
-                        _logger.LogError("Exam {ExamId} not found in storage", submission.ExamId);
-                        await examRepository.UpdateWrittenSubmissionStatusAsync(
-                            writtenSubmissionId,
-                            SubmissionStatus.Failed);
-                        return;
-                    }
-
-                    // STEP 1: Extract MCQ answers from uploaded images
-                    _logger.LogInformation("Extracting MCQ answers from submission {SubmissionId}", writtenSubmissionId);
-                    var mcqExtraction = await mcqExtractionService.ExtractMcqAnswersAsync(submission);
-                    await examRepository.SaveMcqExtractionAsync(mcqExtraction);
-
-                    // STEP 2: Evaluate extracted MCQ answers
-                    if (mcqExtraction.Status == ExtractionStatus.Completed && mcqExtraction.ExtractedAnswers.Count > 0)
-                    {
-                        _logger.LogInformation(
-                            "Evaluating {Count} extracted MCQ answers for submission {SubmissionId}",
-                            mcqExtraction.ExtractedAnswers.Count,
-                            writtenSubmissionId);
-
-                        var mcqEvaluation = await mcqEvaluationService.EvaluateExtractedAnswersAsync(mcqExtraction, exam);
-                        await examRepository.SaveMcqEvaluationFromSheetAsync(mcqEvaluation);
-
-                        _logger.LogInformation(
-                            "MCQ evaluation completed: Score {Score}/{Total}",
-                            mcqEvaluation.TotalScore,
-                            mcqEvaluation.TotalMarks);
-                    }
-                    else
-                    {
-                        _logger.LogWarning(
-                            "No MCQ answers extracted from submission {SubmissionId}, status: {Status}",
-                            writtenSubmissionId,
-                            mcqExtraction.Status);
-                    }
-
-                    // STEP 3: Extract text using OCR (for subjective answers)
-                    var ocrText = mcqExtraction.RawOcrText ?? string.Empty;
-                    if (string.IsNullOrWhiteSpace(ocrText))
-                    {
-                        ocrText = await ocrService.ExtractStudentAnswersTextAsync(submission);
-                    }
-                    await examRepository.UpdateWrittenSubmissionOcrTextAsync(writtenSubmissionId, ocrText);
-
-                    // Update status to evaluating (subjective questions)
-                    await examRepository.UpdateWrittenSubmissionStatusAsync(
-                        writtenSubmissionId,
-                        SubmissionStatus.Evaluating);
-
-                    // STEP 4: Evaluate subjective answers with rubrics (falls back to dynamic evaluation if no rubric found)
-                    _logger.LogInformation(
-                        "Evaluating subjective answers for exam {ExamId} using rubric-based evaluation",
-                        submission.ExamId);
-                    var evaluations = await subjectiveEvaluator.EvaluateWithRubricsAsync(
-                        submission.ExamId,
-                        exam,
-                        ocrText);
-
-                    // Save evaluations
-                    await examRepository.SaveSubjectiveEvaluationsAsync(writtenSubmissionId, evaluations);
-                    // Update status to completed
-                    await examRepository.UpdateWrittenSubmissionStatusAsync(
-                        writtenSubmissionId,
-                        SubmissionStatus.Completed);
-
-                    _logger.LogInformation(
-                        "Written submission {SubmissionId} processed successfully with {Count} subjective evaluations",
-                        writtenSubmissionId,
-                        evaluations.Count);
-
-                    // STEP 5: Process-then-Delete Strategy - Delete files after successful processing
-                    var deleteAfterProcessing = bool.Parse(_configuration["FileStorage:DeleteAfterProcessing"] ?? "false");
-                    if (deleteAfterProcessing && submission.FilePaths != null && submission.FilePaths.Count > 0)
-                    {
-                        _logger.LogInformation(
-                            "DeleteAfterProcessing enabled. Deleting {Count} files for submission {SubmissionId}",
-                            submission.FilePaths.Count,
-                            writtenSubmissionId);
-
-                        foreach (var filePath in submission.FilePaths)
-                        {
-                            try
-                            {
-                                var deleted = await fileStorageService.DeleteFileAsync(filePath);
-                                if (deleted)
-                                {
-                                    _logger.LogInformation("Successfully deleted file after processing: {FilePath}", filePath);
-                                }
-                                else
-                                {
-                                    _logger.LogWarning("File not found or already deleted: {FilePath}", filePath);
-                                }
-                            }
-                            catch (Exception deleteEx)
-                            {
-                                _logger.LogError(deleteEx, "Error deleting file {FilePath} after processing", filePath);
-                                // Continue with other files even if one fails
-                            }
-                        }
-
-                        // Clear file paths from database since files are deleted
-                        submission.FilePaths.Clear();
-                        await examRepository.SaveWrittenSubmissionAsync(submission);
-                        
-                        _logger.LogInformation(
-                            "Files deleted and submission updated for {SubmissionId}. OCR text and evaluations preserved in database.",
-                            writtenSubmissionId);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error processing written submission {SubmissionId}", writtenSubmissionId);
-                
-                try
-                {
-                    // Create a new scope for exception handling
-                    using (var scope = _serviceScopeFactory.CreateScope())
-                    {
-                        var examRepository = scope.ServiceProvider.GetRequiredService<IExamRepository>();
-                        await examRepository.UpdateWrittenSubmissionStatusAsync(
-                            writtenSubmissionId,
-                            SubmissionStatus.Failed);
-                    }
-                }
-                catch { }
-            }
-        }
+        // NOTE: Heavy processing (ProcessWrittenSubmissionAsync) moved to Azure Functions
+        // This API only handles upload + enqueue, status queries, and result retrieval
 
         private List<McqQuestion> GetMcqQuestions(GeneratedExamResponse exam)
         {

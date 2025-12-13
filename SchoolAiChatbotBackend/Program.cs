@@ -225,11 +225,28 @@ else
     builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
 }
 
+// Register Queue Service for Azure Functions integration
+var queueConnectionString = builder.Configuration["AzureStorage:ConnectionString"] ?? 
+                            builder.Configuration["BlobStorage:ConnectionString"];
+if (!string.IsNullOrEmpty(queueConnectionString) && !queueConnectionString.Contains("YOUR_"))
+{
+    builder.Services.AddSingleton<IQueueService>(sp => 
+        new AzureQueueService(queueConnectionString, sp.GetRequiredService<ILogger<AzureQueueService>>()));
+}
+else
+{
+    // Use in-memory queue for local development (logs warning, no actual processing)
+    builder.Services.AddSingleton<IQueueService, InMemoryQueueService>();
+}
+
+// Keep lightweight services needed for API endpoints
 builder.Services.AddScoped<IMathOcrNormalizer, MathOcrNormalizer>();
-builder.Services.AddScoped<IOcrService, OcrService>();
-builder.Services.AddScoped<ISubjectiveEvaluator, SubjectiveEvaluator>();
-builder.Services.AddScoped<IMcqExtractionService, McqExtractionService>();
-builder.Services.AddScoped<IMcqEvaluationService, McqEvaluationService>();
+
+// NOTE: Heavy processing services removed - now handled by Azure Functions
+// - IOcrService (Google Vision) → Azure Functions
+// - ISubjectiveEvaluator (OpenAI grading) → Azure Functions  
+// - IMcqExtractionService (OCR + parsing) → Azure Functions
+// - IMcqEvaluationService (MCQ scoring) → Azure Functions
 
 // Register Exam Storage service (Database-backed - persists exams to Azure SQL)
 builder.Services.AddSingleton<IExamStorageService, DatabaseExamStorageService>();

@@ -131,6 +131,14 @@
               "target": "Package",
               "version": "[12.22.2, )"
             },
+            "Azure.Storage.Queues": {
+              "target": "Package",
+              "version": "[12.24.0, )"
+            },
+            "Google.Cloud.Vision.V1": {
+              "target": "Package",
+              "version": "[3.7.0, )"
+            },
             "Microsoft.AspNetCore.Authentication.JwtBearer": {
               "target": "Package",
               "version": "[8.0.11, )"
@@ -156,6 +164,10 @@
             "Microsoft.EntityFrameworkCore.SqlServer": {
               "target": "Package",
               "version": "[8.0.11, )"
+            },
+            "Microsoft.Extensions.Logging.Abstractions": {
+              "target": "Package",
+              "version": "[8.0.3, )"
             },
             "Newtonsoft.Json": {
               "target": "Package",
@@ -188,6 +200,10 @@
             "Swashbuckle.AspNetCore": {
               "target": "Package",
               "version": "[6.5.0, )"
+            },
+            "UglyToad.PdfPig": {
+              "target": "Package",
+              "version": "[0.1.9-alpha.20240929.1, )"
             }
           },
           "imports": [
