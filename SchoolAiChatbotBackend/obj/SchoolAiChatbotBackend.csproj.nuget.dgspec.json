@@ -47,6 +47,10 @@
               "target": "Package",
               "version": "[12.22.2, )"
             },
+            "Azure.Storage.Queues": {
+              "target": "Package",
+              "version": "[12.24.0, )"
+            },
             "Google.Cloud.Vision.V1": {
               "target": "Package",
               "version": "[3.7.0, )"
