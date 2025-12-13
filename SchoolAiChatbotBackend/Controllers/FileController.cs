@@ -48,28 +48,28 @@ namespace SchoolAiChatbotBackend.Controllers
                 var medium = form["medium"].ToString();
                 var className = form["className"].ToString();
                 var subject = form["subject"].ToString();
-                
-                _logger.LogInformation("File upload request received. File null: {FileNull}, FileName: {FileName}, Medium: {Medium}, Class: {Class}, Subject: {Subject}", 
+
+                _logger.LogInformation("File upload request received. File null: {FileNull}, FileName: {FileName}, Medium: {Medium}, Class: {Class}, Subject: {Subject}",
                     file == null, file?.FileName ?? "null", medium, className, subject);
-                
+
                 if (file == null || file.Length == 0)
                 {
                     _logger.LogWarning("File upload validation failed. File is null or empty.");
                     return BadRequest(new { status = "error", message = "No file uploaded. Please select a file." });
                 }
 
-            _logger.LogInformation("Uploading file: {FileName}, Size: {Size} bytes, Medium: {Medium}, Class: {Class}, Subject: {Subject}", 
-                file.FileName, file.Length, medium, className, subject);
+                _logger.LogInformation("Uploading file: {FileName}, Size: {Size} bytes, Medium: {Medium}, Class: {Class}, Subject: {Subject}",
+                    file.FileName, file.Length, medium, className, subject);
 
-            
+
                 string blobUrl;
 
                 // Upload to Azure Blob Storage with folder structure (keeping existing blob storage logic)
                 using (var stream = file.OpenReadStream())
                 {
                     blobUrl = await _blobStorageService.UploadFileToBlobAsync(
-                        file.FileName, 
-                        stream, 
+                        file.FileName,
+                        stream,
                         file.ContentType,
                         className,  // grade parameter maps to className
                         subject,
@@ -93,11 +93,11 @@ namespace SchoolAiChatbotBackend.Controllers
                 try
                 {
                     _dbContext.UploadedFiles.Add(uploadedFile);
-                    
+
                     _logger.LogInformation("Attempting to save file metadata to database...");
-                    _logger.LogInformation("Database connection: {ConnectionString}", 
+                    _logger.LogInformation("Database connection: {ConnectionString}",
                         _dbContext.Database.GetConnectionString()?.Substring(0, Math.Min(100, _dbContext.Database.GetConnectionString()?.Length ?? 0)));
-                    
+
                     var savedCount = await _dbContext.SaveChangesAsync();
                     _logger.LogInformation("Database SaveChanges completed. Rows affected: {RowCount}, FileId: {FileId}", savedCount, uploadedFile.Id);
 
@@ -123,7 +123,7 @@ namespace SchoolAiChatbotBackend.Controllers
                     });
                 }
 
-                _logger.LogInformation("File uploaded successfully: {FileName}, FileId: {FileId}, BlobUrl: {BlobUrl}", 
+                _logger.LogInformation("File uploaded successfully: {FileName}, FileId: {FileId}, BlobUrl: {BlobUrl}",
                     file.FileName, uploadedFile.Id, blobUrl);
 
                 return Ok(new
@@ -153,7 +153,7 @@ namespace SchoolAiChatbotBackend.Controllers
         // ==========================================
         // CHUNKED UPLOAD ENDPOINTS FOR LARGE FILES
         // ==========================================
-        
+
         private static readonly Dictionary<string, List<string>> _uploadChunks = new();
         private static readonly object _chunksLock = new();
 
@@ -177,8 +177,8 @@ namespace SchoolAiChatbotBackend.Controllers
                 var fileName = form["fileName"].ToString();
 
                 // Validate required fields
-                if (string.IsNullOrWhiteSpace(uploadIdStr) || 
-                    string.IsNullOrWhiteSpace(chunkIndexStr) || 
+                if (string.IsNullOrWhiteSpace(uploadIdStr) ||
+                    string.IsNullOrWhiteSpace(chunkIndexStr) ||
                     string.IsNullOrWhiteSpace(totalChunksStr) ||
                     string.IsNullOrWhiteSpace(fileName))
                 {
@@ -200,7 +200,7 @@ namespace SchoolAiChatbotBackend.Controllers
                     return BadRequest(new { status = "error", message = $"Invalid chunkIndex {chunkIndex}. Must be less than totalChunks {totalChunks}." });
                 }
 
-                _logger.LogInformation("Receiving chunk {ChunkIndex}/{TotalChunks} for upload {UploadId}, file: {FileName}", 
+                _logger.LogInformation("Receiving chunk {ChunkIndex}/{TotalChunks} for upload {UploadId}, file: {FileName}",
                     chunkIndex + 1, totalChunks, uploadIdStr, fileName);
 
                 if (chunk == null || chunk.Length == 0)
@@ -228,7 +228,7 @@ namespace SchoolAiChatbotBackend.Controllers
 
                 // Save chunk to temp file
                 var chunkPath = Path.Combine(tempDir, $"chunk_{chunkIndex:D5}");
-                
+
                 // Check if chunk already exists (duplicate upload)
                 if (System.IO.File.Exists(chunkPath))
                 {
@@ -247,12 +247,12 @@ namespace SchoolAiChatbotBackend.Controllers
                     var fileInfo = new FileInfo(chunkPath);
                     if (!fileInfo.Exists || fileInfo.Length != chunk.Length)
                     {
-                        _logger.LogError("Chunk verification failed for {ChunkIndex}. Expected {Expected} bytes, got {Actual} bytes", 
+                        _logger.LogError("Chunk verification failed for {ChunkIndex}. Expected {Expected} bytes, got {Actual} bytes",
                             chunkIndex, chunk.Length, fileInfo.Length);
                         return StatusCode(500, new { status = "error", message = "Chunk verification failed. File may be corrupted." });
                     }
 
-                    _logger.LogInformation("Chunk {ChunkIndex}/{TotalChunks} saved successfully ({Size} bytes) for upload {UploadId}", 
+                    _logger.LogInformation("Chunk {ChunkIndex}/{TotalChunks} saved successfully ({Size} bytes) for upload {UploadId}",
                         chunkIndex + 1, totalChunks, chunk.Length, uploadIdStr);
                 }
                 catch (Exception fileEx)
@@ -335,7 +335,7 @@ namespace SchoolAiChatbotBackend.Controllers
                     request.UploadId, request.FileName, request.TotalChunks, request.FileSize);
 
                 var tempDir = Path.Combine(Path.GetTempPath(), "school-ai-uploads", request.UploadId);
-                
+
                 if (!Directory.Exists(tempDir))
                 {
                     _logger.LogWarning("Upload session not found for {UploadId}", request.UploadId);
@@ -353,8 +353,9 @@ namespace SchoolAiChatbotBackend.Controllers
                 {
                     _logger.LogError("Chunk count mismatch for upload {UploadId}. Expected {Expected}, found {Found}",
                         request.UploadId, request.TotalChunks, chunkFiles.Count);
-                    return BadRequest(new { 
-                        status = "error", 
+                    return BadRequest(new
+                    {
+                        status = "error",
                         message = $"Missing chunks. Expected {request.TotalChunks}, found {chunkFiles.Count}.",
                         expectedChunks = request.TotalChunks,
                         receivedChunks = chunkFiles.Count
@@ -387,7 +388,7 @@ namespace SchoolAiChatbotBackend.Controllers
                     }
 
                     var finalFileInfo = new FileInfo(finalFilePath);
-                    _logger.LogInformation("Assembled file {FileName}, size: {Size} bytes (expected: {Expected} bytes)", 
+                    _logger.LogInformation("Assembled file {FileName}, size: {Size} bytes (expected: {Expected} bytes)",
                         request.FileName, finalFileInfo.Length, request.FileSize);
 
                     // Verify assembled file size matches expected size (allow 1% variance due to metadata)
@@ -398,8 +399,9 @@ namespace SchoolAiChatbotBackend.Controllers
                     {
                         _logger.LogError("File size mismatch after assembly. Expected {Expected}, got {Actual}",
                             request.FileSize, finalFileInfo.Length);
-                        return StatusCode(500, new { 
-                            status = "error", 
+                        return StatusCode(500, new
+                        {
+                            status = "error",
                             message = "File size verification failed. The assembled file size does not match the expected size.",
                             expectedSize = request.FileSize,
                             actualSize = finalFileInfo.Length
@@ -420,7 +422,7 @@ namespace SchoolAiChatbotBackend.Controllers
                     {
                         var contentType = GetContentType(request.FileName);
                         _logger.LogInformation("Uploading assembled file {FileName} to Azure Blob Storage", request.FileName);
-                        
+
                         blobUrl = await _blobStorageService.UploadFileToBlobAsync(
                             request.FileName,
                             fileStream,
@@ -468,7 +470,7 @@ namespace SchoolAiChatbotBackend.Controllers
                 try
                 {
                     _logger.LogInformation("Cleaning up temporary files for upload {UploadId}", request.UploadId);
-                    
+
                     // Delete individual chunk files first
                     foreach (var chunkFile in chunkFiles)
                     {
@@ -529,7 +531,7 @@ namespace SchoolAiChatbotBackend.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error finalizing upload {UploadId}", request.UploadId);
-                
+
                 // Attempt cleanup even on error
                 try
                 {
@@ -649,6 +651,697 @@ namespace SchoolAiChatbotBackend.Controllers
             {
                 _logger.LogError(ex, "Error listing files");
                 return StatusCode(500, new { status = "error", message = "Failed to list files." });
+            }
+        }
+
+        // ==========================================
+        // SYLLABUS DOWNLOAD ENDPOINTS
+        // ==========================================
+
+        /// <summary>
+        /// Get available syllabi grouped by subject and class
+        /// GET /api/file/syllabus
+        /// </summary>
+        [HttpGet("syllabus")]
+        public async Task<IActionResult> GetAvailableSyllabus(
+            [FromQuery] string? grade = null,
+            [FromQuery] string? medium = null)
+        {
+            try
+            {
+                var query = _dbContext.UploadedFiles
+                    .Where(f => f.Status == "Completed")
+                    .AsQueryable();
+
+                // Apply filters
+                if (!string.IsNullOrWhiteSpace(grade))
+                {
+                    query = query.Where(f => f.Grade == grade);
+                }
+
+                if (!string.IsNullOrWhiteSpace(medium))
+                {
+                    query = query.Where(f => f.Medium == medium);
+                }
+
+                var syllabi = await query
+                    .GroupBy(f => new { f.Subject, f.Grade, f.Medium })
+                    .Select(g => new
+                    {
+                        Subject = g.Key.Subject ?? "General",
+                        Grade = g.Key.Grade ?? "All",
+                        Medium = g.Key.Medium ?? "English",
+                        FileCount = g.Count(),
+                        LatestUpload = g.Max(f => f.UploadedAt),
+                        Files = g.Select(f => new
+                        {
+                            f.Id,
+                            f.FileName,
+                            f.BlobUrl,
+                            f.UploadedAt
+                        }).OrderByDescending(f => f.UploadedAt).ToList()
+                    })
+                    .OrderBy(s => s.Subject)
+                    .ToListAsync();
+
+                return Ok(new
+                {
+                    status = "success",
+                    count = syllabi.Count,
+                    syllabi
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching available syllabi");
+                return StatusCode(500, new { status = "error", message = "Failed to fetch syllabi." });
+            }
+        }
+
+        /// <summary>
+        /// Get syllabus list for a specific subject and class
+        /// GET /api/file/syllabus/{subject}
+        /// </summary>
+        [HttpGet("syllabus/{subject}")]
+        public async Task<IActionResult> GetSyllabusBySubject(
+            string subject,
+            [FromQuery] string? grade = null,
+            [FromQuery] string? medium = null)
+        {
+            try
+            {
+                var query = _dbContext.UploadedFiles
+                    .Where(f => f.Status == "Completed" && 
+                           f.Subject != null && 
+                           f.Subject.ToLower() == subject.ToLower())
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(grade))
+                {
+                    query = query.Where(f => f.Grade == grade);
+                }
+
+                if (!string.IsNullOrWhiteSpace(medium))
+                {
+                    query = query.Where(f => f.Medium == medium);
+                }
+
+                var files = await query
+                    .OrderByDescending(f => f.UploadedAt)
+                    .Select(f => new
+                    {
+                        f.Id,
+                        f.FileName,
+                        f.BlobUrl,
+                        f.Subject,
+                        f.Grade,
+                        f.Medium,
+                        f.UploadedAt,
+                        f.TotalChunks
+                    })
+                    .ToListAsync();
+
+                return Ok(new
+                {
+                    status = "success",
+                    subject,
+                    grade,
+                    medium,
+                    count = files.Count,
+                    files
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching syllabus for subject: {Subject}", subject);
+                return StatusCode(500, new { status = "error", message = "Failed to fetch syllabus." });
+            }
+        }
+
+        /// <summary>
+        /// Get available grades/classes that have uploaded syllabi
+        /// GET /api/file/syllabus/grades
+        /// </summary>
+        [HttpGet("syllabus/grades")]
+        public async Task<IActionResult> GetAvailableGrades([FromQuery] string? medium = null)
+        {
+            try
+            {
+                var query = _dbContext.UploadedFiles
+                    .Where(f => f.Status == "Completed" && f.Grade != null)
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(medium))
+                {
+                    query = query.Where(f => f.Medium == medium);
+                }
+
+                var grades = await query
+                    .GroupBy(f => f.Grade)
+                    .Select(g => new
+                    {
+                        Grade = g.Key,
+                        SubjectCount = g.Select(f => f.Subject).Distinct().Count(),
+                        FileCount = g.Count()
+                    })
+                    .OrderBy(g => g.Grade)
+                    .ToListAsync();
+
+                return Ok(new
+                {
+                    status = "success",
+                    count = grades.Count,
+                    grades
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching available grades");
+                return StatusCode(500, new { status = "error", message = "Failed to fetch grades." });
+            }
+        }
+
+        /// <summary>
+        /// Get available subjects for a specific grade
+        /// GET /api/file/syllabus/subjects
+        /// </summary>
+        [HttpGet("syllabus/subjects")]
+        public async Task<IActionResult> GetAvailableSubjects(
+            [FromQuery] string? grade = null,
+            [FromQuery] string? medium = null)
+        {
+            try
+            {
+                var query = _dbContext.UploadedFiles
+                    .Where(f => f.Status == "Completed" && f.Subject != null)
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(grade))
+                {
+                    query = query.Where(f => f.Grade == grade);
+                }
+
+                if (!string.IsNullOrWhiteSpace(medium))
+                {
+                    query = query.Where(f => f.Medium == medium);
+                }
+
+                var subjects = await query
+                    .GroupBy(f => f.Subject)
+                    .Select(g => new
+                    {
+                        Subject = g.Key,
+                        FileCount = g.Count(),
+                        LatestUpload = g.Max(f => f.UploadedAt)
+                    })
+                    .OrderBy(s => s.Subject)
+                    .ToListAsync();
+
+                return Ok(new
+                {
+                    status = "success",
+                    grade,
+                    medium,
+                    count = subjects.Count,
+                    subjects
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching available subjects");
+                return StatusCode(500, new { status = "error", message = "Failed to fetch subjects." });
+            }
+        }
+
+        /// <summary>
+        /// Get download URL for a specific syllabus file
+        /// GET /api/file/syllabus/download/{fileId}
+        /// </summary>
+        [HttpGet("syllabus/download/{fileId}")]
+        public async Task<IActionResult> GetSyllabusDownloadUrl(int fileId)
+        {
+            try
+            {
+                var file = await _dbContext.UploadedFiles
+                    .Where(f => f.Id == fileId && f.Status == "Completed")
+                    .FirstOrDefaultAsync();
+
+                if (file == null)
+                {
+                    return NotFound(new { status = "error", message = "Syllabus file not found." });
+                }
+
+                return Ok(new
+                {
+                    status = "success",
+                    fileId = file.Id,
+                    fileName = file.FileName,
+                    subject = file.Subject,
+                    grade = file.Grade,
+                    medium = file.Medium,
+                    downloadUrl = file.BlobUrl,
+                    uploadedAt = file.UploadedAt
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting download URL for file: {FileId}", fileId);
+                return StatusCode(500, new { status = "error", message = "Failed to get download URL." });
+            }
+        }
+
+        // ==========================================
+        // MODEL QUESTION PAPER ENDPOINTS
+        // ==========================================
+
+        /// <summary>
+        /// Get all model question papers grouped by subject and class
+        /// GET /api/file/question-papers
+        /// </summary>
+        [HttpGet("question-papers")]
+        public async Task<IActionResult> GetAllQuestionPapers(
+            [FromQuery] string? grade = null,
+            [FromQuery] string? medium = null,
+            [FromQuery] string? academicYear = null)
+        {
+            try
+            {
+                var query = _dbContext.UploadedFiles
+                    .Where(f => f.Status == "Completed" && f.FileType == "ModelQuestionPaper")
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(grade))
+                {
+                    query = query.Where(f => f.Grade == grade);
+                }
+
+                if (!string.IsNullOrWhiteSpace(medium))
+                {
+                    query = query.Where(f => f.Medium == medium);
+                }
+
+                if (!string.IsNullOrWhiteSpace(academicYear))
+                {
+                    query = query.Where(f => f.AcademicYear == academicYear);
+                }
+
+                var questionPapers = await query
+                    .GroupBy(f => new { f.Subject, f.Grade, f.Medium })
+                    .Select(g => new
+                    {
+                        Subject = g.Key.Subject ?? "General",
+                        Grade = g.Key.Grade ?? "All",
+                        Medium = g.Key.Medium ?? "English",
+                        PaperCount = g.Count(),
+                        LatestUpload = g.Max(f => f.UploadedAt),
+                        Papers = g.Select(f => new
+                        {
+                            f.Id,
+                            f.FileName,
+                            f.BlobUrl,
+                            f.AcademicYear,
+                            f.Chapter,
+                            f.UploadedAt
+                        }).OrderByDescending(f => f.UploadedAt).ToList()
+                    })
+                    .OrderBy(s => s.Subject)
+                    .ThenBy(s => s.Grade)
+                    .ToListAsync();
+
+                return Ok(new
+                {
+                    status = "success",
+                    count = questionPapers.Count,
+                    totalPapers = questionPapers.Sum(q => q.PaperCount),
+                    questionPapers
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching question papers");
+                return StatusCode(500, new { status = "error", message = "Failed to fetch question papers." });
+            }
+        }
+
+        /// <summary>
+        /// Get model question papers for a specific subject
+        /// GET /api/file/question-papers/{subject}
+        /// </summary>
+        [HttpGet("question-papers/{subject}")]
+        public async Task<IActionResult> GetQuestionPapersBySubject(
+            string subject,
+            [FromQuery] string? grade = null,
+            [FromQuery] string? medium = null,
+            [FromQuery] string? academicYear = null)
+        {
+            try
+            {
+                var query = _dbContext.UploadedFiles
+                    .Where(f => f.Status == "Completed" && 
+                           f.FileType == "ModelQuestionPaper" &&
+                           f.Subject != null && 
+                           f.Subject.ToLower() == subject.ToLower())
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(grade))
+                {
+                    query = query.Where(f => f.Grade == grade);
+                }
+
+                if (!string.IsNullOrWhiteSpace(medium))
+                {
+                    query = query.Where(f => f.Medium == medium);
+                }
+
+                if (!string.IsNullOrWhiteSpace(academicYear))
+                {
+                    query = query.Where(f => f.AcademicYear == academicYear);
+                }
+
+                var papers = await query
+                    .OrderByDescending(f => f.UploadedAt)
+                    .Select(f => new
+                    {
+                        f.Id,
+                        f.FileName,
+                        f.BlobUrl,
+                        f.Subject,
+                        f.Grade,
+                        f.Medium,
+                        f.AcademicYear,
+                        f.Chapter,
+                        f.UploadedAt,
+                        f.TotalChunks
+                    })
+                    .ToListAsync();
+
+                return Ok(new
+                {
+                    status = "success",
+                    subject,
+                    grade,
+                    medium,
+                    academicYear,
+                    count = papers.Count,
+                    papers
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching question papers for subject: {Subject}", subject);
+                return StatusCode(500, new { status = "error", message = "Failed to fetch question papers." });
+            }
+        }
+
+        /// <summary>
+        /// Get model question papers for a specific class/grade
+        /// GET /api/file/question-papers/grade/{grade}
+        /// </summary>
+        [HttpGet("question-papers/grade/{grade}")]
+        public async Task<IActionResult> GetQuestionPapersByGrade(
+            string grade,
+            [FromQuery] string? medium = null,
+            [FromQuery] string? academicYear = null)
+        {
+            try
+            {
+                var query = _dbContext.UploadedFiles
+                    .Where(f => f.Status == "Completed" && 
+                           f.FileType == "ModelQuestionPaper" &&
+                           f.Grade != null && 
+                           f.Grade.ToLower() == grade.ToLower())
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(medium))
+                {
+                    query = query.Where(f => f.Medium == medium);
+                }
+
+                if (!string.IsNullOrWhiteSpace(academicYear))
+                {
+                    query = query.Where(f => f.AcademicYear == academicYear);
+                }
+
+                var papersBySubject = await query
+                    .GroupBy(f => f.Subject)
+                    .Select(g => new
+                    {
+                        Subject = g.Key ?? "General",
+                        PaperCount = g.Count(),
+                        LatestUpload = g.Max(f => f.UploadedAt),
+                        Papers = g.Select(f => new
+                        {
+                            f.Id,
+                            f.FileName,
+                            f.BlobUrl,
+                            f.AcademicYear,
+                            f.Chapter,
+                            f.UploadedAt
+                        }).OrderByDescending(f => f.UploadedAt).ToList()
+                    })
+                    .OrderBy(s => s.Subject)
+                    .ToListAsync();
+
+                return Ok(new
+                {
+                    status = "success",
+                    grade,
+                    medium,
+                    academicYear,
+                    subjectCount = papersBySubject.Count,
+                    totalPapers = papersBySubject.Sum(s => s.PaperCount),
+                    subjects = papersBySubject
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching question papers for grade: {Grade}", grade);
+                return StatusCode(500, new { status = "error", message = "Failed to fetch question papers." });
+            }
+        }
+
+        /// <summary>
+        /// Get available grades that have model question papers
+        /// GET /api/file/question-papers/grades
+        /// </summary>
+        [HttpGet("question-papers/grades")]
+        public async Task<IActionResult> GetQuestionPaperGrades(
+            [FromQuery] string? medium = null,
+            [FromQuery] string? academicYear = null)
+        {
+            try
+            {
+                var query = _dbContext.UploadedFiles
+                    .Where(f => f.Status == "Completed" && 
+                           f.FileType == "ModelQuestionPaper" &&
+                           f.Grade != null)
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(medium))
+                {
+                    query = query.Where(f => f.Medium == medium);
+                }
+
+                if (!string.IsNullOrWhiteSpace(academicYear))
+                {
+                    query = query.Where(f => f.AcademicYear == academicYear);
+                }
+
+                var grades = await query
+                    .GroupBy(f => f.Grade)
+                    .Select(g => new
+                    {
+                        Grade = g.Key,
+                        SubjectCount = g.Select(f => f.Subject).Distinct().Count(),
+                        PaperCount = g.Count(),
+                        AcademicYears = g.Where(f => f.AcademicYear != null)
+                                         .Select(f => f.AcademicYear)
+                                         .Distinct()
+                                         .ToList()
+                    })
+                    .OrderBy(g => g.Grade)
+                    .ToListAsync();
+
+                return Ok(new
+                {
+                    status = "success",
+                    count = grades.Count,
+                    grades
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching question paper grades");
+                return StatusCode(500, new { status = "error", message = "Failed to fetch grades." });
+            }
+        }
+
+        /// <summary>
+        /// Get available subjects that have model question papers for a grade
+        /// GET /api/file/question-papers/subjects
+        /// </summary>
+        [HttpGet("question-papers/subjects")]
+        public async Task<IActionResult> GetQuestionPaperSubjects(
+            [FromQuery] string? grade = null,
+            [FromQuery] string? medium = null,
+            [FromQuery] string? academicYear = null)
+        {
+            try
+            {
+                var query = _dbContext.UploadedFiles
+                    .Where(f => f.Status == "Completed" && 
+                           f.FileType == "ModelQuestionPaper" &&
+                           f.Subject != null)
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(grade))
+                {
+                    query = query.Where(f => f.Grade == grade);
+                }
+
+                if (!string.IsNullOrWhiteSpace(medium))
+                {
+                    query = query.Where(f => f.Medium == medium);
+                }
+
+                if (!string.IsNullOrWhiteSpace(academicYear))
+                {
+                    query = query.Where(f => f.AcademicYear == academicYear);
+                }
+
+                var subjects = await query
+                    .GroupBy(f => f.Subject)
+                    .Select(g => new
+                    {
+                        Subject = g.Key,
+                        PaperCount = g.Count(),
+                        LatestUpload = g.Max(f => f.UploadedAt),
+                        Grades = g.Where(f => f.Grade != null)
+                                  .Select(f => f.Grade)
+                                  .Distinct()
+                                  .ToList(),
+                        AcademicYears = g.Where(f => f.AcademicYear != null)
+                                         .Select(f => f.AcademicYear)
+                                         .Distinct()
+                                         .ToList()
+                    })
+                    .OrderBy(s => s.Subject)
+                    .ToListAsync();
+
+                return Ok(new
+                {
+                    status = "success",
+                    grade,
+                    medium,
+                    academicYear,
+                    count = subjects.Count,
+                    subjects
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching question paper subjects");
+                return StatusCode(500, new { status = "error", message = "Failed to fetch subjects." });
+            }
+        }
+
+        /// <summary>
+        /// Get download URL for a specific question paper
+        /// GET /api/file/question-papers/download/{fileId}
+        /// </summary>
+        [HttpGet("question-papers/download/{fileId}")]
+        public async Task<IActionResult> GetQuestionPaperDownloadUrl(int fileId)
+        {
+            try
+            {
+                var file = await _dbContext.UploadedFiles
+                    .Where(f => f.Id == fileId && 
+                           f.Status == "Completed" && 
+                           f.FileType == "ModelQuestionPaper")
+                    .FirstOrDefaultAsync();
+
+                if (file == null)
+                {
+                    return NotFound(new { status = "error", message = "Question paper not found." });
+                }
+
+                return Ok(new
+                {
+                    status = "success",
+                    fileId = file.Id,
+                    fileName = file.FileName,
+                    subject = file.Subject,
+                    grade = file.Grade,
+                    medium = file.Medium,
+                    academicYear = file.AcademicYear,
+                    chapter = file.Chapter,
+                    downloadUrl = file.BlobUrl,
+                    uploadedAt = file.UploadedAt
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting download URL for question paper: {FileId}", fileId);
+                return StatusCode(500, new { status = "error", message = "Failed to get download URL." });
+            }
+        }
+
+        /// <summary>
+        /// Get available academic years for question papers
+        /// GET /api/file/question-papers/years
+        /// </summary>
+        [HttpGet("question-papers/years")]
+        public async Task<IActionResult> GetQuestionPaperYears(
+            [FromQuery] string? grade = null,
+            [FromQuery] string? subject = null,
+            [FromQuery] string? medium = null)
+        {
+            try
+            {
+                var query = _dbContext.UploadedFiles
+                    .Where(f => f.Status == "Completed" && 
+                           f.FileType == "ModelQuestionPaper" &&
+                           f.AcademicYear != null)
+                    .AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(grade))
+                {
+                    query = query.Where(f => f.Grade == grade);
+                }
+
+                if (!string.IsNullOrWhiteSpace(subject))
+                {
+                    query = query.Where(f => f.Subject != null && f.Subject.ToLower() == subject.ToLower());
+                }
+
+                if (!string.IsNullOrWhiteSpace(medium))
+                {
+                    query = query.Where(f => f.Medium == medium);
+                }
+
+                var years = await query
+                    .GroupBy(f => f.AcademicYear)
+                    .Select(g => new
+                    {
+                        AcademicYear = g.Key,
+                        PaperCount = g.Count(),
+                        SubjectCount = g.Select(f => f.Subject).Distinct().Count(),
+                        GradeCount = g.Select(f => f.Grade).Distinct().Count()
+                    })
+                    .OrderByDescending(y => y.AcademicYear)
+                    .ToListAsync();
+
+                return Ok(new
+                {
+                    status = "success",
+                    count = years.Count,
+                    years
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching question paper years");
+                return StatusCode(500, new { status = "error", message = "Failed to fetch academic years." });
             }
         }
     }

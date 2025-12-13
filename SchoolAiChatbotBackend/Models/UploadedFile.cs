@@ -37,6 +37,24 @@ namespace SchoolAiChatbotBackend.Models
         [StringLength(50)]
         public string? Medium { get; set; }
 
+        /// <summary>
+        /// Type of file: Syllabus, ModelQuestionPaper, Notes, etc.
+        /// </summary>
+        [StringLength(50)]
+        public string FileType { get; set; } = "Syllabus";
+
+        /// <summary>
+        /// Chapter or unit name (optional)
+        /// </summary>
+        [StringLength(200)]
+        public string? Chapter { get; set; }
+
+        /// <summary>
+        /// Academic year (e.g., "2024-25")
+        /// </summary>
+        [StringLength(20)]
+        public string? AcademicYear { get; set; }
+
         public int TotalChunks { get; set; } = 0;
 
         [StringLength(50)]
