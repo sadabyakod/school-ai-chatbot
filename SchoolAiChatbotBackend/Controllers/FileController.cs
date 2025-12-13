@@ -669,8 +669,9 @@ namespace SchoolAiChatbotBackend.Controllers
         {
             try
             {
+                // Show all uploaded files (Pending, Processing, or Completed) for download
                 var query = _dbContext.UploadedFiles
-                    .Where(f => f.Status == "Completed")
+                    .Where(f => f.FileType == "Syllabus" || f.FileType == null)
                     .AsQueryable();
 
                 // Apply filters
@@ -731,7 +732,7 @@ namespace SchoolAiChatbotBackend.Controllers
             try
             {
                 var query = _dbContext.UploadedFiles
-                    .Where(f => f.Status == "Completed" && 
+                    .Where(f => (f.FileType == "Syllabus" || f.FileType == null) && 
                            f.Subject != null && 
                            f.Subject.ToLower() == subject.ToLower())
                     .AsQueryable();
@@ -788,7 +789,7 @@ namespace SchoolAiChatbotBackend.Controllers
             try
             {
                 var query = _dbContext.UploadedFiles
-                    .Where(f => f.Status == "Completed" && f.Grade != null)
+                    .Where(f => (f.FileType == "Syllabus" || f.FileType == null) && f.Grade != null)
                     .AsQueryable();
 
                 if (!string.IsNullOrWhiteSpace(medium))
@@ -833,7 +834,7 @@ namespace SchoolAiChatbotBackend.Controllers
             try
             {
                 var query = _dbContext.UploadedFiles
-                    .Where(f => f.Status == "Completed" && f.Subject != null)
+                    .Where(f => (f.FileType == "Syllabus" || f.FileType == null) && f.Subject != null)
                     .AsQueryable();
 
                 if (!string.IsNullOrWhiteSpace(grade))
@@ -883,7 +884,7 @@ namespace SchoolAiChatbotBackend.Controllers
             try
             {
                 var file = await _dbContext.UploadedFiles
-                    .Where(f => f.Id == fileId && f.Status == "Completed")
+                    .Where(f => f.Id == fileId)
                     .FirstOrDefaultAsync();
 
                 if (file == null)
@@ -926,8 +927,9 @@ namespace SchoolAiChatbotBackend.Controllers
         {
             try
             {
+                // Show all uploaded question papers for download
                 var query = _dbContext.UploadedFiles
-                    .Where(f => f.Status == "Completed" && f.FileType == "ModelQuestionPaper")
+                    .Where(f => f.FileType == "ModelQuestionPaper")
                     .AsQueryable();
 
                 if (!string.IsNullOrWhiteSpace(grade))
@@ -997,8 +999,7 @@ namespace SchoolAiChatbotBackend.Controllers
             try
             {
                 var query = _dbContext.UploadedFiles
-                    .Where(f => f.Status == "Completed" && 
-                           f.FileType == "ModelQuestionPaper" &&
+                    .Where(f => f.FileType == "ModelQuestionPaper" &&
                            f.Subject != null && 
                            f.Subject.ToLower() == subject.ToLower())
                     .AsQueryable();
@@ -1066,8 +1067,7 @@ namespace SchoolAiChatbotBackend.Controllers
             try
             {
                 var query = _dbContext.UploadedFiles
-                    .Where(f => f.Status == "Completed" && 
-                           f.FileType == "ModelQuestionPaper" &&
+                    .Where(f => f.FileType == "ModelQuestionPaper" &&
                            f.Grade != null && 
                            f.Grade.ToLower() == grade.ToLower())
                     .AsQueryable();
@@ -1132,8 +1132,7 @@ namespace SchoolAiChatbotBackend.Controllers
             try
             {
                 var query = _dbContext.UploadedFiles
-                    .Where(f => f.Status == "Completed" && 
-                           f.FileType == "ModelQuestionPaper" &&
+                    .Where(f => f.FileType == "ModelQuestionPaper" &&
                            f.Grade != null)
                     .AsQueryable();
 
@@ -1189,8 +1188,7 @@ namespace SchoolAiChatbotBackend.Controllers
             try
             {
                 var query = _dbContext.UploadedFiles
-                    .Where(f => f.Status == "Completed" && 
-                           f.FileType == "ModelQuestionPaper" &&
+                    .Where(f => f.FileType == "ModelQuestionPaper" &&
                            f.Subject != null)
                     .AsQueryable();
 
@@ -1256,7 +1254,6 @@ namespace SchoolAiChatbotBackend.Controllers
             {
                 var file = await _dbContext.UploadedFiles
                     .Where(f => f.Id == fileId && 
-                           f.Status == "Completed" && 
                            f.FileType == "ModelQuestionPaper")
                     .FirstOrDefaultAsync();
 
@@ -1299,8 +1296,7 @@ namespace SchoolAiChatbotBackend.Controllers
             try
             {
                 var query = _dbContext.UploadedFiles
-                    .Where(f => f.Status == "Completed" && 
-                           f.FileType == "ModelQuestionPaper" &&
+                    .Where(f => f.FileType == "ModelQuestionPaper" &&
                            f.AcademicYear != null)
                     .AsQueryable();
 
