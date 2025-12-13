@@ -91,6 +91,9 @@ jobs:
     - name: Copy Production Program.cs
       run: cp SchoolAiChatbotBackend/Program.Production.cs SchoolAiChatbotBackend/Program.cs
     
+    - name: Create appsettings.json from template
+      run: cp SchoolAiChatbotBackend/appsettings.template.json SchoolAiChatbotBackend/appsettings.json
+    
     - name: Restore dependencies
       run: dotnet restore SchoolAiChatbotBackend/SchoolAiChatbotBackend.csproj
     

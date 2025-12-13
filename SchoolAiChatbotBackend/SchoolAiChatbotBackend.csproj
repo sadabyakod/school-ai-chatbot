@@ -15,7 +15,8 @@
 
   <!-- Explicitly include only necessary files for publish -->
   <ItemGroup>
-    <Content Include="appsettings.json" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="appsettings.json" CopyToPublishDirectory="PreserveNewest" Condition="Exists('appsettings.json')" />
+    <Content Include="appsettings.template.json" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="web.config" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
