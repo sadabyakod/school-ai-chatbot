@@ -59,7 +59,7 @@ jobs:
           --name $APP_NAME \
           --resource-group ${{ secrets.AZURE_RESOURCE_GROUP_NAME }} \
           --plan $PLAN_NAME \
-          --runtime "dotnet:9"
+          --runtime "dotnet:8"
         
         echo "Setting app configuration..."
         az webapp config appsettings set \
@@ -86,10 +86,13 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: '9.0.x'
+        dotnet-version: '8.0.x'
     
     - name: Copy Production Program.cs
       run: cp SchoolAiChatbotBackend/Program.Production.cs SchoolAiChatbotBackend/Program.cs
+    
+    - name: Create appsettings.json from template
+      run: cp SchoolAiChatbotBackend/appsettings.template.json SchoolAiChatbotBackend/appsettings.json
     
     - name: Restore dependencies
       run: dotnet restore SchoolAiChatbotBackend/SchoolAiChatbotBackend.csproj

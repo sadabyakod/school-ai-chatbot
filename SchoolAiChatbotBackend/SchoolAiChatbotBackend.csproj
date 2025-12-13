@@ -7,9 +7,30 @@
     <UserSecretsId>b7cd7614-f9ba-4a76-8716-ddf92072b845</UserSecretsId>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <PublishWithAspNetCoreTargetManifest>false</PublishWithAspNetCoreTargetManifest>
+    <!-- Prevent any static file middleware from interfering -->
+    <SpaRoot></SpaRoot>
+    <EnableDefaultContentItems>false</EnableDefaultContentItems>
   </PropertyGroup>
 
-  <!-- Use same Program.cs for all configurations -->
+  <!-- Explicitly include only necessary files for publish -->
+  <ItemGroup>
+    <Content Include="appsettings.json" CopyToPublishDirectory="PreserveNewest" Condition="Exists('appsettings.json')" />
+    <Content Include="appsettings.template.json" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="web.config" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Exclude any folders that match route patterns -->
+  <ItemGroup>
+    <Content Remove="api\**" />
+    <Content Remove="wwwroot\**" />
+    <Compile Remove="api\**" />
+    <Compile Remove="wwwroot\**" />
+    <EmbeddedResource Remove="api\**" />
+    <EmbeddedResource Remove="wwwroot\**" />
+    <None Remove="api\**" />
+    <None Remove="wwwroot\**" />
+  </ItemGroup>
 
   <!-- Exclude Program.Production.cs from compilation to avoid duplicate Program class -->
   <ItemGroup>

@@ -50,6 +50,7 @@ namespace SchoolAiChatbotBackend
                             .WithOrigins(
                                 "https://proud-hill-07ee6991e3.azurestaticapps.net",
                                 "https://nice-ocean-0bd32c110.3.azurestaticapps.net",
+                                "https://mango-meadow-0e5611b00.3.azurestaticapps.net",
                                 "http://localhost:5173",
                                 "http://localhost:5174",
                                 "http://localhost:5175"
@@ -324,6 +325,7 @@ app.Use(async (context, next) =>
             }
 
 app.UseHttpsRedirection();
+app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 

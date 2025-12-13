@@ -5925,6 +5925,7 @@
       "Microsoft.EntityFrameworkCore.Design >= 8.0.11",
       "Microsoft.EntityFrameworkCore.InMemory >= 8.0.11",
       "Microsoft.EntityFrameworkCore.SqlServer >= 8.0.11",
+      "Microsoft.Extensions.Logging.Abstractions >= 8.0.3",
       "Newtonsoft.Json >= 13.0.4",
       "OpenAI >= 2.5.0",
       "Serilog.AspNetCore >= 8.0.1",
@@ -6011,6 +6012,10 @@
           "Microsoft.EntityFrameworkCore.SqlServer": {
             "target": "Package",
             "version": "[8.0.11, )"
+          },
+          "Microsoft.Extensions.Logging.Abstractions": {
+            "target": "Package",
+            "version": "[8.0.3, )"
           },
           "Newtonsoft.Json": {
             "target": "Package",
