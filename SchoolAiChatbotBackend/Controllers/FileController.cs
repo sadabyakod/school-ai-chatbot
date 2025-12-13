@@ -669,10 +669,8 @@ namespace SchoolAiChatbotBackend.Controllers
         {
             try
             {
-                // Show all uploaded files (Pending, Processing, or Completed) for download
-                var query = _dbContext.UploadedFiles
-                    .Where(f => f.FileType == "Syllabus" || f.FileType == null)
-                    .AsQueryable();
+                // Show all uploaded files for download (all files are syllabi for now)
+                var query = _dbContext.UploadedFiles.AsQueryable();
 
                 // Apply filters
                 if (!string.IsNullOrWhiteSpace(grade))
@@ -732,8 +730,7 @@ namespace SchoolAiChatbotBackend.Controllers
             try
             {
                 var query = _dbContext.UploadedFiles
-                    .Where(f => (f.FileType == "Syllabus" || f.FileType == null) && 
-                           f.Subject != null && 
+                    .Where(f => f.Subject != null && 
                            f.Subject.ToLower() == subject.ToLower())
                     .AsQueryable();
 
@@ -789,7 +786,7 @@ namespace SchoolAiChatbotBackend.Controllers
             try
             {
                 var query = _dbContext.UploadedFiles
-                    .Where(f => (f.FileType == "Syllabus" || f.FileType == null) && f.Grade != null)
+                    .Where(f => f.Grade != null)
                     .AsQueryable();
 
                 if (!string.IsNullOrWhiteSpace(medium))
@@ -834,7 +831,7 @@ namespace SchoolAiChatbotBackend.Controllers
             try
             {
                 var query = _dbContext.UploadedFiles
-                    .Where(f => (f.FileType == "Syllabus" || f.FileType == null) && f.Subject != null)
+                    .Where(f => f.Subject != null)
                     .AsQueryable();
 
                 if (!string.IsNullOrWhiteSpace(grade))
@@ -913,432 +910,117 @@ namespace SchoolAiChatbotBackend.Controllers
 
         // ==========================================
         // MODEL QUESTION PAPER ENDPOINTS
+        // Note: These endpoints require database migration to add 
+        // FileType, Chapter, and AcademicYear columns.
+        // For now, returning "coming soon" response.
         // ==========================================
 
         /// <summary>
-        /// Get all model question papers grouped by subject and class
+        /// Get all model question papers - Coming Soon
         /// GET /api/file/question-papers
         /// </summary>
         [HttpGet("question-papers")]
-        public async Task<IActionResult> GetAllQuestionPapers(
-            [FromQuery] string? grade = null,
-            [FromQuery] string? medium = null,
-            [FromQuery] string? academicYear = null)
+        public IActionResult GetAllQuestionPapers()
         {
-            try
+            return Ok(new
             {
-                // Show all uploaded question papers for download
-                var query = _dbContext.UploadedFiles
-                    .Where(f => f.FileType == "ModelQuestionPaper")
-                    .AsQueryable();
-
-                if (!string.IsNullOrWhiteSpace(grade))
-                {
-                    query = query.Where(f => f.Grade == grade);
-                }
-
-                if (!string.IsNullOrWhiteSpace(medium))
-                {
-                    query = query.Where(f => f.Medium == medium);
-                }
-
-                if (!string.IsNullOrWhiteSpace(academicYear))
-                {
-                    query = query.Where(f => f.AcademicYear == academicYear);
-                }
-
-                var questionPapers = await query
-                    .GroupBy(f => new { f.Subject, f.Grade, f.Medium })
-                    .Select(g => new
-                    {
-                        Subject = g.Key.Subject ?? "General",
-                        Grade = g.Key.Grade ?? "All",
-                        Medium = g.Key.Medium ?? "English",
-                        PaperCount = g.Count(),
-                        LatestUpload = g.Max(f => f.UploadedAt),
-                        Papers = g.Select(f => new
-                        {
-                            f.Id,
-                            f.FileName,
-                            f.BlobUrl,
-                            f.AcademicYear,
-                            f.Chapter,
-                            f.UploadedAt
-                        }).OrderByDescending(f => f.UploadedAt).ToList()
-                    })
-                    .OrderBy(s => s.Subject)
-                    .ThenBy(s => s.Grade)
-                    .ToListAsync();
-
-                return Ok(new
-                {
-                    status = "success",
-                    count = questionPapers.Count,
-                    totalPapers = questionPapers.Sum(q => q.PaperCount),
-                    questionPapers
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error fetching question papers");
-                return StatusCode(500, new { status = "error", message = "Failed to fetch question papers." });
-            }
+                status = "coming_soon",
+                message = "Model question papers feature is coming soon. Database migration required.",
+                count = 0,
+                questionPapers = Array.Empty<object>()
+            });
         }
 
         /// <summary>
-        /// Get model question papers for a specific subject
-        /// GET /api/file/question-papers/{subject}
+        /// Get question papers by subject - Coming Soon
         /// </summary>
         [HttpGet("question-papers/{subject}")]
-        public async Task<IActionResult> GetQuestionPapersBySubject(
-            string subject,
-            [FromQuery] string? grade = null,
-            [FromQuery] string? medium = null,
-            [FromQuery] string? academicYear = null)
+        public IActionResult GetQuestionPapersBySubject(string subject)
         {
-            try
+            return Ok(new
             {
-                var query = _dbContext.UploadedFiles
-                    .Where(f => f.FileType == "ModelQuestionPaper" &&
-                           f.Subject != null && 
-                           f.Subject.ToLower() == subject.ToLower())
-                    .AsQueryable();
-
-                if (!string.IsNullOrWhiteSpace(grade))
-                {
-                    query = query.Where(f => f.Grade == grade);
-                }
-
-                if (!string.IsNullOrWhiteSpace(medium))
-                {
-                    query = query.Where(f => f.Medium == medium);
-                }
-
-                if (!string.IsNullOrWhiteSpace(academicYear))
-                {
-                    query = query.Where(f => f.AcademicYear == academicYear);
-                }
-
-                var papers = await query
-                    .OrderByDescending(f => f.UploadedAt)
-                    .Select(f => new
-                    {
-                        f.Id,
-                        f.FileName,
-                        f.BlobUrl,
-                        f.Subject,
-                        f.Grade,
-                        f.Medium,
-                        f.AcademicYear,
-                        f.Chapter,
-                        f.UploadedAt,
-                        f.TotalChunks
-                    })
-                    .ToListAsync();
-
-                return Ok(new
-                {
-                    status = "success",
-                    subject,
-                    grade,
-                    medium,
-                    academicYear,
-                    count = papers.Count,
-                    papers
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error fetching question papers for subject: {Subject}", subject);
-                return StatusCode(500, new { status = "error", message = "Failed to fetch question papers." });
-            }
+                status = "coming_soon",
+                message = "Model question papers feature is coming soon.",
+                subject,
+                count = 0,
+                papers = Array.Empty<object>()
+            });
         }
 
         /// <summary>
-        /// Get model question papers for a specific class/grade
-        /// GET /api/file/question-papers/grade/{grade}
+        /// Get question papers by grade - Coming Soon
         /// </summary>
         [HttpGet("question-papers/grade/{grade}")]
-        public async Task<IActionResult> GetQuestionPapersByGrade(
-            string grade,
-            [FromQuery] string? medium = null,
-            [FromQuery] string? academicYear = null)
+        public IActionResult GetQuestionPapersByGrade(string grade)
         {
-            try
+            return Ok(new
             {
-                var query = _dbContext.UploadedFiles
-                    .Where(f => f.FileType == "ModelQuestionPaper" &&
-                           f.Grade != null && 
-                           f.Grade.ToLower() == grade.ToLower())
-                    .AsQueryable();
-
-                if (!string.IsNullOrWhiteSpace(medium))
-                {
-                    query = query.Where(f => f.Medium == medium);
-                }
-
-                if (!string.IsNullOrWhiteSpace(academicYear))
-                {
-                    query = query.Where(f => f.AcademicYear == academicYear);
-                }
-
-                var papersBySubject = await query
-                    .GroupBy(f => f.Subject)
-                    .Select(g => new
-                    {
-                        Subject = g.Key ?? "General",
-                        PaperCount = g.Count(),
-                        LatestUpload = g.Max(f => f.UploadedAt),
-                        Papers = g.Select(f => new
-                        {
-                            f.Id,
-                            f.FileName,
-                            f.BlobUrl,
-                            f.AcademicYear,
-                            f.Chapter,
-                            f.UploadedAt
-                        }).OrderByDescending(f => f.UploadedAt).ToList()
-                    })
-                    .OrderBy(s => s.Subject)
-                    .ToListAsync();
-
-                return Ok(new
-                {
-                    status = "success",
-                    grade,
-                    medium,
-                    academicYear,
-                    subjectCount = papersBySubject.Count,
-                    totalPapers = papersBySubject.Sum(s => s.PaperCount),
-                    subjects = papersBySubject
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error fetching question papers for grade: {Grade}", grade);
-                return StatusCode(500, new { status = "error", message = "Failed to fetch question papers." });
-            }
+                status = "coming_soon",
+                message = "Model question papers feature is coming soon.",
+                grade,
+                subjectCount = 0,
+                totalPapers = 0,
+                subjects = Array.Empty<object>()
+            });
         }
 
         /// <summary>
-        /// Get available grades that have model question papers
-        /// GET /api/file/question-papers/grades
+        /// Get available grades - Coming Soon
         /// </summary>
         [HttpGet("question-papers/grades")]
-        public async Task<IActionResult> GetQuestionPaperGrades(
-            [FromQuery] string? medium = null,
-            [FromQuery] string? academicYear = null)
+        public IActionResult GetQuestionPaperGrades()
         {
-            try
+            return Ok(new
             {
-                var query = _dbContext.UploadedFiles
-                    .Where(f => f.FileType == "ModelQuestionPaper" &&
-                           f.Grade != null)
-                    .AsQueryable();
-
-                if (!string.IsNullOrWhiteSpace(medium))
-                {
-                    query = query.Where(f => f.Medium == medium);
-                }
-
-                if (!string.IsNullOrWhiteSpace(academicYear))
-                {
-                    query = query.Where(f => f.AcademicYear == academicYear);
-                }
-
-                var grades = await query
-                    .GroupBy(f => f.Grade)
-                    .Select(g => new
-                    {
-                        Grade = g.Key,
-                        SubjectCount = g.Select(f => f.Subject).Distinct().Count(),
-                        PaperCount = g.Count(),
-                        AcademicYears = g.Where(f => f.AcademicYear != null)
-                                         .Select(f => f.AcademicYear)
-                                         .Distinct()
-                                         .ToList()
-                    })
-                    .OrderBy(g => g.Grade)
-                    .ToListAsync();
-
-                return Ok(new
-                {
-                    status = "success",
-                    count = grades.Count,
-                    grades
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error fetching question paper grades");
-                return StatusCode(500, new { status = "error", message = "Failed to fetch grades." });
-            }
+                status = "coming_soon",
+                message = "Model question papers feature is coming soon.",
+                count = 0,
+                grades = Array.Empty<object>()
+            });
         }
 
         /// <summary>
-        /// Get available subjects that have model question papers for a grade
-        /// GET /api/file/question-papers/subjects
+        /// Get available subjects - Coming Soon
         /// </summary>
         [HttpGet("question-papers/subjects")]
-        public async Task<IActionResult> GetQuestionPaperSubjects(
-            [FromQuery] string? grade = null,
-            [FromQuery] string? medium = null,
-            [FromQuery] string? academicYear = null)
+        public IActionResult GetQuestionPaperSubjects()
         {
-            try
+            return Ok(new
             {
-                var query = _dbContext.UploadedFiles
-                    .Where(f => f.FileType == "ModelQuestionPaper" &&
-                           f.Subject != null)
-                    .AsQueryable();
-
-                if (!string.IsNullOrWhiteSpace(grade))
-                {
-                    query = query.Where(f => f.Grade == grade);
-                }
-
-                if (!string.IsNullOrWhiteSpace(medium))
-                {
-                    query = query.Where(f => f.Medium == medium);
-                }
-
-                if (!string.IsNullOrWhiteSpace(academicYear))
-                {
-                    query = query.Where(f => f.AcademicYear == academicYear);
-                }
-
-                var subjects = await query
-                    .GroupBy(f => f.Subject)
-                    .Select(g => new
-                    {
-                        Subject = g.Key,
-                        PaperCount = g.Count(),
-                        LatestUpload = g.Max(f => f.UploadedAt),
-                        Grades = g.Where(f => f.Grade != null)
-                                  .Select(f => f.Grade)
-                                  .Distinct()
-                                  .ToList(),
-                        AcademicYears = g.Where(f => f.AcademicYear != null)
-                                         .Select(f => f.AcademicYear)
-                                         .Distinct()
-                                         .ToList()
-                    })
-                    .OrderBy(s => s.Subject)
-                    .ToListAsync();
-
-                return Ok(new
-                {
-                    status = "success",
-                    grade,
-                    medium,
-                    academicYear,
-                    count = subjects.Count,
-                    subjects
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error fetching question paper subjects");
-                return StatusCode(500, new { status = "error", message = "Failed to fetch subjects." });
-            }
+                status = "coming_soon",
+                message = "Model question papers feature is coming soon.",
+                count = 0,
+                subjects = Array.Empty<object>()
+            });
         }
 
         /// <summary>
-        /// Get download URL for a specific question paper
-        /// GET /api/file/question-papers/download/{fileId}
+        /// Download question paper - Coming Soon
         /// </summary>
         [HttpGet("question-papers/download/{fileId}")]
-        public async Task<IActionResult> GetQuestionPaperDownloadUrl(int fileId)
+        public IActionResult GetQuestionPaperDownloadUrl(int fileId)
         {
-            try
+            return Ok(new
             {
-                var file = await _dbContext.UploadedFiles
-                    .Where(f => f.Id == fileId && 
-                           f.FileType == "ModelQuestionPaper")
-                    .FirstOrDefaultAsync();
-
-                if (file == null)
-                {
-                    return NotFound(new { status = "error", message = "Question paper not found." });
-                }
-
-                return Ok(new
-                {
-                    status = "success",
-                    fileId = file.Id,
-                    fileName = file.FileName,
-                    subject = file.Subject,
-                    grade = file.Grade,
-                    medium = file.Medium,
-                    academicYear = file.AcademicYear,
-                    chapter = file.Chapter,
-                    downloadUrl = file.BlobUrl,
-                    uploadedAt = file.UploadedAt
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting download URL for question paper: {FileId}", fileId);
-                return StatusCode(500, new { status = "error", message = "Failed to get download URL." });
-            }
+                status = "coming_soon",
+                message = "Model question papers feature is coming soon.",
+                fileId
+            });
         }
 
         /// <summary>
-        /// Get available academic years for question papers
-        /// GET /api/file/question-papers/years
+        /// Get academic years - Coming Soon
         /// </summary>
         [HttpGet("question-papers/years")]
-        public async Task<IActionResult> GetQuestionPaperYears(
-            [FromQuery] string? grade = null,
-            [FromQuery] string? subject = null,
-            [FromQuery] string? medium = null)
+        public IActionResult GetQuestionPaperYears()
         {
-            try
+            return Ok(new
             {
-                var query = _dbContext.UploadedFiles
-                    .Where(f => f.FileType == "ModelQuestionPaper" &&
-                           f.AcademicYear != null)
-                    .AsQueryable();
-
-                if (!string.IsNullOrWhiteSpace(grade))
-                {
-                    query = query.Where(f => f.Grade == grade);
-                }
-
-                if (!string.IsNullOrWhiteSpace(subject))
-                {
-                    query = query.Where(f => f.Subject != null && f.Subject.ToLower() == subject.ToLower());
-                }
-
-                if (!string.IsNullOrWhiteSpace(medium))
-                {
-                    query = query.Where(f => f.Medium == medium);
-                }
-
-                var years = await query
-                    .GroupBy(f => f.AcademicYear)
-                    .Select(g => new
-                    {
-                        AcademicYear = g.Key,
-                        PaperCount = g.Count(),
-                        SubjectCount = g.Select(f => f.Subject).Distinct().Count(),
-                        GradeCount = g.Select(f => f.Grade).Distinct().Count()
-                    })
-                    .OrderByDescending(y => y.AcademicYear)
-                    .ToListAsync();
-
-                return Ok(new
-                {
-                    status = "success",
-                    count = years.Count,
-                    years
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error fetching question paper years");
-                return StatusCode(500, new { status = "error", message = "Failed to fetch academic years." });
-            }
+                status = "coming_soon",
+                message = "Model question papers feature is coming soon.",
+                count = 0,
+                years = Array.Empty<object>()
+            });
         }
     }
 }
