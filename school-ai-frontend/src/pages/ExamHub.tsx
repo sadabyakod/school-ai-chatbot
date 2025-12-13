@@ -3,6 +3,10 @@ import { motion } from "framer-motion";
 import { useToast } from "../hooks/useToast";
 import ExamPage from "./ExamPage";
 import ExamResult from "./ExamResult";
+import WrittenExamUpload from "./WrittenExamUpload";
+import ProcessingStatus from "./ProcessingStatus";
+import WrittenExamResultView from "./WrittenExamResult";
+import type { WrittenExamResult } from "../api";
 
 // ==========================================
 // TYPES & INTERFACES
@@ -272,7 +276,13 @@ const HistoryCard: React.FC<HistoryCardProps> = ({ history, onViewResult }) => {
 // MAIN EXAM HUB COMPONENT
 // ==========================================
 
-type ViewMode = 'list' | 'exam' | 'result';
+type ViewMode = 'list' | 'exam' | 'result' | 'written-upload' | 'written-processing' | 'written-result';
+
+interface WrittenSubmissionState {
+  submissionId: string;
+  examId: string;
+  studentId: string;
+}
 
 interface ExamHubProps {
   token?: string;
@@ -286,6 +296,10 @@ const ExamHub: React.FC<ExamHubProps> = ({ toast }) => {
   const [templates, setTemplates] = useState<ExamTemplate[]>([]);
   const [history, setHistory] = useState<ExamHistory[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Written exam state
+  const [writtenSubmission, setWrittenSubmission] = useState<WrittenSubmissionState | null>(null);
+  const [writtenResult, setWrittenResult] = useState<WrittenExamResult | null>(null);
 
   const getStudentId = (): string => {
     let studentId = localStorage.getItem('test-student-id');
@@ -334,6 +348,23 @@ const ExamHub: React.FC<ExamHubProps> = ({ toast }) => {
     setViewMode('list');
     setSelectedTemplateId(null);
     setSelectedAttemptId(null);
+    setWrittenSubmission(null);
+    setWrittenResult(null);
+  };
+
+  // Written exam handlers
+  const handleStartWrittenUpload = () => {
+    setViewMode('written-upload');
+  };
+
+  const handleWrittenUploadSuccess = (submissionId: string, examId: string, studentId: string) => {
+    setWrittenSubmission({ submissionId, examId, studentId });
+    setViewMode('written-processing');
+  };
+
+  const handleWrittenProcessingComplete = (result: WrittenExamResult) => {
+    setWrittenResult(result);
+    setViewMode('written-result');
   };
 
   // Render exam page
@@ -354,6 +385,41 @@ const ExamHub: React.FC<ExamHubProps> = ({ toast }) => {
         attemptId={selectedAttemptId}
         onBackToHome={handleBackToHome}
         toast={toast}
+      />
+    );
+  }
+
+  // Render written exam upload page
+  if (viewMode === 'written-upload') {
+    return (
+      <WrittenExamUpload
+        onSuccess={handleWrittenUploadSuccess}
+        onBack={handleBackToHome}
+        toast={toast}
+      />
+    );
+  }
+
+  // Render written exam processing status
+  if (viewMode === 'written-processing' && writtenSubmission) {
+    return (
+      <ProcessingStatus
+        writtenSubmissionId={writtenSubmission.submissionId}
+        examId={writtenSubmission.examId}
+        studentId={writtenSubmission.studentId}
+        onComplete={handleWrittenProcessingComplete}
+        onBack={handleBackToHome}
+        toast={toast}
+      />
+    );
+  }
+
+  // Render written exam result
+  if (viewMode === 'written-result' && writtenResult) {
+    return (
+      <WrittenExamResultView
+        result={writtenResult}
+        onBack={handleBackToHome}
       />
     );
   }
@@ -379,6 +445,41 @@ const ExamHub: React.FC<ExamHubProps> = ({ toast }) => {
           <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
             Test your knowledge with adaptive difficulty exams designed to match your skill level
           </p>
+        </motion.div>
+
+        {/* Written Answer Upload Banner */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-8"
+        >
+          <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-red-500 rounded-2xl shadow-xl overflow-hidden">
+            <div className="p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4 text-white">
+                <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">Upload Written Answers</h3>
+                  <p className="text-white/80 text-sm">Take a photo of your handwritten answers for AI evaluation</p>
+                </div>
+              </div>
+              <motion.button
+                onClick={handleStartWrittenUpload}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-6 py-3 bg-white text-purple-600 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                Upload Now
+              </motion.button>
+            </div>
+          </div>
         </motion.div>
 
         {loading ? (

@@ -702,3 +702,189 @@ export async function getMostRecentSession(token?: string): Promise<any> {
 
   return await response.json();
 }
+
+// ==========================================
+// WRITTEN EXAM SUBMISSION API
+// ==========================================
+
+// File validation constants (must match backend)
+const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.pdf'];
+const MAX_FILE_SIZE_MB = 10;
+const MAX_FILES_PER_UPLOAD = 20;
+
+export interface WrittenSubmissionResponse {
+  writtenSubmissionId: string;
+  status: string;
+  message: string;
+}
+
+export interface SubmissionStatusResponse {
+  writtenSubmissionId: string;
+  status: 'PendingEvaluation' | 'OcrProcessing' | 'Evaluating' | 'Completed' | 'Failed';
+  statusMessage: string;
+  isComplete: boolean;
+}
+
+export interface WrittenExamResult {
+  examId: string;
+  studentId: string;
+  mcqScore: number;
+  mcqTotalMarks: number;
+  subjectiveScore: number;
+  subjectiveTotalMarks: number;
+  grandScore: number;
+  grandTotalMarks: number;
+  percentage: number;
+  grade: string;
+  passed: boolean;
+  subjectiveResults: Array<{
+    questionId: string;
+    earnedMarks: number;
+    maxMarks: number;
+    expectedAnswer: string;
+    stepAnalysis: any[];
+    overallFeedback: string;
+  }>;
+}
+
+/**
+ * Validates files before upload
+ */
+export function validateFiles(files: File[]): { valid: boolean; error?: string } {
+  if (files.length === 0) {
+    return { valid: false, error: 'Please select at least one file.' };
+  }
+  
+  if (files.length > MAX_FILES_PER_UPLOAD) {
+    return { valid: false, error: `Maximum ${MAX_FILES_PER_UPLOAD} files allowed per upload.` };
+  }
+
+  for (const file of files) {
+    // Check file extension
+    const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      return { 
+        valid: false, 
+        error: `Invalid file type: ${file.name}. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}` 
+      };
+    }
+
+    // Check file size
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      return { 
+        valid: false, 
+        error: `File too large: ${file.name}. Maximum size: ${MAX_FILE_SIZE_MB}MB` 
+      };
+    }
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Upload written answer sheets (async - returns immediately)
+ * After upload, poll with pollSubmissionStatus for results
+ */
+export async function submitWrittenAnswers(
+  examId: string,
+  studentId: string,
+  files: File[],
+  token?: string
+): Promise<WrittenSubmissionResponse> {
+  // Validate files before upload
+  const validation = validateFiles(files);
+  if (!validation.valid) {
+    throw new ApiException({
+      message: validation.error || 'Invalid files',
+      code: 'VALIDATION_ERROR',
+      status: 400,
+    });
+  }
+
+  const formData = new FormData();
+  formData.append('examId', examId);
+  formData.append('studentId', studentId);
+  
+  for (const file of files) {
+    formData.append('files', file);
+  }
+
+  // Don't use retry for large file uploads - they can be slow
+  const response = await fetch(buildApiUrl('/api/exam/upload-written'), {
+    method: 'POST',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    // Handle specific error cases
+    if (response.status === 409) {
+      throw new ApiException({
+        message: 'You have already submitted answers for this exam. Duplicate submissions are not allowed.',
+        code: 'DUPLICATE_SUBMISSION',
+        status: 409,
+      });
+    }
+    
+    const error = await parseErrorResponse(response);
+    throw new ApiException(error);
+  }
+
+  return await response.json();
+}
+
+/**
+ * Poll submission status (call every 3 seconds until isComplete=true)
+ */
+export async function pollSubmissionStatus(
+  writtenSubmissionId: string,
+  token?: string
+): Promise<SubmissionStatusResponse> {
+  const response = await fetchWithRetry(
+    buildApiUrl(`/api/exam/submission-status/${writtenSubmissionId}`),
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    },
+    { maxRetries: 2, retryDelay: 1000 }
+  );
+
+  if (!response.ok) {
+    const error = await parseErrorResponse(response);
+    throw new ApiException(error);
+  }
+
+  return await response.json();
+}
+
+/**
+ * Get complete exam results after written evaluation is complete
+ */
+export async function getExamResults(
+  examId: string,
+  studentId: string,
+  token?: string
+): Promise<WrittenExamResult> {
+  const response = await fetchWithRetry(
+    buildApiUrl(`/api/exam/result/${examId}/${studentId}`),
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const error = await parseErrorResponse(response);
+    throw new ApiException(error);
+  }
+
+  return await response.json();
+}
