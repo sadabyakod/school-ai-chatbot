@@ -6,7 +6,7 @@ import { useToast } from "./hooks/useToast";
 const getSubjectsForClass = (medium: string, className: string): string[] => {
   // Class 12 has specific subjects
   if (className === "12") {
-    return ["Physics", "Chemistry", "Mathematics", "Biology", "Kannada", "English"];
+    return ["Physics", "Chemistry", "Mathematics", "Biology", "Kannada", "English", "Accountancy", "Business Studies", "Economics", "Statistics"];
   }
   
   // Class 10 has specific subjects
