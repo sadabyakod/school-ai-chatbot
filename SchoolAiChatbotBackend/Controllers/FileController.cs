@@ -38,7 +38,7 @@ namespace SchoolAiChatbotBackend.Controllers
         /// </summary>
         [HttpPost("upload")]
         [DisableRequestSizeLimit]
-        [RequestFormLimits(MultipartBodyLengthLimit = 104857600)] // 100 MB
+        [RequestFormLimits(MultipartBodyLengthLimit = 524288000)] // 500 MB
         public async Task<IActionResult> Upload()
         {
             try
