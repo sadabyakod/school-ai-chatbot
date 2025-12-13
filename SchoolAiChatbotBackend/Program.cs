@@ -325,6 +325,7 @@ app.Use(async (context, next) =>
             }
 
 app.UseHttpsRedirection();
+app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
