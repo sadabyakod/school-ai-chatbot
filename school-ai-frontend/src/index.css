@@ -421,23 +421,31 @@ select option:checked {
 .form-select {
   display: block;
   width: 100%;
-  padding: 0.75rem 2.5rem 0.75rem 1rem;
-  font-size: 0.9375rem;
+  max-width: 280px;
+  padding: 0.625rem 2.25rem 0.625rem 0.875rem;
+  font-size: 0.875rem;
   font-weight: 500;
   line-height: 1.5;
   color: #334155;
   background-color: white;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 1rem center;
-  background-size: 12px;
-  border: 2px solid #e2e8f0;
-  border-radius: 0.75rem;
+  background-position: right 0.75rem center;
+  background-size: 10px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 0.5rem;
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
   cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+/* On mobile, allow full width */
+@media (max-width: 640px) {
+  .form-select {
+    max-width: 100%;
+  }
 }
 
 .form-select:hover {
@@ -447,7 +455,7 @@ select option:checked {
 .form-select:focus {
   outline: none;
   border-color: #00bcd4;
-  box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.15);
+  box-shadow: 0 0 0 2px rgba(0, 188, 212, 0.12);
 }
 
 .form-select:disabled {

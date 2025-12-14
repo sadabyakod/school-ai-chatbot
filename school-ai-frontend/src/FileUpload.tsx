@@ -229,10 +229,10 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
         </div>
 
         {/* Selection Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="flex flex-wrap gap-4 mb-6 justify-center">
           {/* Medium Dropdown */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">
+          <div className="flex-shrink-0">
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">
               🌐 Medium
             </label>
             <select
@@ -240,15 +240,15 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
               onChange={(e) => handleMediumChange(e.target.value)}
               className="form-select"
             >
-              <option value="">Select Medium</option>
-              <option value="Kannada">Kannada Medium</option>
-              <option value="English">English Medium</option>
+              <option value="">Select</option>
+              <option value="Kannada">Kannada</option>
+              <option value="English">English</option>
             </select>
           </div>
 
           {/* Class Dropdown */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">
+          <div className="flex-shrink-0">
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">
               🎓 Class
             </label>
             <select
@@ -256,7 +256,7 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
               onChange={(e) => handleClassChange(e.target.value)}
               className="form-select"
             >
-              <option value="">Select Class</option>
+              <option value="">Select</option>
               {Array.from({ length: 7 }, (_, i) => 6 + i).map((cls) => (
                 <option key={cls} value={String(cls)}>Class {cls}</option>
               ))}
@@ -264,8 +264,8 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
           </div>
 
           {/* Subject Dropdown */}
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">
+          <div className="flex-shrink-0">
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">
               📖 Subject
             </label>
             <select
@@ -274,7 +274,7 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
               disabled={!className}
               className="form-select"
             >
-              <option value="">{className ? "Select Subject" : "Select class first"}</option>
+              <option value="">{className ? "Select" : "—"}</option>
               {availableSubjects.map((subj) => (
                 <option key={subj} value={subj}>{subj}</option>
               ))}
@@ -284,9 +284,9 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
 
         {/* Additional fields for Model Papers / Evaluation Sheets */}
         {(uploadType === "model" || uploadType === "evaluation") && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
+          <div className="flex flex-wrap gap-4 mb-6 justify-center">
+            <div className="flex-shrink-0">
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">
                 🏛️ State/Board
               </label>
               <select
@@ -294,28 +294,28 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
                 onChange={(e) => setState(e.target.value)}
                 className="form-select"
               >
-                <option value="Karnataka">Karnataka State Board</option>
-                <option value="Maharashtra">Maharashtra Board</option>
-                <option value="TamilNadu">Tamil Nadu Board</option>
-                <option value="Kerala">Kerala Board</option>
+                <option value="Karnataka">Karnataka</option>
+                <option value="Maharashtra">Maharashtra</option>
+                <option value="TamilNadu">Tamil Nadu</option>
+                <option value="Kerala">Kerala</option>
                 <option value="CBSE">CBSE</option>
                 <option value="ICSE">ICSE</option>
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
-                📅 Year (Optional)
+            <div className="flex-shrink-0">
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+                📅 Year
               </label>
               <select
                 value={academicYear}
                 onChange={(e) => setAcademicYear(e.target.value)}
                 className="form-select"
               >
-                <option value="">Any Year</option>
+                <option value="">Any</option>
                 {Array.from({ length: 10 }, (_, i) => {
                   const year = new Date().getFullYear() - i;
-                  return <option key={year} value={`${year}-${(year + 1).toString().slice(-2)}`}>{year}-{(year + 1).toString().slice(-2)}</option>;
+                  return <option key={year} value={`${year}-${(year + 1).toString().slice(-2)}`}>{year}</option>;
                 })}
               </select>
             </div>
