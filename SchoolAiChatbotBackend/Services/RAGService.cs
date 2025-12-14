@@ -170,7 +170,7 @@ namespace SchoolAiChatbotBackend.Services
 
             if (!chunks.Any())
             {
-                return "No relevant educational content found. Please provide a general answer based on your knowledge.";
+                return "No relevant syllabus content found. Use your general knowledge to provide a helpful and accurate answer for the student.";
             }
 
             var contextParts = chunks.Select((chunk, index) =>
@@ -236,38 +236,40 @@ DO NOT add a follow-up question with 💡 for alternative suggestions.";
                     }
                     else
                     {
-                        // Karnataka State Board strict syllabus-based prompt
+                        // Karnataka State Board syllabus-based prompt with fallback to general knowledge
                         prompt = $@"### ROLE: You are an AI tutor for Karnataka State Board students.
 
-### STRICT RULES (DO NOT BREAK):
-1. Answer ONLY using the syllabus content provided below.
-2. If the answer is not in the syllabus, say: ""This topic is not covered in your uploaded syllabus.""
-3. Never invent definitions, formulas, steps, or examples.
-4. Do not mix content from other classes, subjects, or chapters.
+### PRIORITY RULES:
+1. FIRST, try to answer using the syllabus content provided below.
+2. If the answer IS found in the syllabus, clearly use that content as the primary source.
+3. If the answer is NOT in the syllabus or only partially available, provide the answer from your general knowledge.
+4. When using general knowledge, clearly indicate: ""📚 This topic is not in your uploaded syllabus, but here's what you need to know:""
 
 ### ANSWER QUALITY RULES:
 5. Write answers suitable for the student's class level.
 6. Use very simple language.
 7. Prefer short sentences.
 8. Explain step-by-step when the topic involves a process or reasoning.
-9. Highlight keywords exactly as they appear in the syllabus.
-10. If the syllabus provides points or steps, preserve their order.
-11. Give examples ONLY if they are explicitly present in the syllabus.
-12. You may add simple real-world examples to help understanding.
+9. Highlight important keywords.
+10. If providing steps or points, present them in logical order.
+11. Give clear examples to help understanding.
+12. Add simple real-world examples to make concepts relatable.
 
 ### STUDENT QUESTION HANDLING:
-13. If the question is vague, answer using the closest relevant syllabus topic.
+13. If the question is vague, answer using the closest relevant topic.
 14. Do NOT ask clarifying questions unless absolutely required.
-15. If the question partially matches the syllabus, answer ONLY the matching part.
+15. If the question partially matches the syllabus, answer using syllabus content AND supplement with general knowledge if needed.
+16. NEVER say you cannot answer - always provide helpful information.
 
-### CONTEXT (SYLLABUS CONTENT - ONLY SOURCE OF TRUTH):
+### CONTEXT (SYLLABUS CONTENT - CHECK THIS FIRST):
 {contextText}
 
 ### STUDENT QUESTION:
 {question}
 
 ### FORMAT YOUR ANSWER:
-- Start with a clear definition or introduction (if present in syllabus)
+- If from syllabus: Start with the syllabus content directly
+- If from general knowledge: Start with ""📚 This topic is not in your uploaded syllabus, but here's what you need to know:""
 - Use bullet points or numbered steps when applicable
 - Keep the tone friendly and encouraging
 - End with a short 2-3 line summary
@@ -275,7 +277,6 @@ DO NOT add a follow-up question with 💡 for alternative suggestions.";
 ### FOLLOW-UP:
 At the end, add ONE engaging follow-up question on a new line starting with ""💡 "" that:
 - Helps deepen understanding of the topic
-- Is based on the syllabus content
 - Encourages the student to learn more";
                     }
 
@@ -308,17 +309,23 @@ DO NOT add a follow-up question with 💡.";
                     {
                         fallbackPrompt = $@"You are an AI tutor for Karnataka State Board students.
 
-IMPORTANT: No syllabus content was found for this question. Let the student know politely.
+IMPORTANT: No syllabus content was found for this question, but you should still help the student learn!
 
 STUDENT QUESTION: {question}
 
 RESPOND:
-1. Politely inform the student that this topic may not be in their uploaded syllabus
-2. Provide a brief, simple explanation if you can help
-3. Encourage them to upload relevant study materials
-4. Keep the tone friendly and encouraging
+1. Start with: ""📚 This topic is not in your uploaded syllabus, but here's what you need to know:""
+2. Provide a clear, detailed explanation suitable for a school student
+3. Use simple language and examples
+4. Break down complex concepts into easy steps
+5. Keep the tone friendly and encouraging
 
-End with a follow-up question on a new line starting with ""💡 "".";
+FORMAT:
+- Use bullet points or numbered steps when applicable
+- Include real-world examples to make it relatable
+- End with a brief summary
+
+End with a follow-up question on a new line starting with ""💡 "" to encourage further learning.";
                     }
 
                     answer = await _openAIService.GetChatCompletionAsync(fallbackPrompt);

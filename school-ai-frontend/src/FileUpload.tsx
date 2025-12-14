@@ -4,7 +4,7 @@ import { useToast } from "./hooks/useToast";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Subject options based on class (medium optional)
-const getSubjectsForClass = (className: string, _medium?: string): string[] => {
+const getSubjectsForClass = (className: string, medium?: string): string[] => {
   // Class 12 has specific subjects
   if (className === "12") {
     return ["Physics", "Chemistry", "Mathematics", "Biology", "Kannada", "English", "Accountancy", "Business Studies", "Economics", "Statistics", "Computer Science", "History", "Political Science"];
@@ -95,12 +95,14 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
     }, 200);
     
     try {
+      let data;
+      
       if (uploadType === "model") {
-        await uploadQuestionPaper(file, subject, className, medium, state, academicYear, token);
+        data = await uploadQuestionPaper(file, subject, className, medium, state, academicYear, token);
       } else if (uploadType === "evaluation") {
-        await uploadEvaluationSheet(file, subject, className, medium, state, academicYear, token);
+        data = await uploadEvaluationSheet(file, subject, className, medium, state, academicYear, token);
       } else {
-        await uploadFile(file, medium, className, subject, token);
+        data = await uploadFile(file, medium, className, subject, token);
       }
       
       setUploadProgress(100);
