@@ -114,7 +114,7 @@ namespace SchoolAiChatbotBackend.Tests
 
                 var (answer1, nextQ1, complete1) = await examService.SubmitAnswerAsync(
                     attempt.Id, firstQuestion.Id, correctOption?.Id, 45);
-                
+
                 Console.WriteLine($"Answer submitted - Correct: {answer1.IsCorrect}");
                 Console.WriteLine($"Next question (Difficulty: {nextQ1?.Difficulty}): {nextQ1?.Text}\n");
 
@@ -126,7 +126,7 @@ namespace SchoolAiChatbotBackend.Tests
 
                     var (answer2, nextQ2, complete2) = await examService.SubmitAnswerAsync(
                         attempt.Id, nextQ1.Id, correctOption2?.Id, 60);
-                    
+
                     Console.WriteLine($"Answer submitted - Correct: {answer2.IsCorrect}");
                     Console.WriteLine($"Next question (Difficulty: {nextQ2?.Difficulty}): {nextQ2?.Text}\n");
 
@@ -138,7 +138,7 @@ namespace SchoolAiChatbotBackend.Tests
 
                         var (answer3, nextQ3, complete3) = await examService.SubmitAnswerAsync(
                             attempt.Id, nextQ2.Id, correctOption3?.Id, 90);
-                        
+
                         Console.WriteLine($"Answer submitted - Correct: {answer3.IsCorrect}");
                         Console.WriteLine($"Exam complete: {complete3}\n");
                     }
@@ -148,7 +148,7 @@ namespace SchoolAiChatbotBackend.Tests
             // 5. Complete exam
             Console.WriteLine("Completing exam and calculating score...");
             var completedAttempt = await examService.CompleteExamAsync(attempt.Id);
-            
+
             Console.WriteLine($"\n=== Exam Results ===");
             Console.WriteLine($"Status: {completedAttempt.Status}");
             Console.WriteLine($"Correct: {completedAttempt.CorrectCount}");

@@ -39,8 +39,8 @@ namespace SchoolAiChatbotBackend.Middleware
                 stopwatch.Stop();
 
                 // Log response
-                var logLevel = context.Response.StatusCode >= 400 
-                    ? LogLevel.Warning 
+                var logLevel = context.Response.StatusCode >= 400
+                    ? LogLevel.Warning
                     : LogLevel.Information;
 
                 _logger.Log(

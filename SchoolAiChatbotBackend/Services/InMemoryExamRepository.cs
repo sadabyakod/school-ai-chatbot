@@ -31,7 +31,7 @@ namespace SchoolAiChatbotBackend.Services
         {
             var key = $"{submission.ExamId}_{submission.StudentId}";
             _mcqSubmissions[key] = submission;
-            
+
             _logger.LogInformation(
                 "Saved MCQ submission {SubmissionId} for exam {ExamId}, student {StudentId}",
                 submission.McqSubmissionId,
@@ -52,7 +52,7 @@ namespace SchoolAiChatbotBackend.Services
         public Task<string> SaveWrittenSubmissionAsync(WrittenSubmission submission)
         {
             _writtenSubmissions[submission.WrittenSubmissionId] = submission;
-            
+
             _logger.LogInformation(
                 "Saved written submission {SubmissionId} for exam {ExamId}, student {StudentId}",
                 submission.WrittenSubmissionId,
@@ -84,7 +84,7 @@ namespace SchoolAiChatbotBackend.Services
                 {
                     submission.EvaluatedAt = DateTime.UtcNow;
                 }
-                
+
                 _logger.LogInformation(
                     "Updated written submission {SubmissionId} status to {Status}",
                     writtenSubmissionId,
@@ -99,7 +99,7 @@ namespace SchoolAiChatbotBackend.Services
             if (_writtenSubmissions.TryGetValue(writtenSubmissionId, out var submission))
             {
                 submission.OcrText = ocrText;
-                
+
                 _logger.LogInformation(
                     "Updated written submission {SubmissionId} with OCR text ({Length} characters)",
                     writtenSubmissionId,
@@ -118,7 +118,7 @@ namespace SchoolAiChatbotBackend.Services
             }
 
             _subjectiveEvaluations[writtenSubmissionId] = evaluations;
-            
+
             _logger.LogInformation(
                 "Saved {Count} subjective evaluations for written submission {SubmissionId}",
                 evaluations.Count,
@@ -137,7 +137,7 @@ namespace SchoolAiChatbotBackend.Services
         public Task<string> SaveMcqExtractionAsync(McqExtraction extraction)
         {
             _mcqExtractions[extraction.WrittenSubmissionId] = extraction;
-            
+
             _logger.LogInformation(
                 "Saved MCQ extraction {ExtractionId} for written submission {SubmissionId} with {Count} answers",
                 extraction.McqExtractionId,
@@ -157,7 +157,7 @@ namespace SchoolAiChatbotBackend.Services
         {
             var key = $"{evaluation.ExamId}_{evaluation.StudentId}";
             _mcqEvaluationsFromSheets[key] = evaluation;
-            
+
             _logger.LogInformation(
                 "Saved MCQ evaluation from sheet {EvaluationId} for exam {ExamId}, student {StudentId}: Score {Score}/{Total}",
                 evaluation.McqEvaluationId,
@@ -182,7 +182,7 @@ namespace SchoolAiChatbotBackend.Services
             var submissions = _mcqSubmissions.Values
                 .Where(s => s.ExamId == examId)
                 .ToList();
-            
+
             _logger.LogInformation("Retrieved {Count} MCQ submissions for exam {ExamId}", submissions.Count, examId);
             return Task.FromResult(submissions);
         }
@@ -192,7 +192,7 @@ namespace SchoolAiChatbotBackend.Services
             var submissions = _writtenSubmissions.Values
                 .Where(s => s.ExamId == examId)
                 .ToList();
-            
+
             _logger.LogInformation("Retrieved {Count} written submissions for exam {ExamId}", submissions.Count, examId);
             return Task.FromResult(submissions);
         }
@@ -202,7 +202,7 @@ namespace SchoolAiChatbotBackend.Services
             var mcqSubmissions = _mcqSubmissions.Values
                 .Where(s => s.ExamId == examId)
                 .ToList();
-            
+
             var writtenSubmissions = _writtenSubmissions.Values
                 .Where(s => s.ExamId == examId)
                 .ToList();
@@ -230,13 +230,13 @@ namespace SchoolAiChatbotBackend.Services
             var mcqStudents = _mcqSubmissions.Values
                 .Where(s => s.ExamId == examId)
                 .Select(s => s.StudentId);
-            
+
             var writtenStudents = _writtenSubmissions.Values
                 .Where(s => s.ExamId == examId)
                 .Select(s => s.StudentId);
 
             var allStudents = mcqStudents.Union(writtenStudents).Distinct().ToList();
-            
+
             _logger.LogInformation("Retrieved {Count} unique students for exam {ExamId}", allStudents.Count, examId);
             return Task.FromResult(allStudents);
         }
@@ -247,7 +247,7 @@ namespace SchoolAiChatbotBackend.Services
                 .Where(s => s.StudentId == studentId)
                 .OrderByDescending(s => s.SubmittedAt)
                 .ToList();
-            
+
             _logger.LogInformation("Retrieved {Count} MCQ submissions for student {StudentId}", submissions.Count, studentId);
             return Task.FromResult(submissions);
         }
@@ -258,7 +258,7 @@ namespace SchoolAiChatbotBackend.Services
                 .Where(s => s.StudentId == studentId)
                 .OrderByDescending(s => s.SubmittedAt)
                 .ToList();
-            
+
             _logger.LogInformation("Retrieved {Count} written submissions for student {StudentId}", submissions.Count, studentId);
             return Task.FromResult(submissions);
         }

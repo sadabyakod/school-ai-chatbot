@@ -106,8 +106,8 @@ namespace SchoolAiChatbotBackend.Controllers
                         chapter = n.Chapter,
                         createdAt = n.CreatedAt,
                         rating = n.Rating,
-                        preview = n.GeneratedNotes.Length > 200 
-                            ? n.GeneratedNotes.Substring(0, 200) + "..." 
+                        preview = n.GeneratedNotes.Length > 200
+                            ? n.GeneratedNotes.Substring(0, 200) + "..."
                             : n.GeneratedNotes
                     })
                 });

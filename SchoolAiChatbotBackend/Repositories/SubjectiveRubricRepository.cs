@@ -83,9 +83,9 @@ namespace SchoolAiChatbotBackend.Repositories
                 existing.ModelAnswer = rubric.ModelAnswer;
                 existing.QuestionText = rubric.QuestionText;
                 existing.CreatedAt = DateTime.UtcNow;
-                
+
                 _context.SubjectiveRubrics.Update(existing);
-                _logger.LogInformation("Updated existing rubric for Exam={ExamId}, Question={QuestionId}", 
+                _logger.LogInformation("Updated existing rubric for Exam={ExamId}, Question={QuestionId}",
                     rubric.ExamId, rubric.QuestionId);
             }
             else
@@ -93,7 +93,7 @@ namespace SchoolAiChatbotBackend.Repositories
                 // Insert new rubric
                 rubric.CreatedAt = DateTime.UtcNow;
                 await _context.SubjectiveRubrics.AddAsync(rubric);
-                _logger.LogInformation("Created new rubric for Exam={ExamId}, Question={QuestionId}", 
+                _logger.LogInformation("Created new rubric for Exam={ExamId}, Question={QuestionId}",
                     rubric.ExamId, rubric.QuestionId);
             }
 
@@ -159,7 +159,7 @@ namespace SchoolAiChatbotBackend.Repositories
             await EnsureTableExistsAsync();
 
             var examId = rubrics.First().ExamId;
-            
+
             // Delete existing rubrics for this exam first
             await DeleteRubricsForExamAsync(examId);
 
@@ -171,7 +171,7 @@ namespace SchoolAiChatbotBackend.Repositories
 
             await _context.SubjectiveRubrics.AddRangeAsync(rubrics);
             await _context.SaveChangesAsync();
-            
+
             _logger.LogInformation("Batch saved {Count} rubrics for Exam={ExamId}", rubrics.Count, examId);
         }
     }

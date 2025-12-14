@@ -35,7 +35,7 @@ namespace SchoolAiChatbotBackend.Services
                     // Calculate delay until next 2 AM
                     var now = DateTime.Now;
                     var nextRun = now.Date.AddDays(1).AddHours(2); // Next day at 2 AM
-                    
+
                     if (now.Hour < 2)
                     {
                         // If before 2 AM today, run today at 2 AM

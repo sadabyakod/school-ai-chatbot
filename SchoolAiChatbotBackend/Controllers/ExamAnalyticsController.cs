@@ -304,8 +304,8 @@ namespace SchoolAiChatbotBackend.Controllers
                     AverageScore = completedScores.Any() ? Math.Round(completedScores.Average(s => s.score), 2) : null,
                     MinScore = completedScores.Any() ? completedScores.Min(s => s.score) : null,
                     MaxScore = completedScores.Any() ? completedScores.Max(s => s.score) : null,
-                    AveragePercentage = completedScores.Any() 
-                        ? Math.Round(completedScores.Average(s => (s.score / s.total) * 100), 2) 
+                    AveragePercentage = completedScores.Any()
+                        ? Math.Round(completedScores.Average(s => (s.score / s.total) * 100), 2)
                         : null,
                     StatusBreakdown = submissionStats
                         .GroupBy(s => s.status)
@@ -315,9 +315,9 @@ namespace SchoolAiChatbotBackend.Controllers
                         .ToDictionary(g => g.Key, g => g.Count())
                 };
 
-                _logger.LogInformation("Generated summary for exam {ExamId}: {Total} submissions, {Completed} completed", 
+                _logger.LogInformation("Generated summary for exam {ExamId}: {Total} submissions, {Completed} completed",
                     examId, summary.TotalSubmissions, summary.CompletedSubmissions);
-                
+
                 return Ok(summary);
             }
             catch (Exception ex)
@@ -368,7 +368,7 @@ namespace SchoolAiChatbotBackend.Controllers
             WrittenSubmission? writtenSubmission)
         {
             var studentId = mcqSubmission?.StudentId ?? writtenSubmission?.StudentId ?? "";
-            
+
             // Get subjective evaluations if written submission exists
             var subjectiveEvaluations = new List<SubjectiveEvaluationDetailDto>();
             double subjectiveScore = 0;

@@ -45,11 +45,11 @@ namespace SchoolAiChatbotBackend.Services
         /// Save a chat exchange to the database
         /// </summary>
         public async Task<ChatHistory> SaveChatHistoryAsync(
-            string userId, 
-            string sessionId, 
-            string message, 
-            string reply, 
-            string? contextUsed, 
+            string userId,
+            string sessionId,
+            string message,
+            string reply,
+            string? contextUsed,
             int contextCount)
         {
             var chatHistory = new ChatHistory
@@ -73,8 +73,8 @@ namespace SchoolAiChatbotBackend.Services
         /// Retrieve chat history for a specific session (most recent first)
         /// </summary>
         public async Task<List<ChatHistory>> GetChatHistoryBySessionAsync(
-            string userId, 
-            string sessionId, 
+            string userId,
+            string sessionId,
             int limit = 10)
         {
             return await _dbContext.ChatHistories

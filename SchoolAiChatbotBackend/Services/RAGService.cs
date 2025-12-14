@@ -47,9 +47,9 @@ namespace SchoolAiChatbotBackend.Services
         /// 3. Return top-K most similar chunks
         /// </summary>
         public async Task<List<FileChunk>> FindRelevantChunksAsync(
-            string query, 
-            int topK = 5, 
-            string? subject = null, 
+            string query,
+            int topK = 5,
+            string? subject = null,
             string? grade = null)
         {
             try
@@ -69,13 +69,13 @@ namespace SchoolAiChatbotBackend.Services
                 // Apply filters if provided
                 if (!string.IsNullOrWhiteSpace(subject))
                 {
-                    chunksQuery = chunksQuery.Where(ce => 
+                    chunksQuery = chunksQuery.Where(ce =>
                         ce.FileChunk!.Subject == subject);
                 }
 
                 if (!string.IsNullOrWhiteSpace(grade))
                 {
-                    chunksQuery = chunksQuery.Where(ce => 
+                    chunksQuery = chunksQuery.Where(ce =>
                         ce.FileChunk!.Grade == grade);
                 }
 
@@ -119,7 +119,7 @@ namespace SchoolAiChatbotBackend.Services
                     .Select(s => s.Chunk)
                     .ToList();
 
-                _logger.LogInformation("Returning {Count} most relevant chunks (requested {TopK})", 
+                _logger.LogInformation("Returning {Count} most relevant chunks (requested {TopK})",
                     topChunks.Count, topK);
 
                 return topChunks;
@@ -178,7 +178,7 @@ namespace SchoolAiChatbotBackend.Services
                 var header = $"--- Source {index + 1} ---";
                 var metadata = $"Subject: {chunk.Subject ?? "N/A"} | Grade: {chunk.Grade ?? "N/A"} | Chapter: {chunk.Chapter ?? "N/A"}";
                 var content = chunk.ChunkText;
-                
+
                 return $"{header}\n{metadata}\n{content}";
             });
 
@@ -194,7 +194,7 @@ namespace SchoolAiChatbotBackend.Services
             {
                 string answer;
                 int chunksFound = 0;
-                
+
                 try
                 {
                     // Step 1: Find relevant chunks
@@ -205,59 +205,78 @@ namespace SchoolAiChatbotBackend.Services
                     var contextText = await BuildContextTextAsync(relevantChunks);
 
                     // Step 3: Detect if this is a response to a follow-up (suggesting alternatives)
-                    bool isSuggestingAlternatives = question.Contains("declined to continue") || 
+                    bool isSuggestingAlternatives = question.Contains("declined to continue") ||
                                                    question.Contains("Suggest 3 different");
 
                     string prompt;
                     if (isSuggestingAlternatives)
                     {
                         // Special prompt for when user says "no" to follow-up
-                        prompt = $@"### ROLE: You are a helpful AI study assistant.
+                        prompt = $@"### ROLE: You are an AI tutor for Karnataka State Board students.
 
-### TASK: The student declined to continue with the previous topic. Suggest 3 alternative topics they might find interesting.
+### TASK: The student declined to continue with the previous topic. Suggest 3 alternative topics from their syllabus.
 
-### CONTEXT (Educational Content):
+### CONTEXT (SYLLABUS CONTENT - ONLY SOURCE OF TRUTH):
 {contextText}
 
 ### SITUATION:
 {question}
 
 ### YOUR RESPONSE:
-Acknowledge their choice politely and suggest 3 different but related topics they might be interested in instead. Keep it brief, friendly, and engaging. Format as:
+Acknowledge their choice politely and suggest 3 different topics from the syllabus they might be interested in. Keep it brief, friendly, and encouraging. Format as:
 
-No problem! Let me suggest some other topics you might enjoy:
+No problem! Here are some other topics from your syllabus:
 1. [Topic 1] - [brief description]
 2. [Topic 2] - [brief description]  
 3. [Topic 3] - [brief description]
 
-Which one interests you, or would you like to explore something completely different?
+Which one would you like to learn about?
 
 DO NOT add a follow-up question with 💡 for alternative suggestions.";
                     }
                     else
                     {
-                        // Normal prompt with follow-up question
-                        prompt = $@"### ROLE: You are a helpful AI study assistant.
+                        // Karnataka State Board strict syllabus-based prompt
+                        prompt = $@"### ROLE: You are an AI tutor for Karnataka State Board students.
 
-### TASK: Answer the student's question using the provided educational content and ALWAYS end with an engaging follow-up question.
+### STRICT RULES (DO NOT BREAK):
+1. Answer ONLY using the syllabus content provided below.
+2. If the answer is not in the syllabus, say: ""This topic is not covered in your uploaded syllabus.""
+3. Never invent definitions, formulas, steps, or examples.
+4. Do not mix content from other classes, subjects, or chapters.
 
-### CONTEXT (Educational Content):
+### ANSWER QUALITY RULES:
+5. Write answers suitable for the student's class level.
+6. Use very simple language.
+7. Prefer short sentences.
+8. Explain step-by-step when the topic involves a process or reasoning.
+9. Highlight keywords exactly as they appear in the syllabus.
+10. If the syllabus provides points or steps, preserve their order.
+11. Give examples ONLY if they are explicitly present in the syllabus.
+12. You may add simple real-world examples to help understanding.
+
+### STUDENT QUESTION HANDLING:
+13. If the question is vague, answer using the closest relevant syllabus topic.
+14. Do NOT ask clarifying questions unless absolutely required.
+15. If the question partially matches the syllabus, answer ONLY the matching part.
+
+### CONTEXT (SYLLABUS CONTENT - ONLY SOURCE OF TRUTH):
 {contextText}
 
 ### STUDENT QUESTION:
 {question}
 
-### YOUR ANSWER:
-Provide a clear, accurate answer based on the context above. If the context doesn't contain relevant information, say so and provide general guidance.
+### FORMAT YOUR ANSWER:
+- Start with a clear definition or introduction (if present in syllabus)
+- Use bullet points or numbered steps when applicable
+- Keep the tone friendly and encouraging
+- End with a short 2-3 line summary
 
-### IMPORTANT: 
-At the end of your answer, ALWAYS ask ONE engaging follow-up question that:
-1. Helps deepen understanding of the topic
-2. Connects to related concepts
-3. Encourages critical thinking
-4. Is specific and relevant to what was just explained
-
-Format the follow-up question on a new line starting with ""💡 "".";
+### FOLLOW-UP:
+At the end, add ONE engaging follow-up question on a new line starting with ""💡 "" that:
+- Helps deepen understanding of the topic
+- Is based on the syllabus content
+- Encourages the student to learn more";
                     }
 
                     // Step 4: Get AI response
@@ -267,31 +286,41 @@ Format the follow-up question on a new line starting with ""💡 "".";
                 {
                     // If RAG fails, fall back to direct AI response
                     _logger.LogWarning(ex, "RAG pipeline failed, using direct AI response");
-                    
-                    bool isSuggestingAlternatives = question.Contains("declined to continue") || 
+
+                    bool isSuggestingAlternatives = question.Contains("declined to continue") ||
                                                    question.Contains("Suggest 3 different");
-                    
+
                     string fallbackPrompt;
                     if (isSuggestingAlternatives)
                     {
-                        fallbackPrompt = $@"The student declined to continue with the previous topic. Politely acknowledge this and suggest 3 different related topics they might be interested in instead. Format as:
+                        fallbackPrompt = $@"You are an AI tutor for Karnataka State Board students. The student declined to continue with the previous topic. Politely acknowledge this and suggest 3 different topics they might be interested in. Format as:
 
-No problem! Let me suggest some other topics:
+No problem! Here are some other topics you might enjoy:
 1. [Topic 1]
 2. [Topic 2]
 3. [Topic 3]
 
-Which one interests you?
+Which one would you like to learn about?
 
 DO NOT add a follow-up question with 💡.";
                     }
                     else
                     {
-                        fallbackPrompt = $@"Answer this student question clearly and concisely: {question}
+                        fallbackPrompt = $@"You are an AI tutor for Karnataka State Board students.
 
-IMPORTANT: At the end of your answer, ALWAYS ask ONE engaging follow-up question that helps deepen understanding. Format it on a new line starting with ""💡 "".";
+IMPORTANT: No syllabus content was found for this question. Let the student know politely.
+
+STUDENT QUESTION: {question}
+
+RESPOND:
+1. Politely inform the student that this topic may not be in their uploaded syllabus
+2. Provide a brief, simple explanation if you can help
+3. Encourage them to upload relevant study materials
+4. Keep the tone friendly and encouraging
+
+End with a follow-up question on a new line starting with ""💡 "".";
                     }
-                    
+
                     answer = await _openAIService.GetChatCompletionAsync(fallbackPrompt);
                     chunksFound = 0;
                 }
@@ -308,7 +337,7 @@ IMPORTANT: At the end of your answer, ALWAYS ask ONE engaging follow-up question
                     chunksFound
                 );
 
-                _logger.LogInformation("RAG answer generated for session {SessionId} with {ChunkCount} chunks", 
+                _logger.LogInformation("RAG answer generated for session {SessionId} with {ChunkCount} chunks",
                     sessionId, chunksFound);
 
                 return answer;

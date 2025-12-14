@@ -45,13 +45,13 @@ namespace SchoolAiChatbotBackend.Services
                 };
 
                 var content = new System.Net.Http.StringContent(
-                    System.Text.Json.JsonSerializer.Serialize(payload), 
-                    System.Text.Encoding.UTF8, 
+                    System.Text.Json.JsonSerializer.Serialize(payload),
+                    System.Text.Encoding.UTF8,
                     "application/json"
                 );
 
                 var response = await httpClient.PostAsync("https://api.openai.com/v1/chat/completions", content);
-                
+
                 if (!response.IsSuccessStatusCode)
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
@@ -60,7 +60,7 @@ namespace SchoolAiChatbotBackend.Services
 
                 var json = await response.Content.ReadAsStringAsync();
                 using var doc = System.Text.Json.JsonDocument.Parse(json);
-                
+
                 var choices = doc.RootElement.GetProperty("choices");
                 if (choices.GetArrayLength() == 0)
                 {
@@ -69,7 +69,7 @@ namespace SchoolAiChatbotBackend.Services
 
                 var message = choices[0].GetProperty("message");
                 var responseText = message.GetProperty("content").GetString();
-                
+
                 return responseText?.Trim() ?? "Empty response from AI service.";
             }
             catch (System.Exception ex)
@@ -85,39 +85,39 @@ namespace SchoolAiChatbotBackend.Services
             {
                 using var httpClient = new System.Net.Http.HttpClient();
                 httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_apiKey}");
-                
+
                 var payload = new
                 {
                     input = text,
                     model = "text-embedding-3-small" // Updated to newer, more efficient model
                 };
-                
+
                 var content = new System.Net.Http.StringContent(
-                    System.Text.Json.JsonSerializer.Serialize(payload), 
-                    System.Text.Encoding.UTF8, 
+                    System.Text.Json.JsonSerializer.Serialize(payload),
+                    System.Text.Encoding.UTF8,
                     "application/json"
                 );
-                
+
                 var response = await httpClient.PostAsync("https://api.openai.com/v1/embeddings", content);
-                
+
                 if (!response.IsSuccessStatusCode)
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
                     throw new System.Exception($"OpenAI embedding error ({response.StatusCode}): {errorContent}");
                 }
-                
+
                 var json = await response.Content.ReadAsStringAsync();
                 using var doc = System.Text.Json.JsonDocument.Parse(json);
-                
+
                 var data = doc.RootElement.GetProperty("data");
                 if (data.GetArrayLength() == 0)
                 {
                     throw new System.Exception("No embedding data returned from OpenAI");
                 }
-                
+
                 var embeddingArray = data[0].GetProperty("embedding");
                 var embedding = new List<float>();
-                
+
                 foreach (var v in embeddingArray.EnumerateArray())
                 {
                     if (v.ValueKind == System.Text.Json.JsonValueKind.Number)
@@ -134,7 +134,7 @@ namespace SchoolAiChatbotBackend.Services
                             embedding.Add(0f);
                     }
                 }
-                
+
                 return embedding;
             }
             catch (System.Exception ex)

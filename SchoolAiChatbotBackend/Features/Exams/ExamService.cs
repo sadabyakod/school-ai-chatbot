@@ -33,12 +33,12 @@ namespace SchoolAiChatbotBackend.Features.Exams
         /// Create a new exam template
         /// </summary>
         public async Task<ExamTemplate> CreateExamTemplateAsync(
-            string name, 
-            string subject, 
-            string? chapter, 
-            int totalQuestions, 
-            int durationMinutes, 
-            bool adaptiveEnabled, 
+            string name,
+            string subject,
+            string? chapter,
+            int totalQuestions,
+            int durationMinutes,
+            bool adaptiveEnabled,
             string? createdBy)
         {
             var template = new ExamTemplate
@@ -91,9 +91,9 @@ namespace SchoolAiChatbotBackend.Features.Exams
         /// Submit an answer and get the next question using adaptive logic
         /// </summary>
         public async Task<(ExamAnswer answer, Question? nextQuestion, bool isExamComplete)> SubmitAnswerAsync(
-            int attemptId, 
-            int questionId, 
-            int? selectedOptionId, 
+            int attemptId,
+            int questionId,
+            int? selectedOptionId,
             int? timeTakenSeconds)
         {
             // Load attempt with template and existing answers
@@ -152,16 +152,16 @@ namespace SchoolAiChatbotBackend.Features.Exams
 
             // Get next question using adaptive logic
             string nextDifficulty = "Medium";
-            
+
             if (attempt.ExamTemplate.AdaptiveEnabled)
             {
                 nextDifficulty = CalculateNextDifficulty(attemptId);
             }
 
             var nextQuestion = await GetNextQuestionAsync(
-                attempt.ExamTemplate.Subject, 
-                attempt.ExamTemplate.Chapter, 
-                nextDifficulty, 
+                attempt.ExamTemplate.Subject,
+                attempt.ExamTemplate.Chapter,
+                nextDifficulty,
                 answeredQuestionIds);
 
             return (examAnswer, nextQuestion, false);
@@ -198,9 +198,9 @@ namespace SchoolAiChatbotBackend.Features.Exams
         /// Get next question based on difficulty and subject, excluding already answered
         /// </summary>
         private async Task<Question?> GetNextQuestionAsync(
-            string subject, 
-            string? chapter, 
-            string difficulty, 
+            string subject,
+            string? chapter,
+            string difficulty,
             List<int> excludeQuestionIds)
         {
             var query = _context.Questions
@@ -269,8 +269,8 @@ namespace SchoolAiChatbotBackend.Features.Exams
 
             attempt.CorrectCount = correctCount;
             attempt.WrongCount = wrongCount;
-            attempt.ScorePercent = totalAnswers > 0 
-                ? Math.Round((decimal)correctCount / totalAnswers * 100, 2) 
+            attempt.ScorePercent = totalAnswers > 0
+                ? Math.Round((decimal)correctCount / totalAnswers * 100, 2)
                 : 0;
             attempt.CompletedAt = DateTime.UtcNow;
             attempt.Status = "Completed";

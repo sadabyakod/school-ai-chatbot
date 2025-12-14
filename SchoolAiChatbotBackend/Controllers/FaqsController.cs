@@ -9,7 +9,7 @@ namespace SchoolAiChatbotBackend.Controllers
     public class FaqsController : ControllerBase
     {
         private readonly AppDbContext _db;
-        
+
         public FaqsController(AppDbContext db)
         {
             _db = db;

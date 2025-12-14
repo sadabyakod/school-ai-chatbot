@@ -1,4 +1,4 @@
-// API utility for backend calls
+﻿// API utility for backend calls
 // ASP.NET Core backend - Production: Azure App Service
 export const API_URL = import.meta.env.VITE_API_URL || 'https://smartstudy-api-athtbtapcvdjesbe.centralindia-01.azurewebsites.net';
 
@@ -431,6 +431,102 @@ export async function uploadFile(file: File, medium: string, className: string, 
     return await response.json();
   } catch (error) {
     console.error('Upload error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Upload a model question paper to Azure Blob Storage
+ * Folder structure: model-questions/{State}/{Class}/{Subject}/{filename}
+ */
+export async function uploadQuestionPaper(
+  file: File, 
+  subject: string, 
+  grade: string, 
+  medium: string, 
+  state: string, 
+  academicYear?: string,
+  token?: string
+): Promise<any> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('subject', subject);
+  formData.append('grade', grade);
+  formData.append('medium', medium);
+  formData.append('state', state);
+  formData.append('paperType', 'Model');
+  if (academicYear) {
+    formData.append('academicYear', academicYear);
+  }
+
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(buildApiUrl('/api/questionpapers/upload'), {
+      method: 'POST',
+      headers: headers,
+      body: formData
+    });
+
+    if (!response.ok) {
+      const error = await parseErrorResponse(response);
+      throw new ApiException(error);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Question paper upload error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Upload evaluation sheet (answer scheme/marking scheme)
+ * Folder structure: evaluation-sheets/{State}/{Class}/{Subject}/{filename}
+ */
+export async function uploadEvaluationSheet(
+  file: File, 
+  subject: string, 
+  grade: string, 
+  medium: string, 
+  state: string, 
+  academicYear?: string,
+  token?: string
+): Promise<any> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('subject', subject);
+  formData.append('grade', grade);
+  formData.append('medium', medium);
+  formData.append('state', state);
+  formData.append('sheetType', 'Model');
+  if (academicYear) {
+    formData.append('academicYear', academicYear);
+  }
+
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(buildApiUrl('/api/evaluationsheets/upload'), {
+      method: 'POST',
+      headers: headers,
+      body: formData
+    });
+
+    if (!response.ok) {
+      const error = await parseErrorResponse(response);
+      throw new ApiException(error);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Evaluation sheet upload error:', error);
     throw error;
   }
 }

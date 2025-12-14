@@ -35,11 +35,17 @@ namespace SchoolAiChatbotBackend.Models
         public string Subject { get; set; } = string.Empty;
 
         /// <summary>
-        /// Grade/Class (e.g., "10", "12", "PUC-2")
+        /// Grade/Class (e.g., "10", "12", "PUC-2", "Class12")
         /// </summary>
         [Required]
         [StringLength(50)]
         public string Grade { get; set; } = string.Empty;
+
+        /// <summary>
+        /// State/Board (e.g., "Karnataka", "Maharashtra", "CBSE")
+        /// </summary>
+        [StringLength(100)]
+        public string State { get; set; } = "Karnataka";
 
         /// <summary>
         /// Medium of instruction (e.g., "English", "Kannada", "Hindi")

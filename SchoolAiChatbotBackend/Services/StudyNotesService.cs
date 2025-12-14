@@ -50,20 +50,20 @@ namespace SchoolAiChatbotBackend.Services
         /// Generate comprehensive study notes using SQL-based RAG and AI
         /// </summary>
         public async Task<StudyNote> GenerateStudyNotesAsync(
-            string userId, 
-            string topic, 
-            string? subject = null, 
-            string? grade = null, 
+            string userId,
+            string topic,
+            string? subject = null,
+            string? grade = null,
             string? chapter = null)
         {
             try
             {
-                _logger.LogInformation("Generating study notes for topic: {Topic}, subject: {Subject}, grade: {Grade}", 
+                _logger.LogInformation("Generating study notes for topic: {Topic}, subject: {Subject}, grade: {Grade}",
                     topic, subject ?? "any", grade ?? "any");
 
                 // Step 1: Search for relevant content using SQL-based RAG
                 var relevantChunks = await _ragService.FindRelevantChunksAsync(
-                    topic, 
+                    topic,
                     topK: 10,
                     subject: subject,
                     grade: grade
@@ -98,14 +98,14 @@ namespace SchoolAiChatbotBackend.Services
                 promptBuilder.AppendLine();
                 promptBuilder.AppendLine("### TOPIC:");
                 promptBuilder.AppendLine(topic);
-                
+
                 if (!string.IsNullOrWhiteSpace(subject))
                     promptBuilder.AppendLine($"Subject: {subject}");
                 if (!string.IsNullOrWhiteSpace(grade))
                     promptBuilder.AppendLine($"Grade Level: {grade}");
                 if (!string.IsNullOrWhiteSpace(chapter))
                     promptBuilder.AppendLine($"Chapter: {chapter}");
-                
+
                 promptBuilder.AppendLine();
                 promptBuilder.AppendLine("### SOURCE CONTENT:");
                 promptBuilder.AppendLine(contextText);
@@ -119,11 +119,11 @@ namespace SchoolAiChatbotBackend.Services
 
                 // Step 6: Save to database
                 var sourceChunksJson = JsonSerializer.Serialize(
-                    relevantChunks.Select(c => new 
-                    { 
-                        c.Id, 
-                        c.Subject, 
-                        c.Grade, 
+                    relevantChunks.Select(c => new
+                    {
+                        c.Id,
+                        c.Subject,
+                        c.Grade,
                         c.Chapter,
                         c.ChunkIndex,
                         Preview = c.ChunkText.Length > 100 ? c.ChunkText.Substring(0, 100) + "..." : c.ChunkText
@@ -145,7 +145,7 @@ namespace SchoolAiChatbotBackend.Services
                 _dbContext.StudyNotes.Add(studyNote);
                 await _dbContext.SaveChangesAsync();
 
-                _logger.LogInformation("Successfully generated and saved study note {NoteId} for topic: {Topic}", 
+                _logger.LogInformation("Successfully generated and saved study note {NoteId} for topic: {Topic}",
                     studyNote.Id, topic);
 
                 return studyNote;
@@ -203,7 +203,7 @@ namespace SchoolAiChatbotBackend.Services
             try
             {
                 var note = await _dbContext.StudyNotes.FindAsync(id);
-                
+
                 if (note == null || note.UserId != userId)
                 {
                     _logger.LogWarning("Study note {NoteId} not found or user {UserId} not authorized", id, userId);
@@ -212,9 +212,9 @@ namespace SchoolAiChatbotBackend.Services
 
                 note.GeneratedNotes = updatedContent;
                 note.UpdatedAt = DateTime.UtcNow;
-                
+
                 await _dbContext.SaveChangesAsync();
-                
+
                 _logger.LogInformation("Successfully updated study note {NoteId}", id);
                 return note;
             }
@@ -233,7 +233,7 @@ namespace SchoolAiChatbotBackend.Services
             try
             {
                 var note = await _dbContext.StudyNotes.FindAsync(id);
-                
+
                 if (note == null || note.UserId != userId)
                 {
                     _logger.LogWarning("Study note {NoteId} not found or user {UserId} not authorized", id, userId);
@@ -245,10 +245,10 @@ namespace SchoolAiChatbotBackend.Services
                 {
                     note.ShareToken = Guid.NewGuid().ToString("N");
                 }
-                
+
                 note.IsShared = true;
                 await _dbContext.SaveChangesAsync();
-                
+
                 _logger.LogInformation("Successfully shared study note {NoteId} with token {Token}", id, note.ShareToken);
                 return note.ShareToken;
             }
@@ -267,7 +267,7 @@ namespace SchoolAiChatbotBackend.Services
             try
             {
                 var note = await _dbContext.StudyNotes.FindAsync(id);
-                
+
                 if (note == null || note.UserId != userId)
                 {
                     _logger.LogWarning("Study note {NoteId} not found or user {UserId} not authorized", id, userId);
@@ -276,7 +276,7 @@ namespace SchoolAiChatbotBackend.Services
 
                 note.IsShared = false;
                 await _dbContext.SaveChangesAsync();
-                
+
                 _logger.LogInformation("Successfully unshared study note {NoteId}", id);
                 return true;
             }
@@ -296,12 +296,12 @@ namespace SchoolAiChatbotBackend.Services
             {
                 var note = await _dbContext.StudyNotes
                     .FirstOrDefaultAsync(n => n.ShareToken == shareToken && n.IsShared);
-                
+
                 if (note == null)
                 {
                     _logger.LogWarning("Shared study note with token {Token} not found", shareToken);
                 }
-                
+
                 return note;
             }
             catch (Exception ex)

@@ -191,7 +191,7 @@ namespace SchoolAiChatbotBackend.Controllers
 
                         // Parse the evaluation response
                         var evalResult = JsonSerializer.Deserialize<EvaluationJsonResponse>(
-                            evaluationJson, 
+                            evaluationJson,
                             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
                         var score = Math.Min(evalResult?.Score ?? 0, answer.MaxMarks);
@@ -212,7 +212,7 @@ namespace SchoolAiChatbotBackend.Controllers
                     catch (Exception ex)
                     {
                         _logger.LogError(ex, "Error evaluating answer for question {QuestionId}", answer.QuestionId);
-                        
+
                         // Add error result but continue with other answers
                         results.Add(new AnswerEvaluationResult
                         {
@@ -516,22 +516,22 @@ Generate the complete Karnataka 2nd PUC Mathematics Model Question Paper now:";
         {
             // Clean the response - remove any markdown or extra text
             var cleanedResponse = aiResponse.Trim();
-            
+
             // Remove markdown code blocks if present
             if (cleanedResponse.StartsWith("```json"))
                 cleanedResponse = cleanedResponse.Substring(7);
             else if (cleanedResponse.StartsWith("```"))
                 cleanedResponse = cleanedResponse.Substring(3);
-            
+
             if (cleanedResponse.EndsWith("```"))
                 cleanedResponse = cleanedResponse.Substring(0, cleanedResponse.Length - 3);
-            
+
             cleanedResponse = cleanedResponse.Trim();
 
             // Find the JSON object
             var startIndex = cleanedResponse.IndexOf('{');
             var endIndex = cleanedResponse.LastIndexOf('}');
-            
+
             if (startIndex >= 0 && endIndex > startIndex)
             {
                 cleanedResponse = cleanedResponse.Substring(startIndex, endIndex - startIndex + 1);

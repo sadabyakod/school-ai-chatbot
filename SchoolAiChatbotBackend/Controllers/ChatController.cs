@@ -48,7 +48,7 @@ namespace SchoolAiChatbotBackend.Controllers
             string userId = ip; // Can later replace with authenticated user ID
             string sessionId = request.SessionId ?? Guid.NewGuid().ToString();
 
-            _logger.LogInformation("Chat request from {IP}. Session: {SessionId}, Question: {Q}", 
+            _logger.LogInformation("Chat request from {IP}. Session: {SessionId}, Question: {Q}",
                 ip, sessionId, request.Question);
 
             try
@@ -56,10 +56,10 @@ namespace SchoolAiChatbotBackend.Controllers
                 // Check for follow-up question responses
                 string question = request.Question;
                 string userInput = question.ToLower().Trim();
-                
+
                 // Handle positive responses (continue topic)
-                if (userInput.Contains("yes") || 
-                    userInput.Contains("explain more") || 
+                if (userInput.Contains("yes") ||
+                    userInput.Contains("explain more") ||
                     userInput.Contains("tell me more") ||
                     userInput.Contains("continue") ||
                     userInput == "sure" ||
@@ -74,7 +74,7 @@ namespace SchoolAiChatbotBackend.Controllers
                     }
                 }
                 // Handle negative responses (suggest alternatives)
-                else if (userInput.Contains("no") || 
+                else if (userInput.Contains("no") ||
                          userInput.Contains("not interested") ||
                          userInput.Contains("don't") ||
                          userInput.Contains("different") ||
@@ -97,7 +97,7 @@ namespace SchoolAiChatbotBackend.Controllers
                 try
                 {
                     answer = await _ragService.GetRAGAnswerAsync(question, userId, sessionId);
-                    
+
                     // Extract follow-up question if present
                     if (answer.Contains("💡"))
                     {
@@ -112,7 +112,7 @@ namespace SchoolAiChatbotBackend.Controllers
                 catch (Exception ragEx)
                 {
                     _logger.LogError(ragEx, "RAG service failed, using fallback response");
-                    
+
                     // Provide a helpful fallback message when Azure OpenAI is not configured
                     answer = "I'm currently running in local development mode without Azure OpenAI configured. " +
                              "To get AI-powered answers:\n\n" +
@@ -120,7 +120,7 @@ namespace SchoolAiChatbotBackend.Controllers
                              "2. Or deploy to Azure where configuration is automatically applied\n\n" +
                              $"Your question was: \"{question}\"\n\n" +
                              "In production, I would search through uploaded study materials and provide an intelligent answer using RAG (Retrieval-Augmented Generation).";
-                    
+
                     // Try to save to history
                     try
                     {
@@ -280,7 +280,7 @@ namespace SchoolAiChatbotBackend.Controllers
     {
         [Required(ErrorMessage = "Question is required.")]
         public string Question { get; set; } = string.Empty;
-        
+
         /// <summary>
         /// Session ID for conversation continuity. If not provided, a new session is created.
         /// </summary>

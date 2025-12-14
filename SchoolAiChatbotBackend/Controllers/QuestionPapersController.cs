@@ -51,9 +51,10 @@ namespace SchoolAiChatbotBackend.Controllers
                 var academicYear = form["academicYear"].ToString();
                 var chapter = form["chapter"].ToString();
                 var paperType = form["paperType"].ToString();
+                var state = form["state"].ToString();
 
-                _logger.LogInformation("Question paper upload: File={FileName}, Subject={Subject}, Grade={Grade}",
-                    file?.FileName ?? "null", subject, grade);
+                _logger.LogInformation("Question paper upload: File={FileName}, Subject={Subject}, Grade={Grade}, State={State}",
+                    file?.FileName ?? "null", subject, grade, state);
 
                 // Validation
                 if (file == null || file.Length == 0)
@@ -74,20 +75,22 @@ namespace SchoolAiChatbotBackend.Controllers
                 // Default values
                 if (string.IsNullOrWhiteSpace(medium)) medium = "English";
                 if (string.IsNullOrWhiteSpace(paperType)) paperType = "Model";
+                if (string.IsNullOrWhiteSpace(state)) state = "Karnataka";
 
-                // Upload to Azure Blob Storage
+                // Upload to Azure Blob Storage with folder structure:
+                // Container: model-questions
+                // Path: {State}/{Class}/{Subject}/{unique_filename}
+                // Example: model-questions (container) / Karnataka/Class12/Physics/2023_Model_Questions.pdf
                 string blobUrl;
                 using (var stream = file.OpenReadStream())
                 {
-                    // Use question-papers container with folder structure
-                    var blobName = $"question-papers/{grade}/{subject}/{Guid.NewGuid()}_{file.FileName}";
-                    blobUrl = await _blobStorageService.UploadFileToBlobAsync(
+                    var folderPath = $"{state}/{grade}/{subject}";
+                    blobUrl = await _blobStorageService.UploadWithCustomPathAsync(
                         file.FileName,
                         stream,
+                        folderPath,
                         file.ContentType,
-                        grade,
-                        subject,
-                        null);
+                        "model-questions");  // Separate container for model question papers
                 }
 
                 // Save metadata to database
@@ -99,6 +102,7 @@ namespace SchoolAiChatbotBackend.Controllers
                     UploadedBy = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                     Subject = subject,
                     Grade = grade,
+                    State = state,
                     Medium = medium,
                     AcademicYear = string.IsNullOrWhiteSpace(academicYear) ? null : academicYear,
                     Chapter = string.IsNullOrWhiteSpace(chapter) ? null : chapter,
@@ -123,6 +127,7 @@ namespace SchoolAiChatbotBackend.Controllers
                         fileName = questionPaper.FileName,
                         subject = questionPaper.Subject,
                         grade = questionPaper.Grade,
+                        state = questionPaper.State,
                         medium = questionPaper.Medium,
                         academicYear = questionPaper.AcademicYear,
                         paperType = questionPaper.PaperType,
@@ -151,7 +156,8 @@ namespace SchoolAiChatbotBackend.Controllers
             [FromQuery] string? grade = null,
             [FromQuery] string? subject = null,
             [FromQuery] string? medium = null,
-            [FromQuery] string? academicYear = null)
+            [FromQuery] string? academicYear = null,
+            [FromQuery] string? state = null)
         {
             try
             {
@@ -169,13 +175,17 @@ namespace SchoolAiChatbotBackend.Controllers
                 if (!string.IsNullOrWhiteSpace(academicYear))
                     query = query.Where(p => p.AcademicYear == academicYear);
 
+                if (!string.IsNullOrWhiteSpace(state))
+                    query = query.Where(p => p.State == state);
+
                 var papers = await query
-                    .GroupBy(p => new { p.Subject, p.Grade, p.Medium })
+                    .GroupBy(p => new { p.Subject, p.Grade, p.Medium, p.State })
                     .Select(g => new
                     {
                         Subject = g.Key.Subject,
                         Grade = g.Key.Grade,
                         Medium = g.Key.Medium,
+                        State = g.Key.State,
                         PaperCount = g.Count(),
                         LatestUpload = g.Max(p => p.UploadedAt),
                         Papers = g.Select(p => new
@@ -190,7 +200,8 @@ namespace SchoolAiChatbotBackend.Controllers
                             p.UploadedAt
                         }).OrderByDescending(p => p.UploadedAt).ToList()
                     })
-                    .OrderBy(g => g.Subject)
+                    .OrderBy(g => g.State)
+                    .ThenBy(g => g.Subject)
                     .ThenBy(g => g.Grade)
                     .ToListAsync();
 

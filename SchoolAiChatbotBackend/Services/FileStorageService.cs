@@ -91,7 +91,7 @@ namespace SchoolAiChatbotBackend.Services
 
             var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".pdf", ".webp" };
             var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-            
+
             if (!Array.Exists(allowedExtensions, ext => ext == extension))
             {
                 throw new ArgumentException($"File type {extension} is not allowed", nameof(file));
@@ -209,7 +209,7 @@ namespace SchoolAiChatbotBackend.Services
             // Validate file type
             var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".pdf", ".webp" };
             var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-            
+
             if (!Array.Exists(allowedExtensions, ext => ext == extension))
             {
                 throw new ArgumentException($"File type {extension} is not allowed", nameof(file));
@@ -263,18 +263,18 @@ namespace SchoolAiChatbotBackend.Services
             {
                 var blobClient = new BlobClient(new Uri(blobUrl));
                 var blobName = blobClient.Name;
-                
+
                 var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
                 var blobToDelete = containerClient.GetBlobClient(blobName);
 
                 var response = await blobToDelete.DeleteIfExistsAsync();
-                
+
                 if (response.Value)
                 {
                     _logger.LogInformation("Deleted blob from Azure Storage: {BlobName}", blobName);
                     return true;
                 }
-                
+
                 _logger.LogWarning("Blob not found for deletion: {BlobName}", blobName);
                 return false;
             }
@@ -291,7 +291,7 @@ namespace SchoolAiChatbotBackend.Services
             {
                 var blobClient = new BlobClient(new Uri(blobUrl));
                 var blobName = blobClient.Name;
-                
+
                 var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
                 var blobToDownload = containerClient.GetBlobClient(blobName);
 
@@ -311,14 +311,14 @@ namespace SchoolAiChatbotBackend.Services
             {
                 var blobClient = new BlobClient(new Uri(blobUrl));
                 var blobName = blobClient.Name;
-                
+
                 var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
                 var blobToDownload = containerClient.GetBlobClient(blobName);
 
                 _logger.LogInformation("Downloading blob {BlobName} to {DestinationPath}", blobName, destinationPath);
-                
+
                 await blobToDownload.DownloadToAsync(destinationPath);
-                
+
                 _logger.LogInformation("Successfully downloaded blob to {DestinationPath}", destinationPath);
             }
             catch (Exception ex)
@@ -334,7 +334,7 @@ namespace SchoolAiChatbotBackend.Services
             {
                 var blobClient = new BlobClient(new Uri(blobUrl));
                 var blobName = blobClient.Name;
-                
+
                 var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
                 var blobToCheck = containerClient.GetBlobClient(blobName);
 
@@ -353,7 +353,7 @@ namespace SchoolAiChatbotBackend.Services
             {
                 var blobClient = new BlobClient(new Uri(blobUrl));
                 var blobName = blobClient.Name;
-                
+
                 var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
                 var blobToArchive = containerClient.GetBlobClient(blobName);
 
@@ -385,7 +385,7 @@ namespace SchoolAiChatbotBackend.Services
 
                 var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
                 var cutoffDate = DateTime.UtcNow.AddDays(-_options.RetentionDays);
-                
+
                 int deletedCount = 0;
                 int archivedCount = 0;
 

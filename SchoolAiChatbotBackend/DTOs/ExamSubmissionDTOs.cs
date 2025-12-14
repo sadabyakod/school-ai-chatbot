@@ -11,10 +11,10 @@ namespace SchoolAiChatbotBackend.DTOs
     {
         [Required]
         public string ExamId { get; set; } = string.Empty;
-        
+
         [Required]
         public string StudentId { get; set; } = string.Empty;
-        
+
         [Required]
         public List<McqAnswerDto> Answers { get; set; } = new();
     }
@@ -23,7 +23,7 @@ namespace SchoolAiChatbotBackend.DTOs
     {
         [Required]
         public string QuestionId { get; set; } = string.Empty;
-        
+
         [Required]
         public string SelectedOption { get; set; } = string.Empty;
     }
@@ -56,10 +56,10 @@ namespace SchoolAiChatbotBackend.DTOs
     {
         [Required]
         public string ExamId { get; set; } = string.Empty;
-        
+
         [Required]
         public string StudentId { get; set; } = string.Empty;
-        
+
         [Required]
         public List<IFormFile> Files { get; set; } = new();
     }
@@ -87,7 +87,7 @@ namespace SchoolAiChatbotBackend.DTOs
         public bool IsComplete { get; set; }
         public string ExamId { get; set; } = string.Empty;
         public string StudentId { get; set; } = string.Empty;
-        
+
         /// <summary>
         /// Complete exam result (only populated when IsComplete = true)
         /// </summary>
@@ -102,24 +102,24 @@ namespace SchoolAiChatbotBackend.DTOs
         public string ExamId { get; set; } = string.Empty;
         public string StudentId { get; set; } = string.Empty;
         public string ExamTitle { get; set; } = string.Empty;
-        
+
         // MCQ Results
         public int McqScore { get; set; }
         public int McqTotalMarks { get; set; }
         public List<McqResultDto> McqResults { get; set; } = new();
-        
+
         // Subjective Results
         public double SubjectiveScore { get; set; }
         public double SubjectiveTotalMarks { get; set; }
         public List<SubjectiveResultDto> SubjectiveResults { get; set; } = new();
-        
+
         // Grand Total
         public double GrandScore { get; set; }
         public double GrandTotalMarks { get; set; }
         public double Percentage { get; set; }
         public string Grade { get; set; } = string.Empty;
         public bool Passed { get; set; }
-        
+
         public string? EvaluatedAt { get; set; }
     }
 

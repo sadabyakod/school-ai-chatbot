@@ -15,13 +15,13 @@ public class AzureQueueService : IQueueService
     private readonly JsonSerializerOptions _jsonOptions;
     private readonly ConcurrentDictionary<string, QueueClient> _queueClients;
     private readonly SemaphoreSlim _initLock = new(1, 1);
-    
+
     // Retry configuration
     private const int MaxRetries = 3;
-    private static readonly TimeSpan[] RetryDelays = { 
-        TimeSpan.FromMilliseconds(100), 
-        TimeSpan.FromMilliseconds(500), 
-        TimeSpan.FromSeconds(1) 
+    private static readonly TimeSpan[] RetryDelays = {
+        TimeSpan.FromMilliseconds(100),
+        TimeSpan.FromMilliseconds(500),
+        TimeSpan.FromSeconds(1)
     };
 
     public AzureQueueService(string connectionString, ILogger<AzureQueueService> logger)
@@ -71,7 +71,7 @@ public class AzureQueueService : IQueueService
                 }
 
                 var elapsedMs = (DateTime.UtcNow - startTime).TotalMilliseconds;
-                
+
                 _logger.LogInformation(
                     "[QUEUE_SUCCESS] Enqueued {MessageType} to {QueueName} in {ElapsedMs}ms (attempt {Attempt})",
                     typeof(T).Name,
@@ -93,14 +93,14 @@ public class AzureQueueService : IQueueService
                         attempt + 1,
                         MaxRetries,
                         ex.Message);
-                    
+
                     await Task.Delay(RetryDelays[Math.Min(attempt, RetryDelays.Length - 1)]);
                 }
             }
             catch (Exception ex)
             {
                 // Non-transient failure - don't retry
-                _logger.LogError(ex, 
+                _logger.LogError(ex,
                     "[QUEUE_FAILED] Failed to enqueue {MessageType} to {QueueName}",
                     typeof(T).Name,
                     queueName);
@@ -137,10 +137,10 @@ public class AzureQueueService : IQueueService
 
             var queueClient = new QueueClient(_connectionString, queueName);
             await queueClient.CreateIfNotExistsAsync();
-            
+
             _queueClients[queueName] = queueClient;
             _logger.LogInformation("[QUEUE_INIT] Created queue client for {QueueName}", queueName);
-            
+
             return queueClient;
         }
         finally

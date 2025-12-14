@@ -58,25 +58,25 @@ namespace SchoolAiChatbotBackend.Services
                 _apiKey = azureApiKey;
                 _chatDeployment = _configuration["AzureOpenAI:ChatDeployment"] ?? "gpt-4";
                 _embeddingDeployment = _configuration["AzureOpenAI:EmbeddingDeployment"] ?? "text-embedding-3-small";
-                
+
                 _logger.LogInformation("Using Azure OpenAI with endpoint: {Endpoint}", _endpoint);
             }
             else
             {
                 _useAzureOpenAI = false;
-                _apiKey = _configuration["OpenAI:ApiKey"] ?? 
-                          _configuration["OPENAI_API_KEY"] ?? 
-                          Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? 
+                _apiKey = _configuration["OpenAI:ApiKey"] ??
+                          _configuration["OPENAI_API_KEY"] ??
+                          Environment.GetEnvironmentVariable("OPENAI_API_KEY") ??
                           throw new InvalidOperationException("OpenAI API key not configured");
                 _endpoint = "https://api.openai.com/v1";
                 _chatDeployment = "gpt-4";
                 _embeddingDeployment = "text-embedding-3-small";
-                
+
                 _logger.LogInformation("Using standard OpenAI API");
             }
 
             _useRealEmbeddings = bool.TryParse(
-                _configuration["USE_REAL_EMBEDDINGS"] ?? "true", 
+                _configuration["USE_REAL_EMBEDDINGS"] ?? "true",
                 out var useReal) && useReal;
         }
 
@@ -406,7 +406,7 @@ Evaluate the student's answer and provide score (0 to {maxMarks}) with feedback.
             try
             {
                 var base64Image = Convert.ToBase64String(imageData);
-                
+
                 var systemPrompt = @"You are an exam evaluator for Karnataka 2nd PUC board exams.
 First, read and extract the text from the student's handwritten answer in the image.
 Then evaluate the answer against the correct answer and assign marks fairly.
@@ -433,12 +433,12 @@ Please read the student's handwritten answer from the image, then evaluate it an
                 var messageContent = new object[]
                 {
                     new { type = "text", text = userPrompt },
-                    new { 
-                        type = "image_url", 
-                        image_url = new { 
+                    new {
+                        type = "image_url",
+                        image_url = new {
                             url = $"data:{mimeType};base64,{base64Image}",
                             detail = "high"
-                        } 
+                        }
                     }
                 };
 
@@ -559,7 +559,7 @@ Please read the student's handwritten answer from the image, then evaluate it an
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    _logger.LogError("OpenAI API error for subjective evaluation: {Status} - {Content}", 
+                    _logger.LogError("OpenAI API error for subjective evaluation: {Status} - {Content}",
                         response.StatusCode, responseContent);
                     throw new Exception($"OpenAI API returned {response.StatusCode}");
                 }
@@ -587,12 +587,12 @@ Please read the student's handwritten answer from the image, then evaluate it an
         {
             var random = new Random(text.GetHashCode());
             var embedding = new List<float>();
-            
+
             for (int i = 0; i < 1536; i++)
             {
                 embedding.Add((float)(random.NextDouble() * 2 - 1)); // Range: -1 to 1
             }
-            
+
             return embedding;
         }
     }

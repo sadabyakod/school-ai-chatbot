@@ -32,14 +32,14 @@ namespace SchoolAiChatbotBackend.DTOs
         public string Subject { get; set; } = string.Empty;
         public string? GradeLevel { get; set; }
         public string? Chapter { get; set; }
-        
+
         // MCQ Details
         public bool HasMcqSubmission { get; set; }
         public DateTime? McqSubmittedAt { get; set; }
         public int? McqScore { get; set; }
         public int? McqTotalMarks { get; set; }
         public List<McqAnswerDetailDto> McqAnswers { get; set; } = new();
-        
+
         // Written Details
         public bool HasWrittenSubmission { get; set; }
         public DateTime? WrittenSubmittedAt { get; set; }
@@ -48,7 +48,7 @@ namespace SchoolAiChatbotBackend.DTOs
         public double? SubjectiveScore { get; set; }
         public double? SubjectiveTotalMarks { get; set; }
         public List<SubjectiveEvaluationDetailDto> SubjectiveEvaluations { get; set; } = new();
-        
+
         // Overall
         public double? GrandScore { get; set; }
         public double? GrandTotalMarks { get; set; }

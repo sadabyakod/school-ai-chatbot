@@ -9,7 +9,7 @@ public interface IQueueService
     /// Enqueue a message to the specified queue
     /// </summary>
     Task EnqueueAsync<T>(string queueName, T message) where T : class;
-    
+
     /// <summary>
     /// Enqueue a message with visibility delay
     /// </summary>

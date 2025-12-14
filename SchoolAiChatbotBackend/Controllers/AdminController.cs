@@ -169,7 +169,8 @@ public class AdminController : ControllerBase
 
             _logger.LogInformation("Seeded {Count} questions successfully", questions.Count);
 
-            return Ok(new { 
+            return Ok(new
+            {
                 message = "Questions seeded successfully",
                 count = questions.Count,
                 subjects = questions.Select(q => q.Subject).Distinct().ToList()

@@ -11,19 +11,19 @@ namespace SchoolAiChatbotBackend.Data
         {
             using var scope = serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            
+
             // Apply any pending migrations to create/update database schema
             await context.Database.MigrateAsync();
-            
+
             // Ensure GeneratedExams table exists (for exam persistence)
             await EnsureGeneratedExamsTableAsync(context);
-            
+
             // Check if schools data already exists
             bool schoolsExist = await context.Schools.AnyAsync();
-            
+
             // Check if questions exist (for exam system)
             bool questionsExist = await context.Questions.AnyAsync();
-            
+
             if (schoolsExist && questionsExist)
             {
                 return; // Database has been fully seeded
@@ -598,7 +598,7 @@ namespace SchoolAiChatbotBackend.Data
 
             Console.WriteLine("Database seeded successfully!");
         }
-        
+
         /// <summary>
         /// Ensures the GeneratedExams table exists for exam persistence
         /// </summary>

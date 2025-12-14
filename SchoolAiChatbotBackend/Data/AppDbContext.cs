@@ -16,6 +16,7 @@ namespace SchoolAiChatbotBackend.Data
         public DbSet<ChatLog> ChatLogs { get; set; }
         public DbSet<UploadedFile> UploadedFiles { get; set; }
         public DbSet<ModelQuestionPaper> ModelQuestionPapers { get; set; }
+        public DbSet<EvaluationSheet> EvaluationSheets { get; set; }
 
         // New: SQL-backed chat history and study notes (migrated from Azure Functions)
         public DbSet<ChatHistory> ChatHistories { get; set; }

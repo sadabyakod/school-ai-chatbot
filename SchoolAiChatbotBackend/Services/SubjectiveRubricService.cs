@@ -199,7 +199,7 @@ namespace SchoolAiChatbotBackend.Services
                 });
             }
 
-            _logger.LogDebug("Generated default rubric with {StepCount} steps for {TotalMarks} marks", 
+            _logger.LogDebug("Generated default rubric with {StepCount} steps for {TotalMarks} marks",
                 steps.Count, totalMarks);
 
             return Task.FromResult(steps);
@@ -221,7 +221,7 @@ namespace SchoolAiChatbotBackend.Services
             //  Return JSON: [{\"stepNumber\": 1, \"description\": \"...\", \"marks\": N}, ...]"
 
             _logger.LogInformation("AI rubric generation not yet implemented, using default rubric");
-            
+
             // Fall back to default for now
             return await GenerateDefaultRubricAsync(questionText, modelAnswer, totalMarks);
         }

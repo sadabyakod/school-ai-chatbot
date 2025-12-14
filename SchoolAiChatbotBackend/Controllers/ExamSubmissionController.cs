@@ -95,7 +95,7 @@ namespace SchoolAiChatbotBackend.Controllers
                 foreach (var answer in request.Answers)
                 {
                     var question = mcqQuestions.FirstOrDefault(q => q.QuestionId == answer.QuestionId);
-                    
+
                     if (question == null)
                     {
                         _logger.LogWarning("Question {QuestionId} not found", answer.QuestionId);
@@ -188,7 +188,7 @@ namespace SchoolAiChatbotBackend.Controllers
         {
             // Generate correlation ID for this request
             var correlationId = Guid.NewGuid().ToString("N")[..8];
-            
+
             using var scope = _logger.BeginScope(new Dictionary<string, object>
             {
                 ["CorrelationId"] = correlationId,
@@ -204,7 +204,7 @@ namespace SchoolAiChatbotBackend.Controllers
                     files?.Sum(f => f.Length) ?? 0);
 
                 // === VALIDATION PHASE ===
-                
+
                 // 1. Validate required fields
                 if (string.IsNullOrWhiteSpace(examId) || string.IsNullOrWhiteSpace(studentId))
                 {
@@ -215,9 +215,9 @@ namespace SchoolAiChatbotBackend.Controllers
                 // 2. Sanitize inputs (prevent injection)
                 examId = examId.Trim();
                 studentId = studentId.Trim();
-                
+
                 // Validate no path traversal characters
-                if (examId.Contains("..") || studentId.Contains("..") || 
+                if (examId.Contains("..") || studentId.Contains("..") ||
                     examId.Contains('/') || studentId.Contains('/') ||
                     examId.Contains('\\') || studentId.Contains('\\'))
                 {
@@ -241,7 +241,7 @@ namespace SchoolAiChatbotBackend.Controllers
                 foreach (var file in files)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    
+
                     var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
                     if (!AllowedExtensions.Contains(extension))
                     {
@@ -277,7 +277,8 @@ namespace SchoolAiChatbotBackend.Controllers
                 if (existingSubmission != null && existingSubmission.Status != SubmissionStatus.Failed)
                 {
                     _logger.LogWarning("[DUPLICATE] Submission already exists: {SubmissionId}", existingSubmission.WrittenSubmissionId);
-                    return Conflict(new { 
+                    return Conflict(new
+                    {
                         error = "A submission already exists for this exam and student",
                         existingSubmissionId = existingSubmission.WrittenSubmissionId,
                         status = existingSubmission.Status.ToString(),
@@ -286,7 +287,7 @@ namespace SchoolAiChatbotBackend.Controllers
                 }
 
                 // === STORAGE PHASE ===
-                
+
                 var filePaths = new List<string>();
                 foreach (var file in files)
                 {
@@ -294,11 +295,11 @@ namespace SchoolAiChatbotBackend.Controllers
                     var path = await _fileStorageService.SaveFileAsync(file, examId, studentId);
                     filePaths.Add(path);
                 }
-                
+
                 _logger.LogInformation("[BLOB_UPLOADED] {FileCount} files saved to storage", filePaths.Count);
 
                 // === DATABASE PHASE ===
-                
+
                 var submission = new WrittenSubmission
                 {
                     WrittenSubmissionId = Guid.NewGuid().ToString(),
@@ -312,7 +313,7 @@ namespace SchoolAiChatbotBackend.Controllers
                 _logger.LogInformation("[DB_SAVED] Submission {SubmissionId} created", submission.WrittenSubmissionId);
 
                 // === QUEUE PHASE ===
-                
+
                 var queueMessage = new WrittenSubmissionQueueMessage
                 {
                     WrittenSubmissionId = submission.WrittenSubmissionId,
@@ -331,7 +332,7 @@ namespace SchoolAiChatbotBackend.Controllers
                     QueueNames.WrittenSubmissionProcessing);
 
                 // === RESPONSE ===
-                
+
                 return Ok(new UploadWrittenResponse
                 {
                     WrittenSubmissionId = submission.WrittenSubmissionId,
@@ -510,7 +511,7 @@ namespace SchoolAiChatbotBackend.Controllers
                 // Use MCQ answers from direct submission
                 // Get MCQ questions with correct answers
                 var mcqQuestions = GetMcqQuestions(exam);
-                
+
                 mcqScore = mcqSubmission.Score;
                 mcqTotalMarks = mcqSubmission.TotalMarks;
                 mcqResults = mcqSubmission.Answers.Select(a =>
@@ -736,7 +737,7 @@ namespace SchoolAiChatbotBackend.Controllers
             _logger.LogInformation("Getting rubric for Exam={ExamId}, Question={QuestionId}", examId, questionId);
 
             var rubric = await _rubricService.GetRubricAsync(examId, questionId);
-            
+
             if (rubric == null)
             {
                 return NotFound(new { error = $"No rubric found for exam {examId}, question {questionId}" });
@@ -780,8 +781,9 @@ namespace SchoolAiChatbotBackend.Controllers
             var stepMarksSum = request.Steps.Sum(s => s.Marks);
             if (stepMarksSum != request.TotalMarks)
             {
-                return BadRequest(new { 
-                    error = $"Sum of step marks ({stepMarksSum}) must equal total marks ({request.TotalMarks})" 
+                return BadRequest(new
+                {
+                    error = $"Sum of step marks ({stepMarksSum}) must equal total marks ({request.TotalMarks})"
                 });
             }
 
@@ -790,7 +792,8 @@ namespace SchoolAiChatbotBackend.Controllers
 
             await _rubricService.SaveRubricAsync(request);
 
-            return Ok(new { 
+            return Ok(new
+            {
                 message = "Rubric saved successfully",
                 examId = request.ExamId,
                 questionId = request.QuestionId,
@@ -819,16 +822,18 @@ namespace SchoolAiChatbotBackend.Controllers
             {
                 if (rubric.Steps == null || rubric.Steps.Count == 0)
                 {
-                    return BadRequest(new { 
-                        error = $"Rubric for question {rubric.QuestionId} must have at least one step" 
+                    return BadRequest(new
+                    {
+                        error = $"Rubric for question {rubric.QuestionId} must have at least one step"
                     });
                 }
 
                 var stepMarksSum = rubric.Steps.Sum(s => s.Marks);
                 if (stepMarksSum != rubric.TotalMarks)
                 {
-                    return BadRequest(new { 
-                        error = $"Question {rubric.QuestionId}: Sum of step marks ({stepMarksSum}) must equal total marks ({rubric.TotalMarks})" 
+                    return BadRequest(new
+                    {
+                        error = $"Question {rubric.QuestionId}: Sum of step marks ({stepMarksSum}) must equal total marks ({rubric.TotalMarks})"
                     });
                 }
             }
@@ -838,7 +843,8 @@ namespace SchoolAiChatbotBackend.Controllers
 
             await _rubricService.SaveRubricsBatchAsync(request.ExamId, request.Rubrics);
 
-            return Ok(new { 
+            return Ok(new
+            {
                 message = "Rubrics saved successfully",
                 examId = request.ExamId,
                 rubricCount = request.Rubrics.Count
@@ -863,10 +869,11 @@ namespace SchoolAiChatbotBackend.Controllers
             }
 
             _logger.LogInformation("Deleting rubric for Exam={ExamId}, Question={QuestionId}", examId, questionId);
-            
+
             await _rubricService.DeleteRubricAsync(examId, questionId);
 
-            return Ok(new { 
+            return Ok(new
+            {
                 message = "Rubric deleted successfully",
                 examId = examId,
                 questionId = questionId
@@ -896,8 +903,8 @@ namespace SchoolAiChatbotBackend.Controllers
             _logger.LogInformation("Generating rubric preview for {TotalMarks} marks question", totalMarks);
 
             var steps = await _rubricService.GenerateDefaultRubricAsync(
-                questionText ?? string.Empty, 
-                modelAnswer ?? string.Empty, 
+                questionText ?? string.Empty,
+                modelAnswer ?? string.Empty,
                 totalMarks);
 
             var dtoSteps = steps.Select(s => new StepRubricItemDto

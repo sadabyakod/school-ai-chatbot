@@ -186,7 +186,7 @@ public class ExamController : ControllerBase
                 CurrentStats = currentStats
             };
 
-            _logger.LogInformation("Answer submitted: AttemptId={AttemptId}, QuestionId={QuestionId}, Correct={IsCorrect}", 
+            _logger.LogInformation("Answer submitted: AttemptId={AttemptId}, QuestionId={QuestionId}, Correct={IsCorrect}",
                 attemptId, request.QuestionId, answer.IsCorrect);
 
             return Ok(response);
@@ -243,8 +243,8 @@ public class ExamController : ControllerBase
                     {
                         TotalQuestions = difficultyAnswers.Count,
                         CorrectAnswers = correctInDifficulty,
-                        Accuracy = difficultyAnswers.Count > 0 
-                            ? (decimal)correctInDifficulty / difficultyAnswers.Count * 100 
+                        Accuracy = difficultyAnswers.Count > 0
+                            ? (decimal)correctInDifficulty / difficultyAnswers.Count * 100
                             : 0
                     };
                 }
