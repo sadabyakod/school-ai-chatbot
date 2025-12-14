@@ -40,12 +40,7 @@ function App() {
               </div>
               <div>
                 <h1 className="text-lg font-bold text-slate-900">Smart Study</h1>
-                <div className="flex items-center gap-2">
-                  <span className="exam-safe-badge text-[10px] py-0.5 px-2">
-                    <span>🔒</span>
-                    Exam Safe • Syllabus Only
-                  </span>
-                </div>
+                <span className="text-[10px] text-cyan-600 font-medium">🔒 Exam Safe</span>
               </div>
             </div>
 
@@ -91,11 +86,7 @@ function App() {
             </nav>
 
             {/* User Actions */}
-            <div className="flex items-center gap-3">
-              <span className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full text-xs font-medium border border-emerald-200">
-                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                Karnataka 2nd PUC
-              </span>
+            <div className="flex items-center gap-2">
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-2 px-3 py-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors"
@@ -128,9 +119,9 @@ function App() {
       </main>
       
       {/* Footer */}
-      <footer className="py-4 text-center border-t border-slate-200/50 bg-white/50">
+      <footer className="py-3 text-center">
         <p className="text-xs text-slate-400">
-          📘 Smart Study — All answers are generated from uploaded syllabus materials only
+          Smart Study — Making learning simple
         </p>
       </footer>
     </div>
