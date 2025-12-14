@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { API_URL } from '../api';
 
 interface Session {
   sessionId: string;
@@ -15,7 +16,7 @@ export default function SessionsList({ onSelectSession }: SessionsListProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+  const API_BASE = API_URL;
 
   useEffect(() => {
     fetchSessions();
@@ -60,14 +61,14 @@ export default function SessionsList({ onSelectSession }: SessionsListProps) {
   if (loading) {
     return (
       <div className="flex justify-center py-4">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600"></div>
       </div>
     );
   }
 
   if (sessions.length === 0) {
     return (
-      <p className="text-center text-gray-500 py-4">No previous sessions</p>
+      <p className="text-center text-slate-500 py-4">💬 No previous sessions yet</p>
     );
   }
 
@@ -78,10 +79,10 @@ export default function SessionsList({ onSelectSession }: SessionsListProps) {
           key={`${session.sessionId}-${index}`}
           onClick={() => onSelectSession(session.sessionId)}
           whileHover={{ scale: 1.02 }}
-          className="w-full text-left bg-gray-50 hover:bg-indigo-50 rounded-lg p-3 transition-all border border-gray-200 hover:border-indigo-300"
+          className="w-full text-left bg-slate-50 hover:bg-cyan-50 rounded-lg p-3 transition-all border border-slate-200 hover:border-cyan-300"
         >
-          <p className="text-sm text-gray-900 font-medium truncate">{session.lastMessage}</p>
-          <p className="text-xs text-gray-500 mt-1">{formatTimestamp(session.timestamp)}</p>
+          <p className="text-sm text-slate-900 font-medium truncate">{session.lastMessage}</p>
+          <p className="text-xs text-slate-500 mt-1">{formatTimestamp(session.timestamp)}</p>
         </motion.button>
       ))}
     </div>

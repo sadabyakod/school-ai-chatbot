@@ -22,10 +22,10 @@ const FAQItem: React.FC<{
     transition={{ duration: 0.3, delay: index * 0.05 }}
   >
     <motion.button
-      className={`w-full text-left p-5 rounded-2xl transition-all duration-300 ${
+      className={`w-full text-left p-5 rounded-2xl transition-all ${
         isOpen 
-          ? 'bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 text-white shadow-lg shadow-purple-500/25' 
-          : 'bg-white hover:bg-gray-50 border border-gray-200 hover:border-purple-300 hover:shadow-md'
+          ? 'bg-gradient-to-r from-cyan-500 to-teal-600 text-white shadow-lg shadow-cyan-500/25' 
+          : 'bg-white hover:bg-slate-50 border border-slate-200 hover:border-cyan-300 hover:shadow-md'
       }`}
       onClick={onToggle}
       whileHover={{ scale: 1.01 }}
@@ -34,11 +34,11 @@ const FAQItem: React.FC<{
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <span className={`flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold ${
-            isOpen ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-600'
+            isOpen ? 'bg-white/20 text-white' : 'bg-cyan-100 text-cyan-600'
           }`}>
             {index + 1}
           </span>
-          <span className={`font-semibold ${isOpen ? 'text-white' : 'text-gray-800'}`}>
+          <span className={`font-semibold ${isOpen ? 'text-white' : 'text-slate-800'}`}>
             {faq.question}
           </span>
         </div>
@@ -46,17 +46,10 @@ const FAQItem: React.FC<{
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.3 }}
           className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
-            isOpen ? 'bg-white/20' : 'bg-gray-100'
+            isOpen ? 'bg-white/20' : 'bg-slate-100'
           }`}
         >
-          <svg 
-            className={`w-4 h-4 ${isOpen ? 'text-white' : 'text-gray-500'}`} 
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
+          <span className={`text-sm ${isOpen ? 'text-white' : 'text-slate-500'}`}>{isOpen ? '▲' : '▼'}</span>
         </motion.div>
       </div>
     </motion.button>
@@ -70,14 +63,12 @@ const FAQItem: React.FC<{
           transition={{ duration: 0.3 }}
           className="overflow-hidden"
         >
-          <div className="px-5 py-4 ml-12 mt-2 bg-gradient-to-r from-purple-50 to-fuchsia-50 rounded-xl border border-purple-100">
+          <div className="px-5 py-4 ml-12 mt-2 bg-gradient-to-r from-cyan-50 to-teal-50 rounded-xl border border-cyan-100">
             <div className="flex items-start gap-3">
-              <span className="flex-shrink-0 mt-0.5 w-6 h-6 rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
-                <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
+              <span className="flex-shrink-0 mt-0.5 w-6 h-6 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">
+                <span className="text-sm text-white">✓</span>
               </span>
-              <p className="text-gray-700 leading-relaxed">{faq.answer}</p>
+              <p className="text-slate-700 leading-relaxed">{faq.answer}</p>
             </div>
           </div>
         </motion.div>
@@ -99,7 +90,7 @@ const Faqs: React.FC<{ token?: string; toast: ReturnType<typeof useToast> }> = (
         setFaqs(data as FAQ[]);
       } catch (err) {
         const error = err as ApiException;
-        toast.error(error.message || "Failed to load FAQs");
+        toast.error(error.message || "Couldn't load help topics right now");
         setFaqs([]);
       } finally {
         setLoading(false);
@@ -113,66 +104,58 @@ const Faqs: React.FC<{ token?: string; toast: ReturnType<typeof useToast> }> = (
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
       {/* Header */}
       <motion.div 
         className="text-center mb-8"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.4 }}
       >
-        <motion.div 
-          className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 mb-4 shadow-lg shadow-purple-500/25"
-          whileHover={{ scale: 1.05, rotate: 5 }}
-        >
-          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </motion.div>
-        <h2 className="text-2xl sm:text-3xl font-bold text-gradient mb-2">Frequently Asked Questions</h2>
-        <p className="text-gray-500">Find answers to common questions about our platform</p>
+        <div className="page-header-icon mx-auto">
+          <span className="text-2xl">💡</span>
+        </div>
+        <h2 className="page-header-title text-gradient">Help & Support</h2>
+        <p className="page-header-subtitle">Common questions about Smart Study</p>
       </motion.div>
 
       {loading ? (
         <motion.div 
-          className="glass rounded-3xl p-12 text-center"
+          className="card p-12 text-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
           <div className="relative inline-flex">
-            <div className="w-16 h-16 border-4 border-purple-200 rounded-full" />
-            <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full absolute top-0 left-0 animate-spin" />
+            <div className="w-16 h-16 border-4 border-slate-200 rounded-full" />
+            <div className="w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full absolute top-0 left-0 animate-spin" />
           </div>
-          <p className="text-gray-500 mt-4 font-medium">Loading FAQs...</p>
+          <p className="text-slate-500 mt-4 font-medium">Loading help topics...</p>
         </motion.div>
       ) : faqs.length === 0 ? (
         <motion.div 
-          className="glass rounded-3xl p-12 text-center"
+          className="empty-state"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
-          <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gray-100 flex items-center justify-center">
-            <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">No FAQs Available</h3>
-          <p className="text-gray-500">FAQs will appear here once they are added.</p>
+          <div className="empty-state-icon">📚</div>
+          <h3 className="empty-state-title">Help Topics Coming Soon</h3>
+          <p className="empty-state-text">
+            We're working on adding helpful guides and answers. 
+            In the meantime, try asking our Study Assistant!
+          </p>
         </motion.div>
       ) : (
         <motion.div 
           className="space-y-3"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.4 }}
         >
           {/* FAQ Count Badge */}
           <div className="flex justify-center mb-6">
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-gray-200 text-gray-600 text-sm font-medium shadow-sm">
-              <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-              {faqs.length} Questions
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 text-slate-600 text-sm font-medium shadow-sm">
+              <span>📖</span>
+              {faqs.length} Help Topics
             </span>
           </div>
 
@@ -189,14 +172,14 @@ const Faqs: React.FC<{ token?: string; toast: ReturnType<typeof useToast> }> = (
 
           {/* Help Section */}
           <motion.div
-            className="mt-8 p-6 glass rounded-2xl text-center"
+            className="info-box mt-8 text-center"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
+            transition={{ duration: 0.4, delay: 0.5 }}
           >
-            <p className="text-gray-600 mb-3">Can't find what you're looking for?</p>
-            <p className="text-gray-500 text-sm">
-              Ask our AI assistant in the <span className="font-semibold text-purple-600">Chat</span> tab for personalized help!
+            <p className="text-cyan-800 font-medium mb-2">Still have questions?</p>
+            <p className="text-cyan-700 text-sm">
+              Ask our Study Assistant in the <span className="font-semibold">Study</span> tab - it knows your entire syllabus! 📚
             </p>
           </motion.div>
         </motion.div>

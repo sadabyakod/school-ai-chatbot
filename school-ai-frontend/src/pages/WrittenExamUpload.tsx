@@ -37,7 +37,7 @@ const FilePreview: React.FC<{
       exit={{ opacity: 0, scale: 0.8 }}
       className="relative group"
     >
-      <div className="w-24 h-24 rounded-xl overflow-hidden border-2 border-gray-200 bg-gray-50 shadow-md group-hover:border-indigo-400 transition-colors">
+      <div className="w-24 h-24 rounded-xl overflow-hidden border-2 border-slate-200 bg-slate-50 shadow-md group-hover:border-cyan-400 transition-colors">
         {isPdf ? (
           <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-red-50 to-orange-50">
             <svg className="w-10 h-10 text-red-500 mb-1" fill="currentColor" viewBox="0 0 20 20">
@@ -194,7 +194,7 @@ const WrittenExamUpload: React.FC<WrittenExamUploadProps> = ({ onSuccess, onBack
   const totalSize = files.reduce((acc, f) => acc + f.file.size, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-cyan-50 to-teal-50 py-8 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <motion.div
@@ -204,26 +204,25 @@ const WrittenExamUpload: React.FC<WrittenExamUploadProps> = ({ onSuccess, onBack
         >
           <button
             onClick={onBack}
-            className="flex items-center gap-2 text-gray-600 hover:text-indigo-600 mb-4 transition-colors"
+            className="flex items-center gap-2 text-slate-600 hover:text-cyan-600 mb-4 transition-colors"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+            <span>←</span>
             <span className="font-medium">Back to Exams</span>
           </button>
 
           <div className="text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500 rounded-2xl shadow-xl shadow-purple-500/20 mb-4">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-cyan-500 via-teal-500 to-emerald-500 rounded-2xl shadow-xl shadow-teal-500/20 mb-4">
+              <span className="text-3xl">📷</span>
             </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-600 via-teal-600 to-emerald-600 bg-clip-text text-transparent">
               Upload Written Answers
             </h1>
-            <p className="text-gray-600 mt-2">
+            <p className="text-slate-600 mt-2">
               Upload photos of your answer sheets for AI evaluation
             </p>
+            <span className="inline-flex items-center gap-1 mt-2 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium">
+              🔒 Exam Safe • Syllabus Only
+            </span>
           </div>
         </motion.div>
 
@@ -231,12 +230,12 @@ const WrittenExamUpload: React.FC<WrittenExamUploadProps> = ({ onSuccess, onBack
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6"
+          className="bg-white rounded-2xl shadow-xl border border-slate-100 p-6"
         >
           {/* Exam ID & Student ID */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
                 Exam ID
               </label>
               <input
@@ -244,11 +243,11 @@ const WrittenExamUpload: React.FC<WrittenExamUploadProps> = ({ onSuccess, onBack
                 value={examId}
                 onChange={(e) => setExamId(e.target.value)}
                 placeholder="e.g., EXAM-2024-001"
-                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors"
+                className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-cyan-500 focus:outline-none transition-colors"
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
                 Student ID
               </label>
               <input
@@ -256,7 +255,7 @@ const WrittenExamUpload: React.FC<WrittenExamUploadProps> = ({ onSuccess, onBack
                 value={studentId}
                 onChange={(e) => setStudentId(e.target.value)}
                 placeholder="e.g., STU-12345"
-                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors"
+                className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-cyan-500 focus:outline-none transition-colors"
               />
             </div>
           </div>
@@ -269,8 +268,8 @@ const WrittenExamUpload: React.FC<WrittenExamUploadProps> = ({ onSuccess, onBack
             onClick={() => fileInputRef.current?.click()}
             className={`relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-300 ${
               dragOver
-                ? 'border-indigo-500 bg-indigo-50 scale-[1.02]'
-                : 'border-gray-300 hover:border-indigo-400 hover:bg-gray-50'
+                ? 'border-cyan-500 bg-cyan-50 scale-[1.02]'
+                : 'border-slate-300 hover:border-cyan-400 hover:bg-slate-50'
             }`}
           >
             <input
@@ -282,16 +281,14 @@ const WrittenExamUpload: React.FC<WrittenExamUploadProps> = ({ onSuccess, onBack
               className="hidden"
             />
             
-            <div className="w-14 h-14 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <svg className="w-7 h-7 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
+            <div className="w-14 h-14 bg-gradient-to-br from-cyan-100 to-teal-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <span className="text-3xl">☁️</span>
             </div>
             
-            <p className="text-lg font-semibold text-gray-700 mb-1">
+            <p className="text-lg font-semibold text-slate-700 mb-1">
               {dragOver ? 'Drop files here' : 'Drag & drop your answer sheets'}
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-slate-500">
               or click to browse • JPG, PNG, WEBP, PDF • Max 10MB each
             </p>
           </div>
@@ -328,14 +325,12 @@ const WrittenExamUpload: React.FC<WrittenExamUploadProps> = ({ onSuccess, onBack
           </AnimatePresence>
 
           {/* Info Box */}
-          <div className="mt-6 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+          <div className="mt-6 p-4 bg-gradient-to-br from-cyan-50 to-teal-50 rounded-xl border border-cyan-100">
             <div className="flex items-start gap-3">
-              <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-              <div className="text-sm text-blue-800">
+              <span className="text-xl">💡</span>
+              <div className="text-sm text-cyan-800">
                 <p className="font-semibold mb-1">How it works:</p>
-                <ul className="space-y-1 text-blue-700">
+                <ul className="space-y-1 text-cyan-700">
                   <li>1. Upload photos of your handwritten answers</li>
                   <li>2. Our AI will extract text using OCR</li>
                   <li>3. Get detailed feedback on each answer</li>
@@ -352,8 +347,8 @@ const WrittenExamUpload: React.FC<WrittenExamUploadProps> = ({ onSuccess, onBack
             whileTap={{ scale: uploading ? 1 : 0.98 }}
             className={`w-full mt-6 py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 transition-all duration-300 ${
               uploading || files.length === 0 || !examId.trim()
-                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-lg hover:shadow-xl'
+                ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 text-white shadow-lg hover:shadow-xl'
             }`}
           >
             {uploading ? (
@@ -363,9 +358,7 @@ const WrittenExamUpload: React.FC<WrittenExamUploadProps> = ({ onSuccess, onBack
               </>
             ) : (
               <>
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                </svg>
+                <span>📤</span>
                 <span>Submit for Evaluation</span>
               </>
             )}

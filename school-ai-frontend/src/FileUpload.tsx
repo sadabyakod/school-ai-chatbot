@@ -59,6 +59,7 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFile(e.target.files?.[0] || null);
+    setUploadSuccess(false);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -67,14 +68,15 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
     const droppedFile = e.dataTransfer.files[0];
     if (droppedFile?.type === 'application/pdf') {
       setFile(droppedFile);
+      setUploadSuccess(false);
     } else {
-      toast.warning("Please drop a PDF file");
+      toast.warning("Please drop a PDF file only");
     }
   };
 
   const handleUpload = async () => {
     if (!file || !medium || !className || !subject) {
-      toast.warning("Please fill all fields and select a file.");
+      toast.warning("Please complete all fields before uploading");
       return;
     }
     
@@ -96,13 +98,10 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
       let data;
       
       if (uploadType === "model") {
-        // Upload to Model Question Papers endpoint
         data = await uploadQuestionPaper(file, subject, className, medium, state, academicYear, token);
       } else if (uploadType === "evaluation") {
-        // Upload to Evaluation Sheets endpoint
         data = await uploadEvaluationSheet(file, subject, className, medium, state, academicYear, token);
       } else {
-        // Upload to Syllabus endpoint
         data = await uploadFile(file, medium, className, subject, token);
       }
       
@@ -110,22 +109,24 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
       clearInterval(progressInterval);
 
       const uploadLabel = uploadType === "model" ? "Question paper" : uploadType === "evaluation" ? "Evaluation sheet" : "Syllabus";
-      toast.success(`${uploadLabel} uploaded successfully: ${data.message || 'Processing started'}`);
+      toast.success(`✅ ${uploadLabel} uploaded successfully!`);
       setUploadSuccess(true);
       
-      // Reset form
-      setFile(null);
-      setMedium("");
-      setClassName("");
-      setSubject("");
-      setUploadProgress(0);
-      setAcademicYear("");
+      // Reset form after short delay
+      setTimeout(() => {
+        setFile(null);
+        setMedium("");
+        setClassName("");
+        setSubject("");
+        setUploadProgress(0);
+        setAcademicYear("");
+        setUploadSuccess(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }, 2000);
       
-      // Reset file input
-      if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err) {
       const error = err as ApiException;
-      toast.error(error.message || "Failed to upload file");
+      toast.error(error.message || "Upload failed. Please try again.");
       clearInterval(progressInterval);
       setUploadProgress(0);
     } finally {
@@ -133,7 +134,6 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
     }
   };
 
-  // Format file size for display
   const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -141,99 +141,92 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
   };
 
   const isFormComplete = file && medium && className && subject;
+  const completedSteps = [medium, className, subject, file].filter(Boolean).length;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6">
       <motion.div 
-        className="glass rounded-3xl p-6 sm:p-8 shadow-xl"
+        className="card p-6 sm:p-8"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.4 }}
       >
         {/* Header */}
         <div className="text-center mb-8">
           <motion.div 
-            className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 mb-4 shadow-lg shadow-purple-500/25"
-            whileHover={{ scale: 1.05, rotate: 5 }}
+            className="page-header-icon mx-auto"
+            whileHover={{ scale: 1.05, rotate: 3 }}
           >
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-            </svg>
+            <span className="text-2xl">
+              {uploadType === "model" ? "📝" : uploadType === "evaluation" ? "📋" : "📤"}
+            </span>
           </motion.div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-gradient mb-2">
+          <h2 className="page-header-title text-gradient">
             {uploadType === "model" 
-              ? "Upload Model Question Papers" 
+              ? "Upload Question Papers" 
               : uploadType === "evaluation" 
                 ? "Upload Evaluation Sheets" 
-                : "Upload Syllabus for AI Learning"}
+                : "Upload Syllabus Materials"}
           </h2>
-          <p className="text-gray-500">
+          <p className="page-header-subtitle">
             {uploadType === "model" 
-              ? "Upload model question papers organized by State, Class, and Subject." 
+              ? "Add model question papers for student practice" 
               : uploadType === "evaluation"
-                ? "Upload answer evaluation schemes/marking schemes organized by State, Class, and Subject."
-                : "Train our AI chatbot by uploading your syllabus PDFs. Follow the steps below to get started."}
+                ? "Add marking schemes for answer evaluation"
+                : "Train the AI assistant with your syllabus content"}
           </p>
-        </div>
-
-        {/* Upload Type Toggle */}
-        <div className="mb-6">
-          <div className="flex justify-center gap-2 sm:gap-4 flex-wrap">
-            <button
-              onClick={() => setUploadType("syllabus")}
-              className={`px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all duration-300 text-sm sm:text-base ${
-                uploadType === "syllabus"
-                  ? "bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white shadow-lg shadow-purple-500/25"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              📚 Syllabus
-            </button>
-            <button
-              onClick={() => setUploadType("model")}
-              className={`px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all duration-300 text-sm sm:text-base ${
-                uploadType === "model"
-                  ? "bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white shadow-lg shadow-purple-500/25"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              📝 Model Papers
-            </button>
-            <button
-              onClick={() => setUploadType("evaluation")}
-              className={`px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all duration-300 text-sm sm:text-base ${
-                uploadType === "evaluation"
-                  ? "bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white shadow-lg shadow-purple-500/25"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              📋 Evaluation Sheet
-            </button>
+          <div className="flex justify-center mt-3">
+            <span className="exam-safe-badge">
+              <span>🔒</span>
+              Used only for Exam-Safe learning
+            </span>
           </div>
         </div>
 
-        {/* Step-by-Step Guidance */}
+        {/* Upload Type Toggle */}
         <div className="mb-8">
-          <div className="flex items-center justify-center gap-4 text-sm text-gray-600">
-            <div className={`flex items-center gap-2 ${medium ? 'text-blue-600' : 'text-gray-400'}`}>
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${medium ? 'bg-blue-100' : 'bg-gray-100'}`}>1</span>
-              <span>Select Medium</span>
-            </div>
-            <div className="w-8 h-0.5 bg-gray-200 rounded"></div>
-            <div className={`flex items-center gap-2 ${className ? 'text-blue-600' : 'text-gray-400'}`}>
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${className ? 'bg-blue-100' : 'bg-gray-100'}`}>2</span>
-              <span>Choose Class</span>
-            </div>
-            <div className="w-8 h-0.5 bg-gray-200 rounded"></div>
-            <div className={`flex items-center gap-2 ${subject ? 'text-blue-600' : 'text-gray-400'}`}>
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${subject ? 'bg-blue-100' : 'bg-gray-100'}`}>3</span>
-              <span>Pick Subject</span>
-            </div>
-            <div className="w-8 h-0.5 bg-gray-200 rounded"></div>
-            <div className={`flex items-center gap-2 ${file ? 'text-blue-600' : 'text-gray-400'}`}>
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${file ? 'bg-blue-100' : 'bg-gray-100'}`}>4</span>
-              <span>Upload PDF</span>
-            </div>
+          <p className="text-sm font-medium text-slate-600 text-center mb-3">What are you uploading?</p>
+          <div className="flex justify-center gap-2 flex-wrap">
+            {[
+              { type: "syllabus", icon: "📚", label: "Syllabus / Textbook" },
+              { type: "model", icon: "📝", label: "Model Papers" },
+              { type: "evaluation", icon: "📋", label: "Answer Keys" },
+            ].map((item) => (
+              <button
+                key={item.type}
+                onClick={() => setUploadType(item.type)}
+                className={`px-4 py-2.5 rounded-xl font-medium transition-all text-sm ${
+                  uploadType === item.type
+                    ? "bg-gradient-to-r from-cyan-500 to-teal-600 text-white shadow-lg shadow-cyan-500/25"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                <span className="mr-1.5">{item.icon}</span>
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Progress Steps */}
+        <div className="mb-8 hidden sm:block">
+          <div className="flex items-center justify-center gap-2 text-sm">
+            {[
+              { num: 1, label: "Medium", done: !!medium },
+              { num: 2, label: "Class", done: !!className },
+              { num: 3, label: "Subject", done: !!subject },
+              { num: 4, label: "File", done: !!file },
+            ].map((step, idx) => (
+              <React.Fragment key={step.num}>
+                <div className={`step-indicator ${step.done ? 'text-cyan-600' : 'text-slate-400'}`}>
+                  <span className={`step-number ${step.done ? 'completed' : 'pending'}`}>
+                    {step.done ? '✓' : step.num}
+                  </span>
+                  <span className="font-medium">{step.label}</span>
+                </div>
+                {idx < 3 && <div className={`w-8 h-0.5 rounded ${step.done ? 'bg-emerald-400' : 'bg-slate-200'}`} />}
+              </React.Fragment>
+            ))}
           </div>
         </div>
 
@@ -241,158 +234,125 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           {/* Medium Dropdown */}
           <div className="relative">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              <span className="flex items-center gap-2">
-                🌐 Medium
-              </span>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <span className="flex items-center gap-2">🌐 Medium</span>
             </label>
             <select
               value={medium}
               onChange={(e) => handleMediumChange(e.target.value)}
-              className="w-full px-4 py-3 bg-white/80 border-2 border-gray-200 rounded-xl text-gray-800 font-medium focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all duration-300 appearance-none cursor-pointer hover:border-purple-300"
+              className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 transition-all appearance-none cursor-pointer hover:border-cyan-300"
             >
               <option value="">Select Medium</option>
-              <option value="Kannada">🇮🇳 Kannada</option>
-              <option value="English">🇬🇧 English</option>
+              <option value="Kannada">Kannada Medium</option>
+              <option value="English">English Medium</option>
             </select>
-            <div className="absolute right-4 top-11 pointer-events-none text-gray-400">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
+            <div className="absolute right-4 top-11 pointer-events-none text-slate-400">▼</div>
+            <p className="text-xs text-slate-400 mt-1">Language of instruction</p>
           </div>
 
           {/* Class Dropdown */}
           <div className="relative">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              <span className="flex items-center gap-2">
-                🎓 Class
-              </span>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <span className="flex items-center gap-2">🎓 Class</span>
             </label>
             <select
               value={className}
               onChange={(e) => handleClassChange(e.target.value)}
-              className="w-full px-4 py-3 bg-white/80 border-2 border-gray-200 rounded-xl text-gray-800 font-medium focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all duration-300 appearance-none cursor-pointer hover:border-purple-300"
+              className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 transition-all appearance-none cursor-pointer hover:border-cyan-300"
             >
               <option value="">Select Class</option>
               {Array.from({ length: 7 }, (_, i) => 6 + i).map((cls) => (
-                <option key={cls} value={String(cls)}>📚 Class {cls}</option>
+                <option key={cls} value={String(cls)}>Class {cls}</option>
               ))}
             </select>
-            <div className="absolute right-4 top-11 pointer-events-none text-gray-400">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
+            <div className="absolute right-4 top-11 pointer-events-none text-slate-400">▼</div>
+            <p className="text-xs text-slate-400 mt-1">Student grade level</p>
           </div>
 
           {/* Subject Dropdown */}
           <div className="relative">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              <span className="flex items-center gap-2">
-                📖 Subject
-              </span>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <span className="flex items-center gap-2">📖 Subject</span>
             </label>
             <select
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              className={`w-full px-4 py-3 bg-white/80 border-2 rounded-xl text-gray-800 font-medium focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all duration-300 appearance-none cursor-pointer ${
-                !className 
-                  ? 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed' 
-                  : 'border-gray-200 hover:border-purple-300'
-              }`}
               disabled={!className}
+              className={`w-full px-4 py-3 bg-white border-2 rounded-xl text-slate-800 font-medium focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 transition-all appearance-none cursor-pointer ${
+                !className 
+                  ? 'border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed' 
+                  : 'border-slate-200 hover:border-cyan-300'
+              }`}
             >
-              <option value="">Select Subject</option>
+              <option value="">{className ? "Select Subject" : "Select class first"}</option>
               {availableSubjects.map((subj) => (
-                <option key={subj} value={subj}>✨ {subj}</option>
+                <option key={subj} value={subj}>{subj}</option>
               ))}
             </select>
-            <div className="absolute right-4 top-11 pointer-events-none text-gray-400">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
+            <div className="absolute right-4 top-11 pointer-events-none text-slate-400">▼</div>
+            <p className="text-xs text-slate-400 mt-1">{!className ? "Choose class first" : "Pick the subject"}</p>
           </div>
         </div>
 
-        {/* Additional fields for Model Question Papers and Evaluation Sheets */}
+        {/* Additional fields for Model Papers / Evaluation Sheets */}
         {(uploadType === "model" || uploadType === "evaluation") && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            {/* State Dropdown */}
             <div className="relative">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                <span className="flex items-center gap-2">
-                  🏛️ State/Board
-                </span>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                <span className="flex items-center gap-2">🏛️ State/Board</span>
               </label>
               <select
                 value={state}
                 onChange={(e) => setState(e.target.value)}
-                className="w-full px-4 py-3 bg-white/80 border-2 border-gray-200 rounded-xl text-gray-800 font-medium focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all duration-300 appearance-none cursor-pointer hover:border-purple-300"
+                className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 transition-all appearance-none cursor-pointer hover:border-cyan-300"
               >
-                <option value="Karnataka">🇮🇳 Karnataka</option>
-                <option value="Maharashtra">🇮🇳 Maharashtra</option>
-                <option value="TamilNadu">🇮🇳 Tamil Nadu</option>
-                <option value="Kerala">🇮🇳 Kerala</option>
-                <option value="AndhraPradesh">🇮🇳 Andhra Pradesh</option>
-                <option value="Telangana">🇮🇳 Telangana</option>
-                <option value="CBSE">📘 CBSE</option>
-                <option value="ICSE">📗 ICSE</option>
+                <option value="Karnataka">Karnataka State Board</option>
+                <option value="Maharashtra">Maharashtra Board</option>
+                <option value="TamilNadu">Tamil Nadu Board</option>
+                <option value="Kerala">Kerala Board</option>
+                <option value="CBSE">CBSE</option>
+                <option value="ICSE">ICSE</option>
               </select>
-              <div className="absolute right-4 top-11 pointer-events-none text-gray-400">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
+              <div className="absolute right-4 top-11 pointer-events-none text-slate-400">▼</div>
             </div>
 
-            {/* Academic Year Dropdown */}
             <div className="relative">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                <span className="flex items-center gap-2">
-                  📅 Academic Year (Optional)
-                </span>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                <span className="flex items-center gap-2">📅 Year (Optional)</span>
               </label>
               <select
                 value={academicYear}
                 onChange={(e) => setAcademicYear(e.target.value)}
-                className="w-full px-4 py-3 bg-white/80 border-2 border-gray-200 rounded-xl text-gray-800 font-medium focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all duration-300 appearance-none cursor-pointer hover:border-purple-300"
+                className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 transition-all appearance-none cursor-pointer hover:border-cyan-300"
               >
-                <option value="">Select Year</option>
+                <option value="">Any Year</option>
                 {Array.from({ length: 10 }, (_, i) => {
                   const year = new Date().getFullYear() - i;
-                  return (
-                    <option key={year} value={`${year}-${(year + 1).toString().slice(-2)}`}>
-                      📆 {year}-{(year + 1).toString().slice(-2)}
-                    </option>
-                  );
+                  return <option key={year} value={`${year}-${(year + 1).toString().slice(-2)}`}>{year}-{(year + 1).toString().slice(-2)}</option>;
                 })}
               </select>
-              <div className="absolute right-4 top-11 pointer-events-none text-gray-400">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
+              <div className="absolute right-4 top-11 pointer-events-none text-slate-400">▼</div>
             </div>
           </div>
         )}
 
         {/* File Drop Zone */}
         <motion.div
-          className={`relative border-2 border-dashed rounded-2xl p-8 sm:p-12 text-center transition-all duration-300 cursor-pointer ${
+          className={`relative border-2 border-dashed rounded-2xl p-8 sm:p-10 text-center transition-all cursor-pointer ${
             isDragOver 
-              ? 'border-purple-500 bg-purple-50/50' 
+              ? 'border-cyan-500 bg-cyan-50/50' 
               : file 
-                ? 'border-green-400 bg-green-50/50' 
-                : 'border-gray-300 bg-gray-50/50 hover:border-purple-400 hover:bg-purple-50/30'
+                ? 'border-emerald-400 bg-emerald-50/50' 
+                : uploadSuccess
+                  ? 'border-emerald-500 bg-emerald-50'
+                  : 'border-slate-300 bg-slate-50/50 hover:border-cyan-400 hover:bg-cyan-50/30'
           }`}
           onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
           onDragLeave={() => setIsDragOver(false)}
           onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          whileHover={{ scale: 1.01 }}
-          whileTap={{ scale: 0.99 }}
+          onClick={() => !uploadSuccess && fileInputRef.current?.click()}
+          whileHover={{ scale: uploadSuccess ? 1 : 1.01 }}
+          whileTap={{ scale: uploadSuccess ? 1 : 0.99 }}
         >
           <input 
             ref={fileInputRef}
@@ -403,7 +363,26 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
           />
           
           <AnimatePresence mode="wait">
-            {file ? (
+            {uploadSuccess ? (
+              <motion.div
+                key="upload-success"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="flex flex-col items-center py-4"
+              >
+                <motion.div 
+                  className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-green-500 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-green-500/25"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", bounce: 0.5 }}
+                >
+                  <span className="text-3xl">✅</span>
+                </motion.div>
+                <p className="font-bold text-emerald-700 text-xl">Upload Successful!</p>
+                <p className="text-emerald-600 text-sm mt-1">Your file is now being processed</p>
+              </motion.div>
+            ) : file ? (
               <motion.div
                 key="file-selected"
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -411,20 +390,16 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
                 exit={{ opacity: 0, scale: 0.9 }}
                 className="flex flex-col items-center"
               >
-                <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-green-500/25">
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                <div className="w-14 h-14 bg-gradient-to-br from-emerald-400 to-green-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-green-500/25">
+                  <span className="text-2xl">📄</span>
                 </div>
-                <p className="font-semibold text-gray-800 text-lg">{file.name}</p>
-                <p className="text-gray-500 text-sm mt-1">{formatFileSize(file.size)}</p>
+                <p className="font-semibold text-slate-800 text-lg">{file.name}</p>
+                <p className="text-slate-500 text-sm mt-1">{formatFileSize(file.size)} • PDF Document</p>
                 <button
                   onClick={(e) => { e.stopPropagation(); setFile(null); }}
-                  className="mt-3 text-red-500 hover:text-red-600 text-sm font-medium flex items-center gap-1"
+                  className="mt-4 px-4 py-2 text-red-500 hover:bg-red-50 rounded-lg text-sm font-medium flex items-center gap-1.5 transition-colors"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
+                  <span>🗑️</span>
                   Remove file
                 </button>
               </motion.div>
@@ -436,41 +411,49 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
                 exit={{ opacity: 0, scale: 0.9 }}
                 className="flex flex-col items-center"
               >
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300 ${
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-all ${
                   isDragOver 
-                    ? 'bg-gradient-to-br from-purple-500 to-fuchsia-500 shadow-lg shadow-purple-500/25' 
-                    : 'bg-gray-200'
+                    ? 'bg-gradient-to-br from-cyan-500 to-teal-500 shadow-lg shadow-cyan-500/25' 
+                    : 'bg-slate-200'
                 }`}>
-                  <svg className={`w-8 h-8 ${isDragOver ? 'text-white' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
+                  <span className="text-3xl">{isDragOver ? '📥' : '📁'}</span>
                 </div>
-                <p className="font-semibold text-gray-700 text-lg">
-                  {isDragOver ? 'Drop your PDF here!' : 'Drag & drop your syllabus PDF here'}
+                <p className="font-semibold text-slate-700 text-lg">
+                  {isDragOver ? 'Drop your PDF here!' : 'Drag & drop your PDF here'}
                 </p>
-                <p className="text-gray-500 text-sm mt-1">or click to browse</p>
-                <p className="text-gray-400 text-xs mt-3 flex items-center gap-1">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Supports PDF files only
-                </p>
+                <p className="text-slate-500 text-sm mt-1">or click anywhere to browse</p>
+                <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-full text-xs text-slate-500">
+                  <span>📄</span>
+                  PDF files only • Max 50MB
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
+          
+          {/* Upload Progress */}
+          {uploading && (
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-200 rounded-b-2xl overflow-hidden">
+              <motion.div 
+                className="h-full bg-gradient-to-r from-cyan-500 to-teal-500"
+                initial={{ width: 0 }}
+                animate={{ width: `${uploadProgress}%` }}
+                transition={{ duration: 0.3 }}
+              />
+            </div>
+          )}
         </motion.div>
 
         {/* Upload Button */}
         <motion.button
-          className={`mt-6 w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 flex items-center justify-center gap-3 ${
-            isFormComplete && !uploading
-              ? 'bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 text-white shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 hover:scale-[1.02]'
-              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+          className={`mt-6 w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all flex items-center justify-center gap-3 ${
+            isFormComplete && !uploading && !uploadSuccess
+              ? 'bg-gradient-to-r from-cyan-500 to-teal-600 text-white shadow-lg shadow-cyan-500/25 hover:shadow-xl hover:shadow-cyan-500/30 hover:scale-[1.02]'
+              : 'bg-slate-200 text-slate-400 cursor-not-allowed'
           }`}
           onClick={handleUpload}
-          disabled={!isFormComplete || uploading}
-          whileHover={isFormComplete && !uploading ? { scale: 1.02 } : {}}
-          whileTap={isFormComplete && !uploading ? { scale: 0.98 } : {}}
+          disabled={!isFormComplete || uploading || uploadSuccess}
+          whileHover={isFormComplete && !uploading && !uploadSuccess ? { scale: 1.02 } : {}}
+          whileTap={isFormComplete && !uploading && !uploadSuccess ? { scale: 0.98 } : {}}
         >
           {uploading ? (
             <>
@@ -480,58 +463,56 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
               </svg>
               <span>Uploading... {uploadProgress}%</span>
             </>
+          ) : uploadSuccess ? (
+            <>
+              <span>✅</span>
+              <span>Uploaded Successfully!</span>
+            </>
           ) : (
             <>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
+              <span>📤</span>
               <span>Upload & Process</span>
             </>
           )}
         </motion.button>
 
-        {/* Progress Steps */}
         {/* What happens next? */}
-        <div className="mt-8 p-4 bg-blue-50 rounded-xl border border-blue-200">
-          <h3 className="text-sm font-semibold text-blue-900 mb-2 flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            What happens next?
+        <div className="mt-8 info-box">
+          <h3 className="text-sm font-semibold text-cyan-800 mb-3 flex items-center gap-2">
+            <span>💡</span>
+            What happens after upload?
           </h3>
-          <ul className="text-xs text-blue-800 space-y-1">
-            <li>• Your syllabus will be processed and analyzed by our AI</li>
-            <li>• The content will be used to train the chatbot for better responses</li>
-            <li>• You'll receive a confirmation once processing is complete</li>
-            <li>• Your data is securely stored and used only for educational purposes</li>
+          <ul className="text-sm text-cyan-700 space-y-2">
+            <li className="flex items-start gap-2">
+              <span className="text-emerald-500 mt-0.5">✓</span>
+              <span>Your PDF is securely processed and analyzed</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-emerald-500 mt-0.5">✓</span>
+              <span>Content is added to the AI's knowledge base</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-emerald-500 mt-0.5">✓</span>
+              <span>Students can ask questions about this material</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-emerald-500 mt-0.5">✓</span>
+              <span>Answers stay 100% within syllabus boundaries</span>
+            </li>
           </ul>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-gray-200/50">
-          <div className="flex items-center justify-between text-sm">
-            <div className={`flex items-center gap-2 ${medium && className && subject ? 'text-green-600' : 'text-gray-400'}`}>
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${medium && className && subject ? 'bg-green-100' : 'bg-gray-100'}`}>
-                {medium && className && subject ? '✓' : '1'}
-              </span>
-              <span className="hidden sm:inline">Configure</span>
-            </div>
-            <div className="flex-1 h-0.5 mx-2 bg-gray-200 rounded">
-              <div className={`h-full rounded transition-all duration-500 ${medium && className && subject ? 'w-full bg-green-400' : 'w-0'}`} />
-            </div>
-            <div className={`flex items-center gap-2 ${file ? 'text-green-600' : 'text-gray-400'}`}>
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${file ? 'bg-green-100' : 'bg-gray-100'}`}>
-                {file ? '✓' : '2'}
-              </span>
-              <span className="hidden sm:inline">Select File</span>
-            </div>
-            <div className="flex-1 h-0.5 mx-2 bg-gray-200 rounded">
-              <div className={`h-full rounded transition-all duration-500 ${file ? 'w-full bg-green-400' : 'w-0'}`} />
-            </div>
-            <div className={`flex items-center gap-2 text-gray-400`}>
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-gray-100`}>
-                3
-              </span>
-              <span className="hidden sm:inline">Upload</span>
+        {/* Bottom Progress Summary */}
+        <div className="mt-6 pt-6 border-t border-slate-200/50">
+          <div className="flex items-center justify-center gap-3 text-sm">
+            <span className={`font-medium ${completedSteps === 4 ? 'text-emerald-600' : 'text-slate-500'}`}>
+              {completedSteps}/4 steps completed
+            </span>
+            <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-cyan-500 to-emerald-500 rounded-full transition-all duration-500"
+                style={{ width: `${(completedSteps / 4) * 100}%` }}
+              />
             </div>
           </div>
         </div>

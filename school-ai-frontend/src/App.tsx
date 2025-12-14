@@ -8,11 +8,11 @@ import { useToast } from './hooks/useToast';
 import { useState } from "react";
 
 const PAGES = [
-  { name: 'Chat', icon: '💬', component: (token: string, toast: ReturnType<typeof useToast>) => <ChatBot token={token} toast={toast} /> },
-  { name: 'Upload', icon: '📁', component: (token: string, toast: ReturnType<typeof useToast>) => <FileUpload token={token} toast={toast} /> },
-  { name: 'FAQs', icon: '❓', component: (token: string, toast: ReturnType<typeof useToast>) => <Faqs token={token} toast={toast} /> },
-  { name: 'Analytics', icon: '📊', component: (token: string, toast: ReturnType<typeof useToast>) => <Analytics token={token} toast={toast} /> },
-  { name: 'Exams', icon: '📝', component: (token: string, toast: ReturnType<typeof useToast>) => <ExamHub token={token} toast={toast} /> },
+  { name: 'Study', icon: '📚', description: 'Ask questions from your syllabus', component: (token: string, toast: ReturnType<typeof useToast>) => <ChatBot token={token} toast={toast} /> },
+  { name: 'Upload', icon: '📤', description: 'Add syllabus materials', component: (token: string, toast: ReturnType<typeof useToast>) => <FileUpload token={token} toast={toast} /> },
+  { name: 'FAQs', icon: '💡', description: 'Common questions answered', component: (token: string, toast: ReturnType<typeof useToast>) => <Faqs token={token} toast={toast} /> },
+  { name: 'Dashboard', icon: '📊', description: 'View usage analytics', component: (token: string, toast: ReturnType<typeof useToast>) => <Analytics token={token} toast={toast} /> },
+  { name: 'Practice', icon: '✏️', description: 'Take practice exams', component: (token: string, toast: ReturnType<typeof useToast>) => <ExamHub token={token} toast={toast} /> },
 ];
 
 function App() {
@@ -27,55 +27,95 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen">
       {/* Top Navigation Bar */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
+      <header className="bg-white/90 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             
-            {/* Logo */}
+            {/* Logo & Brand */}
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center shadow-sm">
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
-                </svg>
+              <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/25">
+                <span className="text-xl">📘</span>
               </div>
               <div>
                 <h1 className="text-lg font-bold text-slate-900">Smart Study</h1>
-                <p className="text-xs text-slate-500 -mt-0.5 hidden sm:block">AI-Powered Learning</p>
+                <div className="flex items-center gap-2">
+                  <span className="exam-safe-badge text-[10px] py-0.5 px-2">
+                    <span>🔒</span>
+                    Exam Safe • Syllabus Only
+                  </span>
+                </div>
               </div>
             </div>
 
             {/* Navigation Tabs */}
-            <nav className="flex items-center">
-              <div className="flex bg-slate-100 rounded-lg p-1 gap-1">
+            <nav className="hidden md:flex items-center">
+              <div className="flex bg-slate-100/80 rounded-xl p-1 gap-1">
                 {PAGES.map((p, i) => (
                   <button
                     key={p.name}
                     onClick={() => setPage(i)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                    title={p.description}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                       i === page
-                        ? 'bg-white text-indigo-600 shadow-sm'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                        ? 'bg-white text-cyan-700 shadow-md'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                     }`}
                   >
-                    <span className="text-sm">{p.icon}</span>
-                    <span className="hidden md:inline">{p.name}</span>
+                    <span className="text-base">{p.icon}</span>
+                    <span>{p.name}</span>
                   </button>
                 ))}
               </div>
             </nav>
 
-            {/* Logout Button */}
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-3 py-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              <span className="hidden sm:inline">Logout</span>
-            </button>
+            {/* Mobile Navigation */}
+            <nav className="md:hidden flex items-center">
+              <div className="flex bg-slate-100/80 rounded-xl p-1 gap-0.5">
+                {PAGES.map((p, i) => (
+                  <button
+                    key={p.name}
+                    onClick={() => setPage(i)}
+                    title={p.description}
+                    className={`flex items-center justify-center w-10 h-10 rounded-lg text-lg transition-all duration-200 ${
+                      i === page
+                        ? 'bg-white text-cyan-700 shadow-md'
+                        : 'text-slate-500 hover:text-slate-900'
+                    }`}
+                  >
+                    {p.icon}
+                  </button>
+                ))}
+              </div>
+            </nav>
+
+            {/* User Actions */}
+            <div className="flex items-center gap-3">
+              <span className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full text-xs font-medium border border-emerald-200">
+                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                Karnataka 2nd PUC
+              </span>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-3 py-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors"
+                title="Sign out"
+              >
+                <span>👋</span>
+                <span className="hidden sm:inline">Sign Out</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        {/* Mobile Page Title */}
+        <div className="md:hidden border-t border-slate-100 bg-slate-50/50 px-4 py-2">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{PAGES[page].icon}</span>
+            <div>
+              <p className="text-sm font-semibold text-slate-800">{PAGES[page].name}</p>
+              <p className="text-xs text-slate-500">{PAGES[page].description}</p>
+            </div>
           </div>
         </div>
       </header>
@@ -86,6 +126,13 @@ function App() {
       <main className="py-6">
         {PAGES[page].component(token || "", toast)}
       </main>
+      
+      {/* Footer */}
+      <footer className="py-4 text-center border-t border-slate-200/50 bg-white/50">
+        <p className="text-xs text-slate-400">
+          📘 Smart Study — All answers are generated from uploaded syllabus materials only
+        </p>
+      </footer>
     </div>
   );
 }

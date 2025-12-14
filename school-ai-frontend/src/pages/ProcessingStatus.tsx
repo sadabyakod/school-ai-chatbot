@@ -31,31 +31,31 @@ const STAGE_INFO: Record<ProcessingStage, StageInfo> = {
     emoji: '⏳',
     title: 'Queued for Processing',
     description: 'Your answer sheet is in the queue and will be processed shortly...',
-    color: 'from-yellow-400 to-orange-500',
+    color: 'from-amber-400 to-orange-500',
   },
   OcrProcessing: {
     emoji: '📄',
     title: 'Extracting Text',
     description: 'AI is reading your handwritten answers using advanced OCR...',
-    color: 'from-blue-400 to-indigo-500',
+    color: 'from-cyan-400 to-teal-500',
   },
   Evaluating: {
     emoji: '🤖',
     title: 'AI Evaluation in Progress',
     description: 'Our AI is carefully analyzing and grading your answers...',
-    color: 'from-purple-400 to-pink-500',
+    color: 'from-teal-400 to-emerald-500',
   },
   Completed: {
     emoji: '✅',
     title: 'Evaluation Complete!',
     description: 'Your results are ready. Loading your scores...',
-    color: 'from-green-400 to-emerald-500',
+    color: 'from-emerald-400 to-green-500',
   },
   Failed: {
     emoji: '❌',
     title: 'Evaluation Failed',
     description: 'Something went wrong. Please try uploading again or contact support.',
-    color: 'from-red-400 to-pink-500',
+    color: 'from-red-400 to-rose-500',
   },
 };
 
@@ -85,24 +85,24 @@ const StageIndicator: React.FC<{
       transition={{ delay: index * 0.1 }}
       className={`flex items-center gap-4 p-4 rounded-xl transition-all duration-500 ${
         isActive && !isFailed
-          ? 'bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-300 shadow-md scale-105'
+          ? 'bg-gradient-to-r from-cyan-50 to-teal-50 border-2 border-cyan-300 shadow-md scale-105'
           : isComplete
-          ? 'bg-green-50 border-2 border-green-200'
-          : 'bg-gray-50 border-2 border-gray-100 opacity-50'
+          ? 'bg-emerald-50 border-2 border-emerald-200'
+          : 'bg-slate-50 border-2 border-slate-100 opacity-50'
       }`}
     >
       <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${
         isActive && !isFailed
-          ? 'bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg'
+          ? 'bg-gradient-to-br from-cyan-500 to-teal-600 shadow-lg'
           : isComplete
-          ? 'bg-gradient-to-br from-green-400 to-emerald-500'
-          : 'bg-gray-200'
+          ? 'bg-gradient-to-br from-emerald-400 to-green-500'
+          : 'bg-slate-200'
       }`}>
         {isComplete ? '✓' : STAGE_INFO[stage].emoji}
       </div>
       <div className="flex-1">
         <h4 className={`font-semibold ${
-          isActive ? 'text-indigo-700' : isComplete ? 'text-green-700' : 'text-gray-400'
+          isActive ? 'text-teal-700' : isComplete ? 'text-emerald-700' : 'text-slate-400'
         }`}>
           {STAGE_INFO[stage].title}
         </h4>
@@ -110,14 +110,14 @@ const StageIndicator: React.FC<{
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-sm text-gray-600"
+            className="text-sm text-slate-600"
           >
             {STAGE_INFO[stage].description}
           </motion.p>
         )}
       </div>
       {isActive && !isFailed && (
-        <div className="w-6 h-6 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-6 h-6 border-3 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
       )}
     </motion.div>
   );
@@ -203,7 +203,7 @@ const ProcessingStatus: React.FC<ProcessingStatusProps> = ({
   }, [writtenSubmissionId, pollCount, fetchResults]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-cyan-50 to-teal-50 py-8 px-4">
       <div className="max-w-xl mx-auto">
         {/* Header */}
         <motion.div
@@ -225,7 +225,7 @@ const ProcessingStatus: React.FC<ProcessingStatusProps> = ({
             key={stageInfo.title}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-3xl font-bold text-gray-800 mb-2"
+            className="text-3xl font-bold text-slate-800 mb-2"
           >
             {stageInfo.title}
           </motion.h1>
@@ -234,7 +234,7 @@ const ProcessingStatus: React.FC<ProcessingStatusProps> = ({
             key={stageInfo.description}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-lg text-gray-600"
+            className="text-lg text-slate-600"
           >
             {status?.statusMessage || stageInfo.description}
           </motion.p>
@@ -273,9 +273,9 @@ const ProcessingStatus: React.FC<ProcessingStatusProps> = ({
           </h3>
           
           <div className="grid grid-cols-2 gap-4">
-            <div className="p-3 bg-gray-50 rounded-xl">
-              <div className="text-xs text-gray-500 mb-1">Submission ID</div>
-              <div className="font-mono text-sm font-semibold text-indigo-600 truncate">
+            <div className="p-3 bg-slate-50 rounded-xl">
+              <div className="text-xs text-slate-500 mb-1">Submission ID</div>
+              <div className="font-mono text-sm font-semibold text-teal-600 truncate">
                 {writtenSubmissionId}
               </div>
             </div>
@@ -335,15 +335,13 @@ const ProcessingStatus: React.FC<ProcessingStatusProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="mt-6 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100"
+          className="mt-6 p-4 bg-gradient-to-br from-cyan-50 to-teal-50 rounded-xl border border-cyan-100"
         >
           <div className="flex items-start gap-3">
-            <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
-            <div className="text-sm text-blue-800">
+            <span className="text-xl">💡</span>
+            <div className="text-sm text-cyan-800">
               <p className="font-semibold mb-1">Please wait...</p>
-              <p className="text-blue-700">
+              <p className="text-cyan-700">
                 Evaluation typically takes 1-3 minutes depending on the number of pages.
                 You can leave this page open - we'll show your results automatically!
               </p>

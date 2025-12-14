@@ -148,20 +148,20 @@ const Timer: React.FC<TimerProps> = ({ durationMinutes, questionTime, onTimeUp }
   return (
     <div className={`w-full px-6 py-3 shadow-lg transition-all duration-500 ${
       isLowTime 
-        ? 'bg-gradient-to-r from-red-500 via-red-600 to-pink-600 animate-pulse' 
-        : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600'
+        ? 'bg-gradient-to-r from-red-500 via-red-600 to-orange-500 animate-pulse' 
+        : 'bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500'
     }`}>
       <div className="max-w-7xl mx-auto flex items-center justify-between text-white">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center ring-2 ring-white/30 shadow-lg">
-              <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
-              </svg>
+              <span className="text-2xl">📝</span>
             </div>
             <div>
-              <div className="text-lg font-bold tracking-wide">Mathematics Quiz</div>
-              <div className="text-xs opacity-90">November 21, 2025</div>
+              <div className="text-lg font-bold tracking-wide">Practice Test</div>
+              <div className="text-xs opacity-90 flex items-center gap-1">
+                <span>🔒</span> Syllabus Only
+              </div>
             </div>
           </div>
         </div>
@@ -325,10 +325,11 @@ const ExamPage: React.FC<ExamPageProps> = ({ examTemplateId, onNavigateToResult,
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-cyan-50 to-teal-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-lg text-gray-600 font-medium">Loading exam...</p>
+          <div className="w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-lg text-slate-600 font-medium">Loading your practice test...</p>
+          <p className="text-sm text-slate-500 mt-2">🔒 Exam Safe • Syllabus Only</p>
         </div>
       </div>
     );
@@ -336,20 +337,16 @@ const ExamPage: React.FC<ExamPageProps> = ({ examTemplateId, onNavigateToResult,
 
   if (error || !examData || !currentQuestion) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-cyan-50 to-teal-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
-          <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-7 h-7 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Error Loading Exam</h2>
-          <p className="text-gray-600 mb-6">{error || 'No question available'}</p>
+          <div className="text-5xl mb-4">😅</div>
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">Oops! Something went wrong</h2>
+          <p className="text-slate-600 mb-6">{error || 'No question available at the moment'}</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600"
+            className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-teal-500 text-white rounded-xl font-medium hover:from-cyan-600 hover:to-teal-600 shadow-lg transition-all"
           >
-            Retry
+            Try Again
           </button>
         </div>
       </div>
@@ -357,7 +354,7 @@ const ExamPage: React.FC<ExamPageProps> = ({ examTemplateId, onNavigateToResult,
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 pb-24">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-cyan-50 to-teal-50 pb-24">
       <Timer 
         durationMinutes={examData.template.durationMinutes} 
         questionTime={questionTime}
@@ -367,18 +364,18 @@ const ExamPage: React.FC<ExamPageProps> = ({ examTemplateId, onNavigateToResult,
       {/* Progress Bar */}
       <div className="w-full bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-2">
-          <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-            <span className="font-medium">Progress: {stats.answeredCount} of {examData.template.totalQuestions}</span>
+          <div className="flex items-center justify-between text-sm text-slate-600 mb-2">
+            <span className="font-medium">📊 Progress: {stats.answeredCount} of {examData.template.totalQuestions}</span>
             {stats.answeredCount > 0 && (
-              <span className="font-semibold text-indigo-600">
+              <span className="font-semibold text-teal-600">
                 Accuracy: {stats.currentAccuracy.toFixed(0)}% 
-                <span className="text-gray-500 ml-2">({stats.correctCount}✓ / {stats.wrongCount}✗)</span>
+                <span className="text-slate-500 ml-2">({stats.correctCount}✓ / {stats.wrongCount}✗)</span>
               </span>
             )}
           </div>
-          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
             <motion.div 
-              className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full"
+              className="h-full bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${(stats.answeredCount / examData.template.totalQuestions) * 100}%` }}
               transition={{ duration: 0.5, ease: "easeOut" }}
@@ -396,10 +393,10 @@ const ExamPage: React.FC<ExamPageProps> = ({ examTemplateId, onNavigateToResult,
               whileHover={{ scale: 1.05 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
-              <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-2xl flex items-center justify-center text-3xl font-bold shadow-lg">
+              <div className="w-20 h-20 bg-gradient-to-br from-cyan-500 to-teal-600 text-white rounded-2xl flex items-center justify-center text-3xl font-bold shadow-lg">
                 {stats.answeredCount + 1}
               </div>
-              <div className="absolute -top-2 -right-2 w-7 h-7 bg-yellow-400 rounded-full flex items-center justify-center text-xs font-bold shadow-md">
+              <div className="absolute -top-2 -right-2 w-7 h-7 bg-emerald-400 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md">
                 {examData.template.totalQuestions}
               </div>
             </motion.div>
@@ -414,9 +411,7 @@ const ExamPage: React.FC<ExamPageProps> = ({ examTemplateId, onNavigateToResult,
                   : 'bg-white text-gray-600 hover:bg-amber-50 hover:text-amber-600 border-2 border-gray-200'
               }`}
             >
-              <svg className="w-6 h-6" fill={markedForReview ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-              </svg>
+              <span className="text-xl">{markedForReview ? '🔖' : '🗑️'}</span>
               <span className="text-center leading-tight">Mark<br/>Review</span>
             </motion.button>
 
@@ -439,31 +434,29 @@ const ExamPage: React.FC<ExamPageProps> = ({ examTemplateId, onNavigateToResult,
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -50 }}
                 transition={{ duration: 0.4, type: "spring" }}
-                className="bg-white rounded-2xl shadow-lg p-8 border-2 border-indigo-100"
+                className="bg-white rounded-2xl shadow-lg p-8 border-2 border-cyan-100"
               >
                 {/* Question Header */}
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
-                      <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                      </svg>
+                    <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-teal-600 rounded-lg flex items-center justify-center">
+                      <span className="text-xl">❓</span>
                     </div>
                     <div>
-                      <div className="text-xs text-gray-500 font-medium">Question {stats.answeredCount + 1}</div>
-                      <div className="text-sm font-semibold text-gray-700">{currentQuestion.subject}</div>
+                      <div className="text-xs text-slate-500 font-medium">Question {stats.answeredCount + 1}</div>
+                      <div className="text-sm font-semibold text-slate-700">{currentQuestion.subject}</div>
                     </div>
                   </div>
                   {currentQuestion.topic && (
-                    <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                    <span className="px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-xs font-medium">
                       {currentQuestion.topic}
                     </span>
                   )}
                 </div>
 
                 {/* Question Text */}
-                <div className="mb-8 p-6 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border-l-4 border-indigo-500">
-                  <h2 className="text-2xl font-semibold text-gray-800 leading-relaxed">
+                <div className="mb-8 p-6 bg-gradient-to-br from-cyan-50 to-teal-50 rounded-xl border-l-4 border-cyan-500">
+                  <h2 className="text-2xl font-semibold text-slate-800 leading-relaxed">
                     {currentQuestion.text}
                   </h2>
                 </div>
@@ -482,14 +475,14 @@ const ExamPage: React.FC<ExamPageProps> = ({ examTemplateId, onNavigateToResult,
                         whileTap={{ scale: 0.99 }}
                         className={`w-full flex items-center gap-4 p-5 rounded-xl border-2 transition-all duration-300 ${
                           isSelected
-                            ? 'border-indigo-500 bg-gradient-to-r from-indigo-50 to-purple-50 shadow-md'
-                            : 'border-gray-200 bg-white hover:border-indigo-300 hover:shadow-sm'
+                            ? 'border-cyan-500 bg-gradient-to-r from-cyan-50 to-teal-50 shadow-md'
+                            : 'border-slate-200 bg-white hover:border-cyan-300 hover:shadow-sm'
                         }`}
                       >
                         <div className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg transition-all ${
                           isSelected
-                            ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-md scale-110'
-                            : 'bg-gray-100 text-gray-600'
+                            ? 'bg-gradient-to-br from-cyan-500 to-teal-600 text-white shadow-md scale-110'
+                            : 'bg-slate-100 text-slate-600'
                         }`}>
                           {optionLetter}
                         </div>
@@ -522,12 +515,10 @@ const ExamPage: React.FC<ExamPageProps> = ({ examTemplateId, onNavigateToResult,
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg"
+                    className="mt-6 p-4 bg-cyan-50 border border-cyan-200 rounded-xl"
                   >
-                    <p className="text-sm text-blue-700 flex items-center gap-2">
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                      </svg>
+                    <p className="text-sm text-cyan-700 flex items-center gap-2">
+                      <span>💡</span>
                       Select an option to proceed to the next question
                     </p>
                   </motion.div>
@@ -539,14 +530,11 @@ const ExamPage: React.FC<ExamPageProps> = ({ examTemplateId, onNavigateToResult,
       </div>
 
       {/* Footer Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 shadow-2xl backdrop-blur-sm">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-slate-200 shadow-2xl backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 text-gray-600">
-              <svg className="w-5 h-5 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
-                <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd"/>
-              </svg>
+            <div className="flex items-center gap-3 text-slate-600">
+              <span className="text-xl">📋</span>
               <span className="font-semibold text-lg">{examData.template.name}</span>
             </div>
             
@@ -557,8 +545,8 @@ const ExamPage: React.FC<ExamPageProps> = ({ examTemplateId, onNavigateToResult,
               whileTap={{ scale: selectedOptionId && !submitting ? 0.95 : 1 }}
               className={`px-10 py-4 rounded-xl font-bold text-lg flex items-center gap-3 transition-all duration-300 ${
                 selectedOptionId && !submitting
-                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg hover:shadow-xl'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  ? 'bg-gradient-to-r from-cyan-500 to-teal-600 text-white shadow-lg hover:shadow-xl'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
               }`}
             >
               {submitting ? (
@@ -576,8 +564,8 @@ const ExamPage: React.FC<ExamPageProps> = ({ examTemplateId, onNavigateToResult,
               )}
             </motion.button>
 
-            <div className="text-sm text-gray-500">
-              Question <span className="font-bold text-indigo-600">{stats.answeredCount + 1}</span> of {examData.template.totalQuestions}
+            <div className="text-sm text-slate-500">
+              Question <span className="font-bold text-teal-600">{stats.answeredCount + 1}</span> of {examData.template.totalQuestions}
             </div>
           </div>
         </div>

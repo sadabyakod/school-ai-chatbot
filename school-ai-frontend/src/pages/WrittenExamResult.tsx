@@ -207,18 +207,16 @@ const WrittenExamResultView: React.FC<WrittenExamResultProps> = ({ result, onBac
   const hasSubjective = result.subjectiveTotalMarks > 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-cyan-50 to-teal-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Back Button */}
         <motion.button
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           onClick={onBack}
-          className="flex items-center gap-2 text-gray-600 hover:text-indigo-600 mb-6 transition-colors"
+          className="flex items-center gap-2 text-slate-600 hover:text-cyan-600 mb-6 transition-colors"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          <span>←</span>
           <span className="font-medium">Back to Exams</span>
         </motion.button>
 
@@ -243,8 +241,8 @@ const WrittenExamResultView: React.FC<WrittenExamResultProps> = ({ result, onBac
             }`}>
               {result.passed ? '🎉 Congratulations!' : 'Keep Trying!'}
             </h1>
-            <p className="text-lg text-gray-600">
-              You scored <span className="font-bold text-indigo-600">{result.percentage.toFixed(1)}%</span> on this exam
+            <p className="text-lg text-slate-600">
+              You scored <span className="font-bold text-teal-600">{result.percentage.toFixed(1)}%</span> on this exam
             </p>
           </motion.div>
         </motion.div>
@@ -278,12 +276,10 @@ const WrittenExamResultView: React.FC<WrittenExamResultProps> = ({ result, onBac
               title="MCQ Section"
               score={result.mcqScore}
               total={result.mcqTotalMarks}
-              color="from-blue-400 to-indigo-500"
+              color="from-cyan-400 to-teal-500"
               delay={0.3}
               icon={
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
+                <span className="text-lg">✅</span>
               }
             />
           )}
@@ -292,12 +288,10 @@ const WrittenExamResultView: React.FC<WrittenExamResultProps> = ({ result, onBac
               title="Written Section"
               score={result.subjectiveScore}
               total={result.subjectiveTotalMarks}
-              color="from-purple-400 to-pink-500"
+              color="from-teal-400 to-emerald-500"
               delay={0.4}
               icon={
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                </svg>
+                <span className="text-lg">✍️</span>
               }
             />
           )}
@@ -310,11 +304,9 @@ const WrittenExamResultView: React.FC<WrittenExamResultProps> = ({ result, onBac
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
           >
-            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center shadow-md">
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z"/>
-                </svg>
+            <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-teal-600 rounded-xl flex items-center justify-center shadow-md">
+                <span className="text-xl">📝</span>
               </div>
               Detailed Question Analysis
             </h2>
@@ -356,7 +348,7 @@ const WrittenExamResultView: React.FC<WrittenExamResultProps> = ({ result, onBac
           onClick={onBack}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className="w-full mt-8 py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all"
+          className="w-full mt-8 py-4 bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all"
         >
           Done - Back to Exams
         </motion.button>

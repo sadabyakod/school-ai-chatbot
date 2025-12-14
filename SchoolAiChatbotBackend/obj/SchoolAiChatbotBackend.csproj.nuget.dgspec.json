@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj": {}
+    "c:\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj": {}
   },
   "projects": {
-    "C:\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj": {
+    "c:\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj",
+        "projectUniqueName": "c:\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj",
         "projectName": "SchoolAiChatbotBackend",
-        "projectPath": "C:\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj",
+        "projectPath": "c:\\school-ai-chatbot\\SchoolAiChatbotBackend\\SchoolAiChatbotBackend.csproj",
         "packagesPath": "C:\\Users\\HP\\.nuget\\packages\\",
-        "outputPath": "C:\\school-ai-chatbot\\SchoolAiChatbotBackend\\obj\\",
+        "outputPath": "c:\\school-ai-chatbot\\SchoolAiChatbotBackend\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\HP\\AppData\\Roaming\\NuGet\\NuGet.Config"
