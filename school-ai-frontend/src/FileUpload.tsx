@@ -231,78 +231,68 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
         {/* Selection Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           {/* Medium Dropdown */}
-          <div className="relative">
+          <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">
-              <span className="flex items-center gap-2">🌐 Medium</span>
+              🌐 Medium
             </label>
             <select
               value={medium}
               onChange={(e) => handleMediumChange(e.target.value)}
-              className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 transition-all appearance-none cursor-pointer hover:border-cyan-300"
+              className="form-select"
             >
               <option value="">Select Medium</option>
               <option value="Kannada">Kannada Medium</option>
               <option value="English">English Medium</option>
             </select>
-            <div className="absolute right-4 top-11 pointer-events-none text-slate-400">▼</div>
-            <p className="text-xs text-slate-400 mt-1">Language of instruction</p>
           </div>
 
           {/* Class Dropdown */}
-          <div className="relative">
+          <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">
-              <span className="flex items-center gap-2">🎓 Class</span>
+              🎓 Class
             </label>
             <select
               value={className}
               onChange={(e) => handleClassChange(e.target.value)}
-              className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 transition-all appearance-none cursor-pointer hover:border-cyan-300"
+              className="form-select"
             >
               <option value="">Select Class</option>
               {Array.from({ length: 7 }, (_, i) => 6 + i).map((cls) => (
                 <option key={cls} value={String(cls)}>Class {cls}</option>
               ))}
             </select>
-            <div className="absolute right-4 top-11 pointer-events-none text-slate-400">▼</div>
-            <p className="text-xs text-slate-400 mt-1">Student grade level</p>
           </div>
 
           {/* Subject Dropdown */}
-          <div className="relative">
+          <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">
-              <span className="flex items-center gap-2">📖 Subject</span>
+              📖 Subject
             </label>
             <select
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               disabled={!className}
-              className={`w-full px-4 py-3 bg-white border-2 rounded-xl text-slate-800 font-medium focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 transition-all appearance-none cursor-pointer ${
-                !className 
-                  ? 'border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed' 
-                  : 'border-slate-200 hover:border-cyan-300'
-              }`}
+              className="form-select"
             >
               <option value="">{className ? "Select Subject" : "Select class first"}</option>
               {availableSubjects.map((subj) => (
                 <option key={subj} value={subj}>{subj}</option>
               ))}
             </select>
-            <div className="absolute right-4 top-11 pointer-events-none text-slate-400">▼</div>
-            <p className="text-xs text-slate-400 mt-1">{!className ? "Choose class first" : "Pick the subject"}</p>
           </div>
         </div>
 
         {/* Additional fields for Model Papers / Evaluation Sheets */}
         {(uploadType === "model" || uploadType === "evaluation") && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <div className="relative">
+            <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
-                <span className="flex items-center gap-2">🏛️ State/Board</span>
+                🏛️ State/Board
               </label>
               <select
                 value={state}
                 onChange={(e) => setState(e.target.value)}
-                className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 transition-all appearance-none cursor-pointer hover:border-cyan-300"
+                className="form-select"
               >
                 <option value="Karnataka">Karnataka State Board</option>
                 <option value="Maharashtra">Maharashtra Board</option>
@@ -311,17 +301,16 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
                 <option value="CBSE">CBSE</option>
                 <option value="ICSE">ICSE</option>
               </select>
-              <div className="absolute right-4 top-11 pointer-events-none text-slate-400">▼</div>
             </div>
 
-            <div className="relative">
+            <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
-                <span className="flex items-center gap-2">📅 Year (Optional)</span>
+                📅 Year (Optional)
               </label>
               <select
                 value={academicYear}
                 onChange={(e) => setAcademicYear(e.target.value)}
-                className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 transition-all appearance-none cursor-pointer hover:border-cyan-300"
+                className="form-select"
               >
                 <option value="">Any Year</option>
                 {Array.from({ length: 10 }, (_, i) => {
@@ -329,7 +318,6 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
                   return <option key={year} value={`${year}-${(year + 1).toString().slice(-2)}`}>{year}-{(year + 1).toString().slice(-2)}</option>;
                 })}
               </select>
-              <div className="absolute right-4 top-11 pointer-events-none text-slate-400">▼</div>
             </div>
           </div>
         )}
