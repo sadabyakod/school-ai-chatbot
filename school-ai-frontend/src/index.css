@@ -833,15 +833,82 @@ textarea:focus-visible {
   margin: 0.5rem 0 0;
 }
 
-/* Study Footer */
-.study-footer {
+/* ==========================================
+   APP HEADER & NAVIGATION - PREMIUM UI
+   ========================================== */
+
+.app-header {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.nav-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #64748b;
+  background: transparent;
+  border: none;
+  border-radius: 0.625rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.nav-tab:hover {
+  color: #0891b2;
+  background: #f0fdfa;
+}
+
+.nav-tab.active {
+  color: #0891b2;
+  background: linear-gradient(135deg, #e0f7fa 0%, #cffafe 100%);
+  font-weight: 600;
+}
+
+.nav-tab-mobile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  padding: 0.375rem 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #94a3b8;
+  background: transparent;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.nav-tab-mobile:hover {
+  color: #64748b;
+}
+
+.nav-tab-mobile.active {
+  color: #0891b2;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.app-footer {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
-  padding: 0.75rem;
-  font-size: 0.75rem;
+  padding: 0.625rem;
+  font-size: 0.6875rem;
   color: #94a3b8;
+  background: rgba(255, 255, 255, 0.5);
+  border-top: 1px solid rgba(226, 232, 240, 0.5);
 }
 
 /* Mobile Responsive */
