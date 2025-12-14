@@ -139,38 +139,36 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
   };
 
   const isFormComplete = file && medium && className && subject;
-  const completedSteps = [medium, className, subject, file].filter(Boolean).length;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6">
+    <div className="max-w-xl mx-auto px-4 py-8">
       <motion.div 
-        className="card p-6 sm:p-8"
+        className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
+        transition={{ duration: 0.3 }}
       >
         {/* Header */}
-        <div className="text-center mb-6">
-          <h2 className="text-xl font-bold text-slate-800 mb-1">
+        <div className="bg-gradient-to-r from-cyan-500 to-teal-500 px-6 py-5 text-white text-center">
+          <h1 className="text-lg font-bold mb-1">
             {uploadType === "model" 
-              ? "📝 Upload Question Papers" 
+              ? "Upload Question Papers" 
               : uploadType === "evaluation" 
-                ? "📋 Upload Evaluation Sheets" 
-                : "📤 Upload Syllabus Materials"}
-          </h2>
-          <p className="text-sm text-slate-500">
+                ? "Upload Answer Keys" 
+                : "Upload Syllabus"}
+          </h1>
+          <p className="text-sm text-white/80">
             {uploadType === "model" 
-              ? "Add model question papers for practice" 
+              ? "For student practice exams" 
               : uploadType === "evaluation"
-                ? "Add marking schemes for evaluation"
-                : "Train the AI with your syllabus content"}
+                ? "For answer evaluation"
+                : "To train the AI assistant"}
           </p>
         </div>
 
-        {/* Upload Type Toggle */}
-        <div className="mb-6 pb-6 border-b border-slate-100">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide text-center mb-3">Upload Type</p>
-          <div className="flex justify-center gap-2 flex-wrap">
+        <div className="p-6">
+          {/* Upload Type Pills */}
+          <div className="flex justify-center gap-2 mb-8">
             {[
               { type: "syllabus", icon: "📚", label: "Syllabus" },
               { type: "model", icon: "📝", label: "Model Papers" },
@@ -179,286 +177,228 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
               <button
                 key={item.type}
                 onClick={() => setUploadType(item.type)}
-                className={`px-4 py-2 rounded-lg font-medium transition-all text-sm ${
+                className={`px-4 py-2.5 rounded-full font-medium transition-all text-sm ${
                   uploadType === item.type
                     ? "bg-cyan-500 text-white shadow-md"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    : "bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200"
                 }`}
               >
-                <span className="mr-1">{item.icon}</span>
+                <span className="mr-1.5">{item.icon}</span>
                 {item.label}
               </button>
             ))}
           </div>
-        </div>
 
-        {/* Selection Section */}
-        <div className="mb-6 pb-6 border-b border-slate-100">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide text-center mb-4">Select Details</p>
-          
-          {/* Main Selection Row */}
-          <div className="flex flex-wrap gap-3 justify-center mb-4">
-            {/* Medium Dropdown */}
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1 text-center">Medium</label>
-              <select
-                value={medium}
-                onChange={(e) => handleMediumChange(e.target.value)}
-                className="form-select"
-              >
-                <option value="">Select</option>
-                <option value="Kannada">Kannada</option>
-                <option value="English">English</option>
-              </select>
+          {/* Academic Details Section */}
+          <div className="bg-slate-50 rounded-xl p-5 mb-6">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Step 1 · Academic Details</p>
+            
+            <div className="grid grid-cols-3 gap-4">
+              {/* Medium */}
+              <div className="form-field">
+                <label className="form-label">🌐 Medium</label>
+                <select
+                  value={medium}
+                  onChange={(e) => handleMediumChange(e.target.value)}
+                  className="form-select-compact"
+                >
+                  <option value="">Select</option>
+                  <option value="Kannada">Kannada</option>
+                  <option value="English">English</option>
+                </select>
+              </div>
+
+              {/* Class */}
+              <div className="form-field">
+                <label className="form-label">🎓 Class</label>
+                <select
+                  value={className}
+                  onChange={(e) => handleClassChange(e.target.value)}
+                  className="form-select-compact"
+                >
+                  <option value="">Select</option>
+                  {Array.from({ length: 7 }, (_, i) => 6 + i).map((cls) => (
+                    <option key={cls} value={String(cls)}>Class {cls}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Subject */}
+              <div className="form-field">
+                <label className="form-label">📖 Subject</label>
+                <select
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  disabled={!className}
+                  className="form-select-compact"
+                >
+                  <option value="">{className ? "Select" : "—"}</option>
+                  {availableSubjects.map((subj) => (
+                    <option key={subj} value={subj}>{subj}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            {/* Class Dropdown */}
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1 text-center">Class</label>
-              <select
-                value={className}
-                onChange={(e) => handleClassChange(e.target.value)}
-                className="form-select"
-              >
-                <option value="">Select</option>
-                {Array.from({ length: 7 }, (_, i) => 6 + i).map((cls) => (
-                  <option key={cls} value={String(cls)}>Class {cls}</option>
-                ))}
-              </select>
-            </div>
+            {/* Additional fields for Model Papers / Evaluation Sheets */}
+            {(uploadType === "model" || uploadType === "evaluation") && (
+              <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-200">
+                <div className="form-field">
+                  <label className="form-label">🏛️ Board</label>
+                  <select
+                    value={state}
+                    onChange={(e) => setState(e.target.value)}
+                    className="form-select-compact"
+                  >
+                    <option value="Karnataka">Karnataka</option>
+                    <option value="Maharashtra">Maharashtra</option>
+                    <option value="TamilNadu">Tamil Nadu</option>
+                    <option value="Kerala">Kerala</option>
+                    <option value="CBSE">CBSE</option>
+                    <option value="ICSE">ICSE</option>
+                  </select>
+                </div>
 
-            {/* Subject Dropdown */}
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1 text-center">Subject</label>
-              <select
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                disabled={!className}
-                className="form-select"
-              >
-                <option value="">{className ? "Select" : "—"}</option>
-                {availableSubjects.map((subj) => (
-                  <option key={subj} value={subj}>{subj}</option>
-                ))}
-              </select>
-            </div>
+                <div className="form-field">
+                  <label className="form-label">📅 Year</label>
+                  <select
+                    value={academicYear}
+                    onChange={(e) => setAcademicYear(e.target.value)}
+                    className="form-select-compact"
+                  >
+                    <option value="">Any</option>
+                    {Array.from({ length: 10 }, (_, i) => {
+                      const year = new Date().getFullYear() - i;
+                      return <option key={year} value={`${year}-${(year + 1).toString().slice(-2)}`}>{year}</option>;
+                    })}
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Additional fields for Model Papers / Evaluation Sheets */}
-          {(uploadType === "model" || uploadType === "evaluation") && (
-            <div className="flex flex-wrap gap-3 justify-center pt-3 border-t border-slate-100">
-              <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1 text-center">State/Board</label>
-                <select
-                  value={state}
-                  onChange={(e) => setState(e.target.value)}
-                  className="form-select"
-                >
-                  <option value="Karnataka">Karnataka</option>
-                  <option value="Maharashtra">Maharashtra</option>
-                  <option value="TamilNadu">Tamil Nadu</option>
-                  <option value="Kerala">Kerala</option>
-                  <option value="CBSE">CBSE</option>
-                  <option value="ICSE">ICSE</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1 text-center">Year</label>
-                <select
-                  value={academicYear}
-                  onChange={(e) => setAcademicYear(e.target.value)}
-                  className="form-select"
-                >
-                  <option value="">Any</option>
-                  {Array.from({ length: 10 }, (_, i) => {
-                    const year = new Date().getFullYear() - i;
-                    return <option key={year} value={`${year}-${(year + 1).toString().slice(-2)}`}>{year}</option>;
-                  })}
-                </select>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* File Drop Zone */}
-        <motion.div
-          className={`relative border-2 border-dashed rounded-2xl p-8 sm:p-10 text-center transition-all cursor-pointer ${
-            isDragOver 
-              ? 'border-cyan-500 bg-cyan-50/50' 
-              : file 
-                ? 'border-emerald-400 bg-emerald-50/50' 
-                : uploadSuccess
-                  ? 'border-emerald-500 bg-emerald-50'
-                  : 'border-slate-300 bg-slate-50/50 hover:border-cyan-400 hover:bg-cyan-50/30'
-          }`}
-          onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-          onDragLeave={() => setIsDragOver(false)}
-          onDrop={handleDrop}
-          onClick={() => !uploadSuccess && fileInputRef.current?.click()}
-          whileHover={{ scale: uploadSuccess ? 1 : 1.01 }}
-          whileTap={{ scale: uploadSuccess ? 1 : 0.99 }}
-        >
-          <input 
-            ref={fileInputRef}
-            type="file" 
-            onChange={handleFileChange} 
-            className="hidden" 
-            accept=".pdf" 
-          />
-          
-          <AnimatePresence mode="wait">
-            {uploadSuccess ? (
-              <motion.div
-                key="upload-success"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="flex flex-col items-center py-4"
-              >
-                <motion.div 
-                  className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-green-500 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-green-500/25"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", bounce: 0.5 }}
-                >
-                  <span className="text-3xl">✅</span>
-                </motion.div>
-                <p className="font-bold text-emerald-700 text-xl">Upload Successful!</p>
-                <p className="text-emerald-600 text-sm mt-1">Your file is now being processed</p>
-              </motion.div>
-            ) : file ? (
-              <motion.div
-                key="file-selected"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="flex flex-col items-center"
-              >
-                <div className="w-14 h-14 bg-gradient-to-br from-emerald-400 to-green-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-green-500/25">
-                  <span className="text-2xl">📄</span>
-                </div>
-                <p className="font-semibold text-slate-800 text-lg">{file.name}</p>
-                <p className="text-slate-500 text-sm mt-1">{formatFileSize(file.size)} • PDF Document</p>
-                <button
-                  onClick={(e) => { e.stopPropagation(); setFile(null); }}
-                  className="mt-4 px-4 py-2 text-red-500 hover:bg-red-50 rounded-lg text-sm font-medium flex items-center gap-1.5 transition-colors"
-                >
-                  <span>🗑️</span>
-                  Remove file
-                </button>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="no-file"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="flex flex-col items-center"
-              >
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-all ${
-                  isDragOver 
-                    ? 'bg-gradient-to-br from-cyan-500 to-teal-500 shadow-lg shadow-cyan-500/25' 
-                    : 'bg-slate-200'
-                }`}>
-                  <span className="text-3xl">{isDragOver ? '📥' : '📁'}</span>
-                </div>
-                <p className="font-semibold text-slate-700 text-lg">
-                  {isDragOver ? 'Drop your PDF here!' : 'Drag & drop your PDF here'}
-                </p>
-                <p className="text-slate-500 text-sm mt-1">or click anywhere to browse</p>
-                <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-full text-xs text-slate-500">
-                  <span>📄</span>
-                  PDF files only • Max 50MB
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          
-          {/* Upload Progress */}
-          {uploading && (
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-200 rounded-b-2xl overflow-hidden">
-              <motion.div 
-                className="h-full bg-gradient-to-r from-cyan-500 to-teal-500"
-                initial={{ width: 0 }}
-                animate={{ width: `${uploadProgress}%` }}
-                transition={{ duration: 0.3 }}
+          {/* File Upload Section */}
+          <div className="mb-6">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Step 2 · Upload File</p>
+            <motion.div
+              className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer ${
+                isDragOver 
+                  ? 'border-cyan-500 bg-cyan-50/50' 
+                  : file 
+                    ? 'border-emerald-400 bg-emerald-50/50' 
+                    : uploadSuccess
+                      ? 'border-emerald-500 bg-emerald-50'
+                      : 'border-slate-200 bg-white hover:border-cyan-400 hover:bg-cyan-50/20'
+              }`}
+              onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+              onDragLeave={() => setIsDragOver(false)}
+              onDrop={handleDrop}
+              onClick={() => !uploadSuccess && fileInputRef.current?.click()}
+              whileHover={{ scale: uploadSuccess ? 1 : 1.005 }}
+              whileTap={{ scale: uploadSuccess ? 1 : 0.995 }}
+            >
+              <input 
+                ref={fileInputRef}
+                type="file" 
+                onChange={handleFileChange} 
+                className="hidden" 
+                accept=".pdf" 
               />
-            </div>
-          )}
-        </motion.div>
+              
+              <AnimatePresence mode="wait">
+                {uploadSuccess ? (
+                  <motion.div
+                    key="upload-success"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    className="flex flex-col items-center py-2"
+                  >
+                    <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center mb-3">
+                      <span className="text-2xl text-white">✓</span>
+                    </div>
+                    <p className="font-semibold text-emerald-700">Upload Successful!</p>
+                    <p className="text-emerald-600 text-sm mt-1">Processing your file...</p>
+                  </motion.div>
+                ) : file ? (
+                  <motion.div
+                    key="file-selected"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    className="flex flex-col items-center py-2"
+                  >
+                    <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mb-3">
+                      <span className="text-xl">📄</span>
+                    </div>
+                    <p className="font-medium text-slate-800">{file.name}</p>
+                    <p className="text-slate-500 text-xs mt-1">{formatFileSize(file.size)} • PDF</p>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setFile(null); }}
+                      className="mt-3 px-3 py-1.5 text-red-500 hover:bg-red-50 rounded-lg text-xs font-medium transition-colors"
+                    >
+                      Remove
+                    </button>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="no-file"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    className="flex flex-col items-center py-2"
+                  >
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 transition-all ${
+                      isDragOver ? 'bg-cyan-500 text-white' : 'bg-slate-100'
+                    }`}>
+                      <span className="text-xl">{isDragOver ? '📥' : '📁'}</span>
+                    </div>
+                    <p className="font-medium text-slate-700">
+                      {isDragOver ? 'Drop here!' : 'Drag & drop PDF'}
+                    </p>
+                    <p className="text-slate-400 text-xs mt-1">or click to browse</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              
+              {/* Upload Progress */}
+              {uploading && (
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-200 rounded-b-xl overflow-hidden">
+                  <motion.div 
+                    className="h-full bg-gradient-to-r from-cyan-500 to-teal-500"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${uploadProgress}%` }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </div>
+              )}
+            </motion.div>
 
-        {/* Upload Button */}
-        <motion.button
-          className={`mt-6 w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all flex items-center justify-center gap-3 ${
-            isFormComplete && !uploading && !uploadSuccess
-              ? 'bg-gradient-to-r from-cyan-500 to-teal-600 text-white shadow-lg shadow-cyan-500/25 hover:shadow-xl hover:shadow-cyan-500/30 hover:scale-[1.02]'
-              : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-          }`}
-          onClick={handleUpload}
-          disabled={!isFormComplete || uploading || uploadSuccess}
-          whileHover={isFormComplete && !uploading && !uploadSuccess ? { scale: 1.02 } : {}}
-          whileTap={isFormComplete && !uploading && !uploadSuccess ? { scale: 0.98 } : {}}
-        >
-          {uploading ? (
-            <>
-              <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-              <span>Uploading... {uploadProgress}%</span>
-            </>
-          ) : uploadSuccess ? (
-            <>
-              <span>✅</span>
-              <span>Uploaded Successfully!</span>
-            </>
-          ) : (
-            <>
-              <span>📤</span>
-              <span>Upload & Process</span>
-            </>
-          )}
-        </motion.button>
-
-        {/* What happens next? */}
-        <div className="mt-8 info-box">
-          <h3 className="text-sm font-semibold text-cyan-800 mb-3 flex items-center gap-2">
-            <span>💡</span>
-            What happens after upload?
-          </h3>
-          <ul className="text-sm text-cyan-700 space-y-2">
-            <li className="flex items-start gap-2">
-              <span className="text-emerald-500 mt-0.5">✓</span>
-              <span>Your PDF is securely processed and analyzed</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-emerald-500 mt-0.5">✓</span>
-              <span>Content is added to the AI's knowledge base</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-emerald-500 mt-0.5">✓</span>
-              <span>Students can ask questions about this material</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-emerald-500 mt-0.5">✓</span>
-              <span>Answers stay 100% within syllabus boundaries</span>
-            </li>
-          </ul>
-        </div>
-
-        {/* Bottom Progress Summary */}
-        <div className="mt-6 pt-6 border-t border-slate-200/50">
-          <div className="flex items-center justify-center gap-3 text-sm">
-            <span className={`font-medium ${completedSteps === 4 ? 'text-emerald-600' : 'text-slate-500'}`}>
-              {completedSteps}/4 steps completed
-            </span>
-            <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-cyan-500 to-emerald-500 rounded-full transition-all duration-500"
-                style={{ width: `${(completedSteps / 4) * 100}%` }}
-              />
-            </div>
+            {/* Upload Button */}
+            <motion.button
+              className={`mt-5 w-full py-3 px-5 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${
+                isFormComplete && !uploading && !uploadSuccess
+                  ? 'bg-gradient-to-r from-cyan-500 to-teal-600 text-white hover:opacity-90'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              }`}
+              onClick={handleUpload}
+              disabled={!isFormComplete || uploading || uploadSuccess}
+              whileTap={isFormComplete && !uploading && !uploadSuccess ? { scale: 0.98 } : {}}
+            >
+              {uploading ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  <span>Uploading {uploadProgress}%</span>
+                </>
+              ) : uploadSuccess ? (
+                <span>✓ Uploaded Successfully</span>
+              ) : (
+                <span>Upload & Process</span>
+              )}
+            </motion.button>
           </div>
         </div>
       </motion.div>
