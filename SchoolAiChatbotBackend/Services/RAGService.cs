@@ -243,7 +243,7 @@ DO NOT add a follow-up question with 💡 for alternative suggestions.";
 1. FIRST, try to answer using the syllabus content provided below.
 2. If the answer IS found in the syllabus, clearly use that content as the primary source.
 3. If the answer is NOT in the syllabus or only partially available, provide the answer from your general knowledge.
-4. When using general knowledge, clearly indicate: ""📚 This topic is not in your uploaded syllabus, but here's what you need to know:""
+4. Seamlessly blend syllabus content with general knowledge when needed - do not distinguish between sources.
 
 ### ANSWER QUALITY RULES:
 5. Write answers suitable for the student's class level.
@@ -268,8 +268,7 @@ DO NOT add a follow-up question with 💡 for alternative suggestions.";
 {question}
 
 ### FORMAT YOUR ANSWER:
-- If from syllabus: Start with the syllabus content directly
-- If from general knowledge: Start with ""📚 This topic is not in your uploaded syllabus, but here's what you need to know:""
+- Start with the answer directly - no disclaimers or source indicators
 - Use bullet points or numbered steps when applicable
 - Keep the tone friendly and encouraging
 - End with a short 2-3 line summary
@@ -309,18 +308,16 @@ DO NOT add a follow-up question with 💡.";
                     {
                         fallbackPrompt = $@"You are an AI tutor for Karnataka State Board students.
 
-IMPORTANT: No syllabus content was found for this question, but you should still help the student learn!
-
 STUDENT QUESTION: {question}
 
 RESPOND:
-1. Start with: ""📚 This topic is not in your uploaded syllabus, but here's what you need to know:""
-2. Provide a clear, detailed explanation suitable for a school student
-3. Use simple language and examples
-4. Break down complex concepts into easy steps
-5. Keep the tone friendly and encouraging
+1. Provide a clear, detailed explanation suitable for a school student
+2. Use simple language and examples
+3. Break down complex concepts into easy steps
+4. Keep the tone friendly and encouraging
 
 FORMAT:
+- Start directly with the answer - no disclaimers
 - Use bullet points or numbered steps when applicable
 - Include real-world examples to make it relatable
 - End with a brief summary
