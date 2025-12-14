@@ -150,177 +150,136 @@ const FileUpload: React.FC<{ token?: string; toast: ReturnType<typeof useToast> 
         transition={{ duration: 0.4 }}
       >
         {/* Header */}
-        <div className="text-center mb-8">
-          <motion.div 
-            className="page-header-icon mx-auto"
-            whileHover={{ scale: 1.05, rotate: 3 }}
-          >
-            <span className="text-2xl">
-              {uploadType === "model" ? "📝" : uploadType === "evaluation" ? "📋" : "📤"}
-            </span>
-          </motion.div>
-          <h2 className="page-header-title text-gradient">
+        <div className="text-center mb-6">
+          <h2 className="text-xl font-bold text-slate-800 mb-1">
             {uploadType === "model" 
-              ? "Upload Question Papers" 
+              ? "📝 Upload Question Papers" 
               : uploadType === "evaluation" 
-                ? "Upload Evaluation Sheets" 
-                : "Upload Syllabus Materials"}
+                ? "📋 Upload Evaluation Sheets" 
+                : "📤 Upload Syllabus Materials"}
           </h2>
-          <p className="page-header-subtitle">
+          <p className="text-sm text-slate-500">
             {uploadType === "model" 
-              ? "Add model question papers for student practice" 
+              ? "Add model question papers for practice" 
               : uploadType === "evaluation"
-                ? "Add marking schemes for answer evaluation"
-                : "Train the AI assistant with your syllabus content"}
+                ? "Add marking schemes for evaluation"
+                : "Train the AI with your syllabus content"}
           </p>
-          <div className="flex justify-center mt-3">
-            <span className="exam-safe-badge">
-              <span>🔒</span>
-              Used only for Exam-Safe learning
-            </span>
-          </div>
         </div>
 
         {/* Upload Type Toggle */}
-        <div className="mb-8">
-          <p className="text-sm font-medium text-slate-600 text-center mb-3">What are you uploading?</p>
+        <div className="mb-6 pb-6 border-b border-slate-100">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide text-center mb-3">Upload Type</p>
           <div className="flex justify-center gap-2 flex-wrap">
             {[
-              { type: "syllabus", icon: "📚", label: "Syllabus / Textbook" },
+              { type: "syllabus", icon: "📚", label: "Syllabus" },
               { type: "model", icon: "📝", label: "Model Papers" },
               { type: "evaluation", icon: "📋", label: "Answer Keys" },
             ].map((item) => (
               <button
                 key={item.type}
                 onClick={() => setUploadType(item.type)}
-                className={`px-4 py-2.5 rounded-xl font-medium transition-all text-sm ${
+                className={`px-4 py-2 rounded-lg font-medium transition-all text-sm ${
                   uploadType === item.type
-                    ? "bg-gradient-to-r from-cyan-500 to-teal-600 text-white shadow-lg shadow-cyan-500/25"
+                    ? "bg-cyan-500 text-white shadow-md"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
               >
-                <span className="mr-1.5">{item.icon}</span>
+                <span className="mr-1">{item.icon}</span>
                 {item.label}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Progress Steps */}
-        <div className="mb-8 hidden sm:block">
-          <div className="flex items-center justify-center gap-2 text-sm">
-            {[
-              { num: 1, label: "Medium", done: !!medium },
-              { num: 2, label: "Class", done: !!className },
-              { num: 3, label: "Subject", done: !!subject },
-              { num: 4, label: "File", done: !!file },
-            ].map((step, idx) => (
-              <React.Fragment key={step.num}>
-                <div className={`step-indicator ${step.done ? 'text-cyan-600' : 'text-slate-400'}`}>
-                  <span className={`step-number ${step.done ? 'completed' : 'pending'}`}>
-                    {step.done ? '✓' : step.num}
-                  </span>
-                  <span className="font-medium">{step.label}</span>
-                </div>
-                {idx < 3 && <div className={`w-8 h-0.5 rounded ${step.done ? 'bg-emerald-400' : 'bg-slate-200'}`} />}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-
-        {/* Selection Grid */}
-        <div className="flex flex-wrap gap-4 mb-6 justify-center">
-          {/* Medium Dropdown */}
-          <div className="flex-shrink-0">
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-              🌐 Medium
-            </label>
-            <select
-              value={medium}
-              onChange={(e) => handleMediumChange(e.target.value)}
-              className="form-select"
-            >
-              <option value="">Select</option>
-              <option value="Kannada">Kannada</option>
-              <option value="English">English</option>
-            </select>
-          </div>
-
-          {/* Class Dropdown */}
-          <div className="flex-shrink-0">
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-              🎓 Class
-            </label>
-            <select
-              value={className}
-              onChange={(e) => handleClassChange(e.target.value)}
-              className="form-select"
-            >
-              <option value="">Select</option>
-              {Array.from({ length: 7 }, (_, i) => 6 + i).map((cls) => (
-                <option key={cls} value={String(cls)}>Class {cls}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Subject Dropdown */}
-          <div className="flex-shrink-0">
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-              📖 Subject
-            </label>
-            <select
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              disabled={!className}
-              className="form-select"
-            >
-              <option value="">{className ? "Select" : "—"}</option>
-              {availableSubjects.map((subj) => (
-                <option key={subj} value={subj}>{subj}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Additional fields for Model Papers / Evaluation Sheets */}
-        {(uploadType === "model" || uploadType === "evaluation") && (
-          <div className="flex flex-wrap gap-4 mb-6 justify-center">
-            <div className="flex-shrink-0">
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                🏛️ State/Board
-              </label>
+        {/* Selection Section */}
+        <div className="mb-6 pb-6 border-b border-slate-100">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide text-center mb-4">Select Details</p>
+          
+          {/* Main Selection Row */}
+          <div className="flex flex-wrap gap-3 justify-center mb-4">
+            {/* Medium Dropdown */}
+            <div>
+              <label className="block text-xs font-medium text-slate-500 mb-1 text-center">Medium</label>
               <select
-                value={state}
-                onChange={(e) => setState(e.target.value)}
+                value={medium}
+                onChange={(e) => handleMediumChange(e.target.value)}
                 className="form-select"
               >
-                <option value="Karnataka">Karnataka</option>
-                <option value="Maharashtra">Maharashtra</option>
-                <option value="TamilNadu">Tamil Nadu</option>
-                <option value="Kerala">Kerala</option>
-                <option value="CBSE">CBSE</option>
-                <option value="ICSE">ICSE</option>
+                <option value="">Select</option>
+                <option value="Kannada">Kannada</option>
+                <option value="English">English</option>
               </select>
             </div>
 
-            <div className="flex-shrink-0">
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                📅 Year
-              </label>
+            {/* Class Dropdown */}
+            <div>
+              <label className="block text-xs font-medium text-slate-500 mb-1 text-center">Class</label>
               <select
-                value={academicYear}
-                onChange={(e) => setAcademicYear(e.target.value)}
+                value={className}
+                onChange={(e) => handleClassChange(e.target.value)}
                 className="form-select"
               >
-                <option value="">Any</option>
-                {Array.from({ length: 10 }, (_, i) => {
-                  const year = new Date().getFullYear() - i;
-                  return <option key={year} value={`${year}-${(year + 1).toString().slice(-2)}`}>{year}</option>;
-                })}
+                <option value="">Select</option>
+                {Array.from({ length: 7 }, (_, i) => 6 + i).map((cls) => (
+                  <option key={cls} value={String(cls)}>Class {cls}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Subject Dropdown */}
+            <div>
+              <label className="block text-xs font-medium text-slate-500 mb-1 text-center">Subject</label>
+              <select
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                disabled={!className}
+                className="form-select"
+              >
+                <option value="">{className ? "Select" : "—"}</option>
+                {availableSubjects.map((subj) => (
+                  <option key={subj} value={subj}>{subj}</option>
+                ))}
               </select>
             </div>
           </div>
-        )}
+
+          {/* Additional fields for Model Papers / Evaluation Sheets */}
+          {(uploadType === "model" || uploadType === "evaluation") && (
+            <div className="flex flex-wrap gap-3 justify-center pt-3 border-t border-slate-100">
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1 text-center">State/Board</label>
+                <select
+                  value={state}
+                  onChange={(e) => setState(e.target.value)}
+                  className="form-select"
+                >
+                  <option value="Karnataka">Karnataka</option>
+                  <option value="Maharashtra">Maharashtra</option>
+                  <option value="TamilNadu">Tamil Nadu</option>
+                  <option value="Kerala">Kerala</option>
+                  <option value="CBSE">CBSE</option>
+                  <option value="ICSE">ICSE</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1 text-center">Year</label>
+                <select
+                  value={academicYear}
+                  onChange={(e) => setAcademicYear(e.target.value)}
+                  className="form-select"
+                >
+                  <option value="">Any</option>
+                  {Array.from({ length: 10 }, (_, i) => {
+                    const year = new Date().getFullYear() - i;
+                    return <option key={year} value={`${year}-${(year + 1).toString().slice(-2)}`}>{year}</option>;
+                  })}
+                </select>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* File Drop Zone */}
         <motion.div
