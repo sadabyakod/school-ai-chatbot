@@ -371,31 +371,32 @@ namespace SchoolAiChatbotBackend.Controllers
                     return NotFound(new { error = "Submission not found" });
                 }
 
-                // Map status to user-friendly message
+                // Map status to user-friendly message (Status: 0=Uploaded, 1=OCR Complete, 2=Evaluation Complete, 3=OCR Failed, 4=Evaluation Failed)
                 string statusMessage = submission.Status switch
                 {
-                    SubmissionStatus.PendingEvaluation => "⏳ Your answer sheet is being processed...",
-                    SubmissionStatus.OcrProcessing => "📄 Extracting text from your answer sheet...",
-                    SubmissionStatus.Evaluating => "🤖 AI is evaluating your answers...",
-                    SubmissionStatus.Completed => "✅ Evaluation completed! Your results are ready.",
-                    SubmissionStatus.Failed => "❌ Evaluation failed. Please contact support.",
+                    SubmissionStatus.Uploaded => "⏳ Uploaded. Waiting for OCR to start...", // 0
+                    SubmissionStatus.OcrComplete => "📄 OCR Complete. AI evaluation starting...", // 1  
+                    SubmissionStatus.EvaluationComplete => "✅ Evaluation completed! Your results are ready.", // 2
+                    SubmissionStatus.OcrFailed => "❌ OCR Failed. Please try uploading clearer images.", // 3
+                    SubmissionStatus.EvaluationFailed => "❌ Evaluation failed. Please contact support.", // 4
                     _ => "Unknown status"
                 };
 
                 var response = new SubmissionStatusResponse
                 {
                     WrittenSubmissionId = writtenSubmissionId,
-                    Status = submission.Status.ToString(),
+                    Status = ((int)submission.Status).ToString(), // Return numeric status (0-4)
                     StatusMessage = statusMessage,
                     SubmittedAt = submission.SubmittedAt,
                     EvaluatedAt = submission.EvaluatedAt,
-                    IsComplete = submission.Status == SubmissionStatus.Completed,
+                    IsComplete = submission.Status == SubmissionStatus.EvaluationComplete, // Status 2
                     ExamId = submission.ExamId,
-                    StudentId = submission.StudentId
+                    StudentId = submission.StudentId,
+                    EvaluationResultBlobPath = submission.EvaluationResultBlobPath // From WrittenSubmissions.EvaluationResultBlobPath
                 };
 
-                // If evaluation is completed, include the full results
-                if (submission.Status == SubmissionStatus.Completed)
+                // If evaluation is completed (Status = 2), include the full results
+                if (submission.Status == SubmissionStatus.EvaluationComplete)
                 {
                     try
                     {

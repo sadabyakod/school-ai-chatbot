@@ -184,8 +184,8 @@ namespace SchoolAiChatbotBackend
                 // Register Exam System services
                 builder.Services.AddScoped<SchoolAiChatbotBackend.Features.Exams.IExamService, SchoolAiChatbotBackend.Features.Exams.ExamService>();
 
-                // Register Exam Submission services (New)
-                builder.Services.AddScoped<IExamRepository, InMemoryExamRepository>();
+                // Register Exam Submission services - SQL-backed for Azure Function integration
+                builder.Services.AddScoped<IExamRepository, SqlExamRepository>();
 
                 // Configure File Storage based on appsettings
                 var fileStorageProvider = builder.Configuration["FileStorage:Provider"] ?? "Local";

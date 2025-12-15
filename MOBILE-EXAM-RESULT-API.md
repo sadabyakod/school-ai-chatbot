@@ -3,7 +3,7 @@
 ## 📱 Mobile App Integration Guide - Exam Results
 
 **Base URL (Local):** `http://localhost:8080`  
-**Base URL (Production):** `https://your-backend-url.azurewebsites.net`
+**Base URL (Production):** `https://smartstudy-api-athtbtapcvdjesbe.centralindia-01.azurewebsites.net`
 
 ---
 

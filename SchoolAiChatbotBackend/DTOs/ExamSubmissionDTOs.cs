@@ -89,6 +89,11 @@ namespace SchoolAiChatbotBackend.DTOs
         public string StudentId { get; set; } = string.Empty;
 
         /// <summary>
+        /// Azure Blob Storage path to evaluation result JSON (populated when Status = 2/Completed)
+        /// </summary>
+        public string? EvaluationResultBlobPath { get; set; }
+
+        /// <summary>
         /// Complete exam result (only populated when IsComplete = true)
         /// </summary>
         public ConsolidatedExamResult? Result { get; set; }

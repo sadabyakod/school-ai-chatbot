@@ -39,6 +39,10 @@ namespace SchoolAiChatbotBackend.Data
         // Generated exams storage (persisted for MCQ/written answer submissions)
         public DbSet<GeneratedExam> GeneratedExams { get; set; }
 
+        // Written submission tracking (shared with Azure Functions)
+        public DbSet<WrittenSubmission> WrittenSubmissions { get; set; }
+        public DbSet<WrittenQuestionEvaluation> WrittenQuestionEvaluations { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -172,6 +176,30 @@ namespace SchoolAiChatbotBackend.Data
 
             modelBuilder.Entity<GeneratedExam>()
                 .HasIndex(e => e.CreatedAt);
+
+            // Configure WrittenSubmission for SQL table mapping
+            modelBuilder.Entity<WrittenSubmission>()
+                .HasIndex(w => w.ExamId);
+
+            modelBuilder.Entity<WrittenSubmission>()
+                .HasIndex(w => w.StudentId);
+
+            modelBuilder.Entity<WrittenSubmission>()
+                .HasIndex(w => w.Status);
+
+            modelBuilder.Entity<WrittenSubmission>()
+                .HasIndex(w => new { w.ExamId, w.StudentId })
+                .IsUnique();
+
+            // Configure WrittenQuestionEvaluation relationships
+            modelBuilder.Entity<WrittenQuestionEvaluation>()
+                .HasOne(e => e.WrittenSubmission)
+                .WithMany()
+                .HasForeignKey(e => e.WrittenSubmissionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<WrittenQuestionEvaluation>()
+                .HasIndex(e => e.WrittenSubmissionId);
         }
     }
 }
