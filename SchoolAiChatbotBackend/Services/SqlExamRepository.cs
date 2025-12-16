@@ -141,20 +141,22 @@ namespace SchoolAiChatbotBackend.Services
                 var previousStatus = submission.Status;
                 submission.Status = status;
 
-                // Update relevant timestamps based on status
-                switch (status)
+                // Update relevant timestamps based on status (using numeric values to avoid duplicate case labels)
+                switch ((int)status)
                 {
-                    case SubmissionStatus.OcrProcessing:
-                        submission.OcrStartedAt = DateTime.UtcNow;
+                    case 0: // Uploaded/PendingEvaluation
                         break;
-                    case SubmissionStatus.Evaluating:
+                    case 1: // OcrComplete/OcrProcessing/Evaluating
                         submission.OcrCompletedAt ??= DateTime.UtcNow;
                         submission.EvaluationStartedAt = DateTime.UtcNow;
                         break;
-                    case SubmissionStatus.Completed:
+                    case 2: // EvaluationComplete/Completed
                         submission.EvaluatedAt = DateTime.UtcNow;
                         break;
-                    case SubmissionStatus.Failed:
+                    case 3: // OcrFailed
+                        submission.EvaluatedAt = DateTime.UtcNow;
+                        break;
+                    case 4: // EvaluationFailed/Failed
                         submission.EvaluatedAt = DateTime.UtcNow;
                         break;
                 }

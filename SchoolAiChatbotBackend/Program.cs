@@ -195,6 +195,7 @@ namespace SchoolAiChatbotBackend
                         ?? throw new InvalidOperationException("BlobStorage:ConnectionString not configured");
                     var containerName = builder.Configuration["BlobStorage:ContainerName"]
                         ?? throw new InvalidOperationException("BlobStorage:ContainerName not configured");
+                    var answerSheetsContainer = builder.Configuration["BlobStorage:AnswerSheetsContainer"] ?? containerName;
 
                     var storageOptions = new SchoolAiChatbotBackend.Services.FileStorageOptions
                     {
@@ -209,10 +210,11 @@ namespace SchoolAiChatbotBackend
                             blobConnectionString,
                             containerName,
                             storageOptions,
-                            sp.GetRequiredService<ILogger<SchoolAiChatbotBackend.Services.AzureBlobStorageService>>()));
+                            sp.GetRequiredService<ILogger<SchoolAiChatbotBackend.Services.AzureBlobStorageService>>(),
+                            answerSheetsContainer));
 
                     // Log configuration (after app is built)
-                    Console.WriteLine($"[INFO] Using Azure Blob Storage - DeleteAfterProcessing: {storageOptions.DeleteAfterProcessing}, OnDemandStorage: {storageOptions.OnDemandStorage}, RetentionDays: {storageOptions.RetentionDays}");
+                    Console.WriteLine($"[INFO] Using Azure Blob Storage - AnswerSheetsContainer: {answerSheetsContainer}, DeleteAfterProcessing: {storageOptions.DeleteAfterProcessing}, OnDemandStorage: {storageOptions.OnDemandStorage}, RetentionDays: {storageOptions.RetentionDays}");
 
                     // Register background service for periodic file cleanup
                     if (storageOptions.RetentionDays > 0)

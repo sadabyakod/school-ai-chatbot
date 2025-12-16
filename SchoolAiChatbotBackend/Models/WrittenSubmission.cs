@@ -118,23 +118,33 @@ namespace SchoolAiChatbotBackend.Models
 
     /// <summary>
     /// Submission status matching SQL schema exactly
-    /// 0 = Uploaded (waiting for OCR)
-    /// 1 = OCR Complete (waiting for evaluation)
-    /// 2 = Evaluation Complete (done)
+    /// 0 = Uploaded/PendingEvaluation (waiting for OCR)
+    /// 1 = OCR Complete/OcrProcessing (waiting for evaluation)
+    /// 2 = Evaluation Complete/Completed (done)
     /// 3 = OCR Failed
-    /// 4 = Evaluation Failed
+    /// 4 = Evaluation Failed/Failed
     /// </summary>
     public enum SubmissionStatus
     {
         /// <summary>Uploaded - Answer sheet received, awaiting OCR (Status = 0)</summary>
         Uploaded = 0,
+        /// <summary>Alias for Uploaded - backward compatibility</summary>
+        PendingEvaluation = 0,
         /// <summary>OCR Complete - Text extraction done, awaiting evaluation (Status = 1)</summary>
         OcrComplete = 1,
+        /// <summary>Alias for OcrComplete - backward compatibility</summary>
+        OcrProcessing = 1,
+        /// <summary>Evaluating - AI evaluation in progress (Status = 1)</summary>
+        Evaluating = 1,
         /// <summary>Evaluation Complete - AI scoring finished successfully (Status = 2)</summary>
         EvaluationComplete = 2,
+        /// <summary>Alias for EvaluationComplete - backward compatibility</summary>
+        Completed = 2,
         /// <summary>OCR Failed - Error during text extraction (Status = 3)</summary>
         OcrFailed = 3,
         /// <summary>Evaluation Failed - Error during AI evaluation (Status = 4)</summary>
-        EvaluationFailed = 4
+        EvaluationFailed = 4,
+        /// <summary>Alias for EvaluationFailed - backward compatibility</summary>
+        Failed = 4
     }
 }

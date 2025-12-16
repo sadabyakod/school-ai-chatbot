@@ -78,7 +78,7 @@ namespace SchoolAiChatbotBackend.Services
         public LocalFileStorageService(ILogger<LocalFileStorageService> logger)
         {
             _logger = logger;
-            _uploadDirectory = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "written-answers");
+            _uploadDirectory = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "students-answer-sheets");
             Directory.CreateDirectory(_uploadDirectory);
         }
 
@@ -177,6 +177,7 @@ namespace SchoolAiChatbotBackend.Services
     {
         private readonly BlobServiceClient _blobServiceClient;
         private readonly string _containerName;
+        private readonly string _answerSheetsContainer;
         private readonly FileStorageOptions _options;
         private readonly ILogger<AzureBlobStorageService> _logger;
 
@@ -184,19 +185,22 @@ namespace SchoolAiChatbotBackend.Services
             string connectionString,
             string containerName,
             FileStorageOptions options,
-            ILogger<AzureBlobStorageService> logger)
+            ILogger<AzureBlobStorageService> logger,
+            string? answerSheetsContainer = null)
         {
             _blobServiceClient = new BlobServiceClient(connectionString);
             _containerName = containerName;
+            _answerSheetsContainer = answerSheetsContainer ?? containerName;
             _options = options;
             _logger = logger;
 
             _logger.LogInformation(
-                "Azure Blob Storage initialized - DeleteAfterProcessing: {Delete}, OnDemandStorage: {OnDemand}, RetentionDays: {Retention}, Archive: {Archive}",
+                "Azure Blob Storage initialized - DeleteAfterProcessing: {Delete}, OnDemandStorage: {OnDemand}, RetentionDays: {Retention}, Archive: {Archive}, AnswerSheetsContainer: {AnswerContainer}",
                 _options.DeleteAfterProcessing,
                 _options.OnDemandStorage,
                 _options.RetentionDays,
-                _options.ArchiveAfterRetention);
+                _options.ArchiveAfterRetention,
+                _answerSheetsContainer);
         }
 
         public async Task<string> SaveFileAsync(IFormFile file, string examId, string studentId)
@@ -215,13 +219,14 @@ namespace SchoolAiChatbotBackend.Services
                 throw new ArgumentException($"File type {extension} is not allowed", nameof(file));
             }
 
-            var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
+            // Use dedicated answer-sheets container instead of textbooks
+            var containerClient = _blobServiceClient.GetBlobContainerClient(_answerSheetsContainer);
             await containerClient.CreateIfNotExistsAsync(PublicAccessType.None);
 
-            // Create unique blob name with timestamp
+            // Create unique blob name with timestamp (no 'written-answers' prefix since we have dedicated container)
             var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
             var uniqueFileName = $"{timestamp}_{Guid.NewGuid():N}{extension}";
-            var blobName = $"written-answers/{examId}/{studentId}/{uniqueFileName}";
+            var blobName = $"{examId}/{studentId}/{uniqueFileName}";
             var blobClient = containerClient.GetBlobClient(blobName);
 
             // Set metadata including upload timestamp for retention management
@@ -383,13 +388,15 @@ namespace SchoolAiChatbotBackend.Services
                     return;
                 }
 
-                var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
+                // Use the dedicated answer sheets container for cleanup
+                var containerClient = _blobServiceClient.GetBlobContainerClient(_answerSheetsContainer);
                 var cutoffDate = DateTime.UtcNow.AddDays(-_options.RetentionDays);
 
                 int deletedCount = 0;
                 int archivedCount = 0;
 
-                await foreach (var blobItem in containerClient.GetBlobsAsync(BlobTraits.Metadata, prefix: "written-answers/"))
+                // No prefix needed since this container only contains answer sheets
+                await foreach (var blobItem in containerClient.GetBlobsAsync(BlobTraits.Metadata))
                 {
                     try
                     {
