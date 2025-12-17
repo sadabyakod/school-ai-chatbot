@@ -1,0 +1,3 @@
+<step title="Startup Request" date="2025-12-14T12:32:49.841" instance="22a7da" url="/api/settings" method="GET" type="request" pid="10924,2,8" ScmType="GitHubAction" >
+  <step title="Cleanup Xml Logs" date="2025-12-14T12:32:49.841" /><!-- duration: 16ms -->
+</step><!-- duration: 16ms -->

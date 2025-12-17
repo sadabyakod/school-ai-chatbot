@@ -80,7 +80,10 @@ namespace SchoolAiChatbotBackend.Controllers
             try
             {
                 // Check cache first if caching is enabled
-                var cacheKey = $"exam_{request.Subject}_{request.Grade}".ToLowerInvariant().Replace(" ", "_");
+                var chapter = request.Chapter ?? "all";
+                var difficulty = request.Difficulty ?? "medium";
+                var examType = request.ExamType ?? "full";
+                var cacheKey = $"exam_{request.Subject}_{request.Grade}_{chapter}_{difficulty}_{examType}".ToLowerInvariant().Replace(" ", "_");
                 
                 if (request.UseCache && _cache.TryGetValue(cacheKey, out GeneratedExamResponse? cachedExam) && cachedExam != null)
                 {
@@ -206,7 +209,10 @@ namespace SchoolAiChatbotBackend.Controllers
             var requestId = Guid.NewGuid().ToString("N")[..12];
             
             // Check cache first
-            var cacheKey = $"exam_{request.Subject}_{request.Grade}".ToLowerInvariant().Replace(" ", "_");
+            var chapter = request.Chapter ?? "all";
+            var difficulty = request.Difficulty ?? "medium";
+            var examType = request.ExamType ?? "full";
+            var cacheKey = $"exam_{request.Subject}_{request.Grade}_{chapter}_{difficulty}_{examType}".ToLowerInvariant().Replace(" ", "_");
             
             if (request.UseCache && _cache.TryGetValue(cacheKey, out GeneratedExamResponse? cachedExam) && cachedExam != null)
             {
@@ -933,13 +939,28 @@ Generate the complete Karnataka 2nd PUC Mathematics Model Question Paper now:";
         public string Grade { get; set; } = string.Empty;
         
         /// <summary>
+        /// Chapter to cover (optional, default: "All Chapters")
+        /// </summary>
+        public string? Chapter { get; set; }
+        
+        /// <summary>
+        /// Difficulty level (optional, default: "Medium")
+        /// </summary>
+        public string? Difficulty { get; set; }
+        
+        /// <summary>
+        /// Exam type (optional, default: "Full Paper")
+        /// </summary>
+        public string? ExamType { get; set; }
+        
+        /// <summary>
         /// Use cached exam if available (default: true for faster response)
         /// </summary>
         public bool UseCache { get; set; } = true;
         
         /// <summary>
-        /// Use faster GPT-3.5-turbo model (faster but may have slightly lower quality)
-        /// Default: true for faster generation (~15-30s vs ~60-90s)
+        /// Use faster model for generation (~15-30s vs ~60-90s)
+        /// Default: true for faster generation
         /// </summary>
         public bool FastMode { get; set; } = true;
     }

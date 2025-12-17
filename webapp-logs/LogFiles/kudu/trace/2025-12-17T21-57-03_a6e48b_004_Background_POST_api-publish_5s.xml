@@ -1,0 +1,78 @@
+<step title="BackgroundTrace" date="2025-12-17T21:57:03.322" instance="a6e48b" url="/api/publish" method="POST" >
+  <step title="Updating shutdown sentinel last write time" date="2025-12-17T21:57:03.338" SemaphoreCount="7" /><!-- duration: 16ms -->
+  <step title="LockFile &apos;C:\home\site\locks\deployments.lock&apos; acquired" date="2025-12-17T21:57:03.353" /><!-- duration: 0ms -->
+  <step title="Creating temporary deployment" date="2025-12-17T21:57:03.353" /><!-- duration: 47ms -->
+  <step title="Performing fetch based deployment" date="2025-12-17T21:57:03.416" >
+    <step title="Fetching changes." date="2025-12-17T21:57:03.478" /><!-- duration: 0ms -->
+    <step title="Starting LocalZipHandler" date="2025-12-17T21:57:03.494" /><!-- duration: 0ms -->
+    <step title="Cleaning up temp folders from previous zip deployments and extracting pushed zip file C:\local\Temp\zipdeploy\ynjxzrm1.zip (13.18 MB) to C:\local\Temp\zipdeploy\extracted" date="2025-12-17T21:57:03.525" /><!-- duration: 0ms -->
+    <step title="Cleaning up temp folders from previous zip deployments and extracting pushed zip file C:\local\Temp\zipdeploy\ynjxzrm1.zip (13.18 MB) to C:\local\Temp\zipdeploy\extracted" date="2025-12-17T21:57:03.541" >
+      <step title="Renaming extractTargetDirectory(C:\local\Temp\zipdeploy\extracted) to tempDirectory(C:\local\Temp\zipdeploy\ithd2s4p.wnf)" date="2025-12-17T21:57:03.541" /><!-- duration: 0ms -->
+      <step title="Extracting 115 entries to C:\local\Temp\zipdeploy\extracted directory" date="2025-12-17T21:57:03.556" >
+        <step title="Extracting to C:\local\Temp\zipdeploy\extracted\appsettings.json ..." date="2025-12-17T21:57:03.556" /><!-- duration: 31ms -->
+        <step title="Extracting to C:\local\Temp\zipdeploy\extracted\appsettings.template.json ..." date="2025-12-17T21:57:03.588" /><!-- duration: 0ms -->
+        <step title="Extracting to C:\local\Temp\zipdeploy\extracted\Azure.Core.dll ..." date="2025-12-17T21:57:03.588" /><!-- duration: 16ms -->
+        <step title="Extracting to C:\local\Temp\zipdeploy\extracted\Azure.Identity.dll ..." date="2025-12-17T21:57:03.603" /><!-- duration: 16ms -->
+        <step title="Extracting to C:\local\Temp\zipdeploy\extracted\Azure.Storage.Blobs.dll ..." date="2025-12-17T21:57:03.619" /><!-- duration: 16ms -->
+        <step title="Omitting extracting file traces ..." date="2025-12-17T21:57:03.634" /><!-- duration: 16ms -->
+      </step><!-- duration: 563ms -->
+    </step><!-- duration: 578ms -->
+    <step title="Before sending BuildRequestReceived status to /api/updatedeploystatus" date="2025-12-17T21:57:04.119" /><!-- duration: 16ms -->
+    <step title="DeploymentManager.Deploy(id:ba40fc9e064e4b2a93485784d9db64d5)" date="2025-12-17T21:57:04.134" >
+      <step title="Collecting changeset information" date="2025-12-17T21:57:04.150" /><!-- duration: 31ms -->
+      <step title="Updating submodules" date="2025-12-17T21:57:04.181" >
+        <step title="Updating submodules." date="2025-12-17T21:57:04.228" /><!-- duration: 0ms -->
+      </step><!-- duration: 47ms -->
+      <step title="Preparing deployment for commit id &apos;ba40fc9e06&apos;." date="2025-12-17T21:57:04.275" /><!-- duration: 0ms -->
+      <step title="Determining deployment builder" date="2025-12-17T21:57:04.322" >
+        <step title="Builder is OneDeployBuilder" date="2025-12-17T21:57:04.322" /><!-- duration: 0ms -->
+      </step><!-- duration: 0ms -->
+      <step title="Copying SSH keys" date="2025-12-17T21:57:04.338" /><!-- duration: 16ms -->
+      <step title="Building" date="2025-12-17T21:57:04.353" >
+        <step title="Running build. Project type: OneDeploy" date="2025-12-17T21:57:04.385" /><!-- duration: 0ms -->
+        <step title="Copying the manifest" date="2025-12-17T21:57:04.431" /><!-- duration: 0ms -->
+        <step title="Clean deploying to C:\home\site\wwwroot" date="2025-12-17T21:57:04.478" /><!-- duration: 0ms -->
+        <step title="Generating deployment script." date="2025-12-17T21:57:04.525" /><!-- duration: 0ms -->
+        <step title="Generating deployment script" date="2025-12-17T21:57:04.541" >
+          <step title="Using cached version of the deployment script for command: -y --no-dot-deployment -r &quot;C:\local\Temp\zipdeploy\extracted&quot; -o &quot;C:\home\site\deployments\tools&quot; --basic --sitePath &quot;C:\local\Temp\zipdeploy\extracted&quot;" date="2025-12-17T21:57:04.541" /><!-- duration: 16ms -->
+          <step title="Using cached version of deployment script (command: &apos;azure -y --no-dot-deployment -r &quot;C:\local\Temp\zipdeploy\extracted&quot; -o &quot;C:\home\site\deployments\tools&quot; --basic --sitePath &quot;C:\local\Temp\zipdeploy\extracted&quot;&apos;)." date="2025-12-17T21:57:04.572" /><!-- duration: 0ms -->
+        </step><!-- duration: 31ms -->
+        <step title="Running deployment command..." date="2025-12-17T21:57:04.619" /><!-- duration: 0ms -->
+        <step title="Command: &quot;C:\home\site\deployments\tools\deploy.cmd&quot;" date="2025-12-17T21:57:04.635" /><!-- duration: 0ms -->
+        <step title="Executing external process" date="2025-12-17T21:57:04.635" type="process" path="starter.cmd" arguments="&quot;C:\home\site\deployments\tools\deploy.cmd&quot;" >
+          <step title="Handling Basic Web Site deployment." date="2025-12-17T21:57:04.760" /><!-- duration: 16ms -->
+          <step title="Creating app_offline.htm" date="2025-12-17T21:57:07.322" >
+          <step title="Error: Failed to change file that is currently being used &quot;C:\home\site\wwwroot\logs\app-20251217.log&quot;" date="2025-12-17T21:57:07.322" /><!-- duration: 16ms -->
+>
+          <step title="KuduSync.NET from: &apos;C:\local\Temp\zipdeploy\extracted&apos; to: &apos;C:\home\site\wwwroot&apos;" date="2025-12-17T21:57:07.338" /><!-- duration: 16ms -->
+          <step title="Deleting file: &apos;logs\app-20251217.log&apos;" date="2025-12-17T21:57:07.353" /><!-- duration: 16ms -->
+          <step title="Failed exitCode=1, command=&quot;kudusync&quot; -v 50 -x -f &quot;C:\local\Temp\zipdeploy\extracted&quot; -t &quot;C:\home\site\wwwroot&quot; -n &quot;C:\local\Temp\tmpF14D.tmp&quot; -p &quot;C:\local\Temp\tmpF14D.tmp&quot; -i &quot;.git;.hg;.deployment;deploy.cmd&quot;" date="2025-12-17T21:57:07.369" /><!-- duration: 0ms -->
+          <step title="An error has occurred during web site deployment." date="2025-12-17T21:57:07.385" /><!-- duration: 0ms -->
+          <step title="Process dump" date="2025-12-17T21:57:07.385" exitCode="255" type="processOutput" /><!-- duration: 16ms -->
+        </step><!-- duration: 2766ms -->
+        <step title="Error: Failed to change file that is currently being used &quot;C:\home\site\wwwroot\logs\app-20251217.log&quot;
+C:\Program Files (x86)\SiteExtensions\Kudu\2025.11.1.1\bin\Scripts\starter.cmd &quot;C:\home\site\deployments\tools\deploy.cmd&quot; DEPLOYMENTINFO: deploymentPath = OneDeploy, deployer = OneDeploy, os = windows, sku = Free, siteName = smartstudy-api, siteHostName = smartstudy-api-athtbtapcvdjesbe.centralindia-01.azurewebsites.net, deploymentStatus = Error" date="2025-12-17T21:57:07.400" /><!-- duration: 16ms -->
+        <step title="Error occurred" date="2025-12-17T21:57:07.416" type="error" text="Error: Failed to change file that is currently being used &quot;C:\home\site\wwwroot\logs\app-20251217.log&quot;
+C:\Program Files (x86)\SiteExtensions\Kudu\2025.11.1.1\bin\Scripts\starter.cmd &quot;C:\home\site\deployments\tools\deploy.cmd&quot;" stackTrace="   at Kudu.Core.Infrastructure.Executable.ExecuteInternal(ITracer tracer, Func`2 onWriteOutput, Func`2 onWriteError, Encoding encoding, String arguments, Object[] args)
+   at Kudu.Core.Infrastructure.Executable.ExecuteWithProgressWriter(ILogger logger, ITracer tracer, String arguments, Object[] args)
+   at Kudu.Core.Deployment.Generator.ExternalCommandBuilder.RunCommand(DeploymentContext context, String command, Boolean ignoreManifest, String message)" /><!-- duration: 0ms -->
+        <step title="Build completed succesfully." date="2025-12-17T21:57:07.463" /><!-- duration: 0ms -->
+        <step title="Running post deployment command(s)..." date="2025-12-17T21:57:07.510" /><!-- duration: 0ms -->
+        <step title="Requesting site restart" date="2025-12-17T21:57:07.556" /><!-- duration: 0ms -->
+        <step title="Requesting site restart" date="2025-12-17T21:57:07.572" /><!-- duration: 0ms -->
+        <step title="Requesting site restart. Attempt #1" date="2025-12-17T21:57:07.603" /><!-- duration: 16ms -->
+        <step title="Requesting site restart. Attempt #1" date="2025-12-17T21:57:07.619" /><!-- duration: 0ms -->
+        <step title="Successfully requested a restart. Attempt #1" date="2025-12-17T21:57:07.947" /><!-- duration: 0ms -->
+        <step title="Successfully requested a restart. Attempt #1" date="2025-12-17T21:57:07.947" /><!-- duration: 0ms -->
+        <step title="Deployment successful. DEPLOYMENTINFO: deploymentPath = OneDeploy, deployer = OneDeploy, os = windows, sku = Free, siteName = smartstudy-api, siteHostName = smartstudy-api-athtbtapcvdjesbe.centralindia-01.azurewebsites.net, deploymentStatus = Success" date="2025-12-17T21:57:07.994" /><!-- duration: 0ms -->
+        <step title="Purge deployment items" date="2025-12-17T21:57:08.072" >
+          <step title="Remove 51606648a, Success, received at 12/15/2025 7:36:31 AM" date="2025-12-17T21:57:08.135" /><!-- duration: 0ms -->
+        </step><!-- duration: 63ms -->
+      </step><!-- duration: 3813ms -->
+    </step><!-- duration: 4031ms -->
+    <step title="Cleaning up temp files" date="2025-12-17T21:57:08.182" /><!-- duration: 0ms -->
+    <step title="Skip function trigger and logicapp sync because function is not enabled." date="2025-12-17T21:57:08.182" /><!-- duration: 16ms -->
+  </step><!-- duration: 4875ms -->
+  <step title="LockFile &apos;C:\home\site\locks\deployments.lock&apos; released" date="2025-12-17T21:57:08.291" /><!-- duration: 0ms -->
+  <step title="Deleting shutdown sentinel file" date="2025-12-17T21:57:08.307" SemaphoreCount="8" /><!-- duration: 0ms -->
+</step><!-- duration: 4985ms -->

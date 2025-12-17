@@ -1,0 +1,116 @@
+<step title="BackgroundTrace" date="2025-12-14T13:37:12.885" instance="22a7da" url="/api/publish" method="POST" >
+  <step title="Updating shutdown sentinel last write time" date="2025-12-14T13:37:12.901" SemaphoreCount="7" /><!-- duration: 0ms -->
+  <step title="LockFile &apos;C:\home\site\locks\deployments.lock&apos; acquired" date="2025-12-14T13:37:12.901" /><!-- duration: 17ms -->
+  <step title="Creating temporary deployment" date="2025-12-14T13:37:12.917" /><!-- duration: 47ms -->
+  <step title="Performing fetch based deployment" date="2025-12-14T13:37:12.964" >
+    <step title="Fetching changes." date="2025-12-14T13:37:13.026" /><!-- duration: 16ms -->
+    <step title="Starting LocalZipHandler" date="2025-12-14T13:37:13.042" /><!-- duration: 16ms -->
+    <step title="Cleaning up temp folders from previous zip deployments and extracting pushed zip file C:\local\Temp\zipdeploy\3wgbn0gp.zip (13.16 MB) to C:\local\Temp\zipdeploy\extracted" date="2025-12-14T13:37:13.073" /><!-- duration: 16ms -->
+    <step title="Cleaning up temp folders from previous zip deployments and extracting pushed zip file C:\local\Temp\zipdeploy\3wgbn0gp.zip (13.16 MB) to C:\local\Temp\zipdeploy\extracted" date="2025-12-14T13:37:13.089" >
+      <step title="Renaming extractTargetDirectory(C:\local\Temp\zipdeploy\extracted) to tempDirectory(C:\local\Temp\zipdeploy\dztwvbfj.raj)" date="2025-12-14T13:37:13.089" /><!-- duration: 0ms -->
+      <step title="Extracting 115 entries to C:\local\Temp\zipdeploy\extracted directory" date="2025-12-14T13:37:13.120" >
+        <step title="Extracting to C:\local\Temp\zipdeploy\extracted\appsettings.json ..." date="2025-12-14T13:37:13.120" /><!-- duration: 16ms -->
+        <step title="Extracting to C:\local\Temp\zipdeploy\extracted\appsettings.template.json ..." date="2025-12-14T13:37:13.136" /><!-- duration: 16ms -->
+        <step title="Extracting to C:\local\Temp\zipdeploy\extracted\Azure.Core.dll ..." date="2025-12-14T13:37:13.151" /><!-- duration: 0ms -->
+        <step title="Extracting to C:\local\Temp\zipdeploy\extracted\Azure.Identity.dll ..." date="2025-12-14T13:37:13.167" /><!-- duration: 0ms -->
+        <step title="Extracting to C:\local\Temp\zipdeploy\extracted\Azure.Storage.Blobs.dll ..." date="2025-12-14T13:37:13.167" /><!-- duration: 31ms -->
+        <step title="Omitting extracting file traces ..." date="2025-12-14T13:37:13.198" /><!-- duration: 16ms -->
+      </step><!-- duration: 531ms -->
+    </step><!-- duration: 578ms -->
+    <step title="Before sending BuildRequestReceived status to /api/updatedeploystatus" date="2025-12-14T13:37:13.667" /><!-- duration: 16ms -->
+    <step title="DeploymentManager.Deploy(id:56a482a3a1384fe6b30ff5e1c59299f5)" date="2025-12-14T13:37:13.683" >
+      <step title="Collecting changeset information" date="2025-12-14T13:37:13.683" /><!-- duration: 31ms -->
+      <step title="Updating submodules" date="2025-12-14T13:37:13.730" >
+        <step title="Updating submodules." date="2025-12-14T13:37:13.761" /><!-- duration: 0ms -->
+      </step><!-- duration: 47ms -->
+      <step title="Preparing deployment for commit id &apos;56a482a3a1&apos;." date="2025-12-14T13:37:13.823" /><!-- duration: 0ms -->
+      <step title="Determining deployment builder" date="2025-12-14T13:37:13.855" >
+        <step title="Builder is OneDeployBuilder" date="2025-12-14T13:37:13.855" /><!-- duration: 0ms -->
+      </step><!-- duration: 16ms -->
+      <step title="Copying SSH keys" date="2025-12-14T13:37:13.901" /><!-- duration: 0ms -->
+      <step title="Building" date="2025-12-14T13:37:13.901" >
+        <step title="Running build. Project type: OneDeploy" date="2025-12-14T13:37:13.933" /><!-- duration: 16ms -->
+        <step title="Copying the manifest" date="2025-12-14T13:37:14.011" /><!-- duration: 0ms -->
+        <step title="Clean deploying to C:\home\site\wwwroot" date="2025-12-14T13:37:14.058" /><!-- duration: 16ms -->
+        <step title="Generating deployment script." date="2025-12-14T13:37:14.105" /><!-- duration: 0ms -->
+        <step title="Generating deployment script" date="2025-12-14T13:37:14.120" >
+          <step title="Using cached version of the deployment script for command: -y --no-dot-deployment -r &quot;C:\local\Temp\zipdeploy\extracted&quot; -o &quot;C:\home\site\deployments\tools&quot; --basic --sitePath &quot;C:\local\Temp\zipdeploy\extracted&quot;" date="2025-12-14T13:37:14.136" /><!-- duration: 0ms -->
+          <step title="Using cached version of deployment script (command: &apos;azure -y --no-dot-deployment -r &quot;C:\local\Temp\zipdeploy\extracted&quot; -o &quot;C:\home\site\deployments\tools&quot; --basic --sitePath &quot;C:\local\Temp\zipdeploy\extracted&quot;&apos;)." date="2025-12-14T13:37:14.151" /><!-- duration: 0ms -->
+        </step><!-- duration: 47ms -->
+        <step title="Running deployment command..." date="2025-12-14T13:37:14.198" /><!-- duration: 0ms -->
+        <step title="Command: &quot;C:\home\site\deployments\tools\deploy.cmd&quot;" date="2025-12-14T13:37:14.214" /><!-- duration: 0ms -->
+        <step title="Executing external process" date="2025-12-14T13:37:14.214" type="process" path="starter.cmd" arguments="&quot;C:\home\site\deployments\tools\deploy.cmd&quot;" >
+          <step title="Handling Basic Web Site deployment." date="2025-12-14T13:37:14.370" /><!-- duration: 0ms -->
+          <step title="Creating app_offline.htm" date="2025-12-14T13:37:14.917" /><!-- duration: 0ms -->
+          <step title="KuduSync.NET from: &apos;C:\local\Temp\zipdeploy\extracted&apos; to: &apos;C:\home\site\wwwroot&apos;" date="2025-12-14T13:37:14.933" /><!-- duration: 0ms -->
+          <step title="Deleting file: &apos;logs\app-20251214.log&apos;" date="2025-12-14T13:37:14.948" /><!-- duration: 0ms -->
+          <step title="Deleting file: &apos;logs\stdout_20251214125746_4148.log&apos;" date="2025-12-14T13:37:14.964" /><!-- duration: 0ms -->
+          <step title="Deleting file: &apos;logs\stdout_20251214131602_8764.log&apos;" date="2025-12-14T13:37:14.964" /><!-- duration: 16ms -->
+          <step title="Deleting directory: &apos;logs&apos;" date="2025-12-14T13:37:14.980" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;appsettings.json&apos;" date="2025-12-14T13:37:14.995" /><!-- duration: 16ms -->
+          <step title="Copying file: &apos;appsettings.template.json&apos;" date="2025-12-14T13:37:15.011" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Azure.Core.dll&apos;" date="2025-12-14T13:37:15.026" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Azure.Identity.dll&apos;" date="2025-12-14T13:37:15.042" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Azure.Storage.Blobs.dll&apos;" date="2025-12-14T13:37:15.042" /><!-- duration: 16ms -->
+          <step title="Copying file: &apos;Azure.Storage.Common.dll&apos;" date="2025-12-14T13:37:15.058" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Azure.Storage.Queues.dll&apos;" date="2025-12-14T13:37:15.073" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Google.Api.CommonProtos.dll&apos;" date="2025-12-14T13:37:15.089" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Google.Api.Gax.dll&apos;" date="2025-12-14T13:37:15.105" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Google.Api.Gax.Grpc.dll&apos;" date="2025-12-14T13:37:15.105" /><!-- duration: 16ms -->
+          <step title="Copying file: &apos;Google.Apis.Auth.dll&apos;" date="2025-12-14T13:37:15.120" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Google.Apis.Core.dll&apos;" date="2025-12-14T13:37:15.136" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Google.Apis.dll&apos;" date="2025-12-14T13:37:15.151" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Google.Cloud.Vision.V1.dll&apos;" date="2025-12-14T13:37:15.167" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Google.LongRunning.dll&apos;" date="2025-12-14T13:37:15.167" /><!-- duration: 16ms -->
+          <step title="Copying file: &apos;Google.Protobuf.dll&apos;" date="2025-12-14T13:37:15.183" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Grpc.Auth.dll&apos;" date="2025-12-14T13:37:15.198" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Grpc.Core.Api.dll&apos;" date="2025-12-14T13:37:15.214" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Grpc.Net.Client.dll&apos;" date="2025-12-14T13:37:15.230" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Grpc.Net.Common.dll&apos;" date="2025-12-14T13:37:15.230" /><!-- duration: 16ms -->
+          <step title="Copying file: &apos;Microsoft.AspNetCore.Authentication.JwtBearer.dll&apos;" date="2025-12-14T13:37:15.245" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Microsoft.AspNetCore.OpenApi.dll&apos;" date="2025-12-14T13:37:15.261" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Microsoft.Bcl.AsyncInterfaces.dll&apos;" date="2025-12-14T13:37:15.276" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Microsoft.Data.SqlClient.dll&apos;" date="2025-12-14T13:37:15.292" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Microsoft.EntityFrameworkCore.Abstractions.dll&apos;" date="2025-12-14T13:37:15.308" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Microsoft.EntityFrameworkCore.dll&apos;" date="2025-12-14T13:37:15.308" /><!-- duration: 16ms -->
+          <step title="Copying file: &apos;Microsoft.EntityFrameworkCore.InMemory.dll&apos;" date="2025-12-14T13:37:15.323" /><!-- duration: 31ms -->
+          <step title="Copying file: &apos;Microsoft.EntityFrameworkCore.Relational.dll&apos;" date="2025-12-14T13:37:15.355" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Microsoft.EntityFrameworkCore.SqlServer.dll&apos;" date="2025-12-14T13:37:15.370" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Microsoft.Extensions.Caching.Memory.dll&apos;" date="2025-12-14T13:37:15.386" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Microsoft.Extensions.DependencyInjection.Abstractions.dll&apos;" date="2025-12-14T13:37:15.386" /><!-- duration: 16ms -->
+          <step title="Copying file: &apos;Microsoft.Extensions.DependencyInjection.dll&apos;" date="2025-12-14T13:37:15.401" /><!-- duration: 16ms -->
+          <step title="Copying file: &apos;Microsoft.Extensions.DependencyModel.dll&apos;" date="2025-12-14T13:37:15.448" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Microsoft.Extensions.Logging.Abstractions.dll&apos;" date="2025-12-14T13:37:15.448" /><!-- duration: 16ms -->
+          <step title="Copying file: &apos;Microsoft.Extensions.Logging.dll&apos;" date="2025-12-14T13:37:15.464" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Microsoft.Extensions.Options.dll&apos;" date="2025-12-14T13:37:15.480" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Microsoft.Identity.Client.dll&apos;" date="2025-12-14T13:37:15.495" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Microsoft.Identity.Client.Extensions.Msal.dll&apos;" date="2025-12-14T13:37:15.495" /><!-- duration: 16ms -->
+          <step title="Copying file: &apos;Microsoft.IdentityModel.Abstractions.dll&apos;" date="2025-12-14T13:37:15.511" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Microsoft.IdentityModel.JsonWebTokens.dll&apos;" date="2025-12-14T13:37:15.526" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Microsoft.IdentityModel.Logging.dll&apos;" date="2025-12-14T13:37:15.542" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Microsoft.IdentityModel.Protocols.dll&apos;" date="2025-12-14T13:37:15.558" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Microsoft.IdentityModel.Protocols.OpenIdConnect.dll&apos;" date="2025-12-14T13:37:15.573" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;Microsoft.IdentityModel.Tokens.dll&apos;" date="2025-12-14T13:37:15.573" /><!-- duration: 16ms -->
+          <step title="Omitting next output lines..." date="2025-12-14T13:37:15.589" /><!-- duration: 0ms -->
+          <step title="Finished successfully." date="2025-12-14T13:37:18.245" /><!-- duration: 0ms -->
+        </step><!-- duration: 4031ms -->
+        <step title="Build completed succesfully." date="2025-12-14T13:37:18.277" /><!-- duration: 0ms -->
+        <step title="Running post deployment command(s)..." date="2025-12-14T13:37:18.323" /><!-- duration: 16ms -->
+        <step title="Requesting site restart" date="2025-12-14T13:37:18.370" /><!-- duration: 16ms -->
+        <step title="Requesting site restart" date="2025-12-14T13:37:18.386" /><!-- duration: 0ms -->
+        <step title="Requesting site restart. Attempt #1" date="2025-12-14T13:37:18.417" /><!-- duration: 16ms -->
+        <step title="Requesting site restart. Attempt #1" date="2025-12-14T13:37:18.433" /><!-- duration: 0ms -->
+        <step title="Successfully requested a restart. Attempt #1" date="2025-12-14T13:37:18.636" /><!-- duration: 0ms -->
+        <step title="Successfully requested a restart. Attempt #1" date="2025-12-14T13:37:18.636" /><!-- duration: 16ms -->
+        <step title="Deployment successful. DEPLOYMENTINFO: deploymentPath = OneDeploy, deployer = OneDeploy, os = windows, sku = Free, siteName = smartstudy-api, siteHostName = smartstudy-api-athtbtapcvdjesbe.centralindia-01.azurewebsites.net, deploymentStatus = Success" date="2025-12-14T13:37:18.683" /><!-- duration: 0ms -->
+        <step title="Purge deployment items" date="2025-12-14T13:37:18.761" >
+          <step title="Remove c3b4d7000, Success, received at 12/13/2025 8:08:54 PM" date="2025-12-14T13:37:18.808" /><!-- duration: 0ms -->
+        </step><!-- duration: 63ms -->
+      </step><!-- duration: 4938ms -->
+    </step><!-- duration: 5156ms -->
+    <step title="Cleaning up temp files" date="2025-12-14T13:37:18.855" /><!-- duration: 0ms -->
+    <step title="Skip function trigger and logicapp sync because function is not enabled." date="2025-12-14T13:37:18.855" /><!-- duration: 16ms -->
+  </step><!-- duration: 5938ms -->
+  <step title="LockFile &apos;C:\home\site\locks\deployments.lock&apos; released" date="2025-12-14T13:37:18.902" /><!-- duration: 16ms -->
+  <step title="Deleting shutdown sentinel file" date="2025-12-14T13:37:18.917" SemaphoreCount="8" /><!-- duration: 0ms -->
+</step><!-- duration: 6048ms -->

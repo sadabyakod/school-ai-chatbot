@@ -157,17 +157,16 @@ namespace SchoolAiChatbotBackend.Services
         /// Specifically designed for Karnataka 2nd PUC style exam generation
         /// </summary>
         /// <param name="prompt">The exam generation prompt</param>
-        /// <param name="fastMode">If true, uses GPT-3.5-turbo for faster generation (~15-30s vs ~60-90s)</param>
+        /// <param name="fastMode">If true, uses the configured deployment with reduced tokens for faster generation</param>
         public async Task<string> GetExamGenerationAsync(string prompt, bool fastMode = true)
         {
             try
             {
-                // Use faster model in fast mode
-                var modelToUse = fastMode ? "gpt-35-turbo" : _chatDeployment; // Azure uses gpt-35-turbo
-                var standardModelToUse = fastMode ? "gpt-3.5-turbo" : "gpt-4"; // Standard OpenAI naming
+                // Always use the configured deployment (gpt-4o-mini is already fast)
+                var modelToUse = _chatDeployment; 
                 
                 _logger.LogInformation("Generating exam with model: {Model} (FastMode: {FastMode})", 
-                    _useAzureOpenAI ? modelToUse : standardModelToUse, fastMode);
+                    modelToUse, fastMode);
                 
                 var requestBody = new
                 {
@@ -184,9 +183,8 @@ namespace SchoolAiChatbotBackend.Services
                 string url;
                 if (_useAzureOpenAI)
                 {
-                    // Try fast model first, fall back to default if not available
-                    var deployment = fastMode ? "gpt-35-turbo" : _chatDeployment;
-                    url = $"{_endpoint}/openai/deployments/{deployment}/chat/completions?api-version=2024-08-01-preview";
+                    // Use the configured deployment
+                    url = $"{_endpoint}/openai/deployments/{_chatDeployment}/chat/completions?api-version=2024-08-01-preview";
                 }
                 else
                 {
