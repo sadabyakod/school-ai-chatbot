@@ -68,6 +68,11 @@ namespace SchoolAiChatbotBackend.Services
         /// Moves file to Archive tier (cold storage)
         /// </summary>
         Task<bool> ArchiveFileAsync(string filePath);
+
+        /// <summary>
+        /// Reads JSON content from blob storage (for evaluation results)
+        /// </summary>
+        Task<string?> ReadJsonFromBlobAsync(string blobPath, string containerName = "evaluation-results");
     }
 
     public class LocalFileStorageService : IFileStorageService
@@ -168,6 +173,19 @@ namespace SchoolAiChatbotBackend.Services
             _logger.LogWarning("Archive not supported for local storage: {FilePath}", filePath);
             return Task.FromResult(false);
         }
+
+        public Task<string?> ReadJsonFromBlobAsync(string blobPath, string containerName = "evaluation-results")
+        {
+            // For local storage, try to read from local uploads directory
+            var localPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads", containerName, blobPath);
+            if (File.Exists(localPath))
+            {
+                var content = File.ReadAllText(localPath);
+                return Task.FromResult<string?>(content);
+            }
+            _logger.LogWarning("Local file not found: {Path}", localPath);
+            return Task.FromResult<string?>(null);
+        }
     }
 
     /// <summary>
@@ -190,7 +208,8 @@ namespace SchoolAiChatbotBackend.Services
         {
             _blobServiceClient = new BlobServiceClient(connectionString);
             _containerName = containerName;
-            _answerSheetsContainer = answerSheetsContainer ?? containerName;
+            // Always use students-answer-sheets for answer uploads, never fall back to textbooks
+            _answerSheetsContainer = answerSheetsContainer ?? "students-answer-sheets";
             _options = options;
             _logger = logger;
 
@@ -258,8 +277,10 @@ namespace SchoolAiChatbotBackend.Services
                 file.Length,
                 _options.RetentionDays);
 
-            // Return blob URL
-            return blobClient.Uri.ToString();
+            // Return relative blob path (container/blobName) instead of full URL
+            // This allows Azure Function to easily parse and use it
+            // Format: students-answer-sheets/{examId}/{studentId}/{filename}
+            return $"{_answerSheetsContainer}/{blobName}";
         }
 
         public async Task<bool> DeleteFileAsync(string blobUrl)
@@ -442,6 +463,37 @@ namespace SchoolAiChatbotBackend.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during blob cleanup");
+            }
+        }
+
+        /// <summary>
+        /// Reads JSON content from blob storage (for evaluation results)
+        /// </summary>
+        public async Task<string?> ReadJsonFromBlobAsync(string blobPath, string containerName = "evaluation-results")
+        {
+            try
+            {
+                _logger.LogInformation("Reading JSON from blob: Container={Container}, Path={Path}", containerName, blobPath);
+
+                var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
+                var blobClient = containerClient.GetBlobClient(blobPath);
+
+                if (!await blobClient.ExistsAsync())
+                {
+                    _logger.LogWarning("Blob not found: Container={Container}, Path={Path}", containerName, blobPath);
+                    return null;
+                }
+
+                var response = await blobClient.DownloadContentAsync();
+                var content = response.Value.Content.ToString();
+
+                _logger.LogInformation("Successfully read JSON from blob ({Length} chars): {Path}", content?.Length ?? 0, blobPath);
+                return content;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reading JSON from blob: Container={Container}, Path={Path}", containerName, blobPath);
+                return null;
             }
         }
     }

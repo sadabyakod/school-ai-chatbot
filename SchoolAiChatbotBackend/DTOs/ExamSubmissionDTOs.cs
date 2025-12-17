@@ -76,27 +76,68 @@ namespace SchoolAiChatbotBackend.DTOs
 
     /// <summary>
     /// Response for submission status check
+    /// Status Flow: 0=Uploaded, 1=OCR Processing, 2=Evaluating, 3=Results Ready, 4=Error
     /// </summary>
     public class SubmissionStatusResponse
     {
         public string WrittenSubmissionId { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// Status code: 0=Uploaded, 1=OCR Processing, 2=Evaluating, 3=Results Ready, 4=Error
+        /// </summary>
         public string Status { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// User-friendly status message
+        /// </summary>
         public string StatusMessage { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// Suggested polling interval in seconds. 0 means stop polling (results ready or error).
+        /// </summary>
+        public int PollIntervalSeconds { get; set; }
+        
         public DateTime SubmittedAt { get; set; }
         public DateTime? EvaluatedAt { get; set; }
+        
+        /// <summary>
+        /// True when Status=3 (Results Ready) - stop polling and show results
+        /// </summary>
         public bool IsComplete { get; set; }
+        
+        /// <summary>
+        /// True when Status=4 (Error) - stop polling and show error
+        /// </summary>
+        public bool IsError { get; set; }
+        
+        /// <summary>
+        /// Error message when IsError=true
+        /// </summary>
+        public string? ErrorMessage { get; set; }
+        
         public string ExamId { get; set; } = string.Empty;
         public string StudentId { get; set; } = string.Empty;
 
         /// <summary>
-        /// Azure Blob Storage path to evaluation result JSON (populated when Status = 2/Completed)
+        /// Azure Blob Storage path to evaluation result JSON (populated when Status=3/Results Ready)
         /// </summary>
         public string? EvaluationResultBlobPath { get; set; }
 
+        // Summary scores (populated when Status=3/Results Ready)
+        /// <summary>Total score earned by student</summary>
+        public decimal? TotalScore { get; set; }
+        /// <summary>Maximum possible score for the exam</summary>
+        public decimal? MaxPossibleScore { get; set; }
+        /// <summary>Score percentage</summary>
+        public decimal? Percentage { get; set; }
+        /// <summary>Letter grade (A+, A, B+, B, C, D, E, F)</summary>
+        public string? Grade { get; set; }
+
         /// <summary>
-        /// Complete exam result (only populated when IsComplete = true)
+        /// Complete evaluation result from blob storage (only populated when IsComplete=true)
+        /// Contains per-question evaluations with step-wise marks, feedback, expected answers
         /// </summary>
-        public ConsolidatedExamResult? Result { get; set; }
+        public object? Result { get; set; }
     }
 
     /// <summary>

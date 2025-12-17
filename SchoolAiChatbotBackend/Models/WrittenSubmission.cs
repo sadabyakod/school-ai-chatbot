@@ -127,24 +127,33 @@ namespace SchoolAiChatbotBackend.Models
     public enum SubmissionStatus
     {
         /// <summary>Uploaded - Answer sheet received, awaiting OCR (Status = 0)</summary>
+        /// <summary>Status 0: Uploaded - Processing will start soon</summary>
         Uploaded = 0,
-        /// <summary>Alias for Uploaded - backward compatibility</summary>
+        /// <summary>Alias for Uploaded</summary>
         PendingEvaluation = 0,
-        /// <summary>OCR Complete - Text extraction done, awaiting evaluation (Status = 1)</summary>
-        OcrComplete = 1,
-        /// <summary>Alias for OcrComplete - backward compatibility</summary>
+        
+        /// <summary>Status 1: Reading your answer sheet (OCR in progress)</summary>
         OcrProcessing = 1,
-        /// <summary>Evaluating - AI evaluation in progress (Status = 1)</summary>
-        Evaluating = 1,
-        /// <summary>Evaluation Complete - AI scoring finished successfully (Status = 2)</summary>
+        /// <summary>Alias for OcrProcessing</summary>
+        OcrComplete = 1,
+        
+        /// <summary>Status 2: Evaluating your answers (AI evaluation in progress)</summary>
+        Evaluating = 2,
+        /// <summary>Alias for Evaluating</summary>
         EvaluationComplete = 2,
-        /// <summary>Alias for EvaluationComplete - backward compatibility</summary>
-        Completed = 2,
-        /// <summary>OCR Failed - Error during text extraction (Status = 3)</summary>
-        OcrFailed = 3,
-        /// <summary>Evaluation Failed - Error during AI evaluation (Status = 4)</summary>
-        EvaluationFailed = 4,
-        /// <summary>Alias for EvaluationFailed - backward compatibility</summary>
-        Failed = 4
+        
+        /// <summary>Status 3: Results Ready - Evaluation completed successfully</summary>
+        ResultsReady = 3,
+        /// <summary>Alias for ResultsReady</summary>
+        Completed = 3,
+        
+        /// <summary>Status 4: Error occurred during processing</summary>
+        Error = 4,
+        /// <summary>Alias for Error</summary>
+        Failed = 4,
+        /// <summary>Alias for Error (legacy)</summary>
+        OcrFailed = 4,
+        /// <summary>Alias for Error (legacy)</summary>
+        EvaluationFailed = 4
     }
 }

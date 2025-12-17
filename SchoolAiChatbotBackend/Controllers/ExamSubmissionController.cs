@@ -67,6 +67,23 @@ namespace SchoolAiChatbotBackend.Controllers
         {
             try
             {
+                // === REQUEST LOGGING ===
+                Console.WriteLine("\n" + new string('=', 80));
+                Console.WriteLine("📥 MCQ SUBMIT - REQUEST RECEIVED");
+                Console.WriteLine(new string('=', 80));
+                Console.WriteLine($"⏰ Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                Console.WriteLine($"📚 Exam ID: {request.ExamId}");
+                Console.WriteLine($"👤 Student ID: {request.StudentId}");
+                Console.WriteLine($"📝 Answers Count: {request.Answers?.Count ?? 0}");
+                if (request.Answers != null)
+                {
+                    foreach (var a in request.Answers.Take(5))
+                        Console.WriteLine($"   - Q:{a.QuestionId} → {a.SelectedOption}");
+                    if (request.Answers.Count > 5)
+                        Console.WriteLine($"   ... and {request.Answers.Count - 5} more");
+                }
+                Console.WriteLine(new string('-', 80));
+                
                 _logger.LogInformation(
                     "Received MCQ submission for exam {ExamId} from student {StudentId}",
                     request.ExamId,
@@ -155,6 +172,18 @@ namespace SchoolAiChatbotBackend.Controllers
                     totalMarks,
                     response.Percentage);
 
+                // === RESPONSE LOGGING ===
+                Console.WriteLine("📤 MCQ SUBMIT - RESPONSE");
+                Console.WriteLine(new string('-', 80));
+                Console.WriteLine($"✅ Submission ID: {response.McqSubmissionId}");
+                Console.WriteLine($"📊 Score: {response.Score}/{response.TotalMarks} ({response.Percentage}%)");
+                Console.WriteLine($"📝 Results:");
+                foreach (var r in response.Results.Take(5))
+                    Console.WriteLine($"   - Q:{r.QuestionId} Selected:{r.SelectedOption} Correct:{r.CorrectAnswer} {(r.IsCorrect ? "✅" : "❌")}");
+                if (response.Results.Count > 5)
+                    Console.WriteLine($"   ... and {response.Results.Count - 5} more");
+                Console.WriteLine(new string('=', 80) + "\n");
+
                 return Ok(response);
             }
             catch (Exception ex)
@@ -198,6 +227,27 @@ namespace SchoolAiChatbotBackend.Controllers
 
             try
             {
+                // === REQUEST LOGGING ===
+                Console.WriteLine("\n" + new string('=', 80));
+                Console.WriteLine("📥 UPLOAD WRITTEN - REQUEST RECEIVED");
+                Console.WriteLine(new string('=', 80));
+                Console.WriteLine($"⏰ Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                Console.WriteLine($"🔗 Correlation ID: {correlationId}");
+                Console.WriteLine($"📚 Exam ID: {examId ?? "null"}");
+                Console.WriteLine($"👤 Student ID: {studentId ?? "null"}");
+                Console.WriteLine($"📁 Files Count: {files?.Count ?? 0}");
+                if (files != null)
+                {
+                    long totalSize = 0;
+                    foreach (var f in files)
+                    {
+                        Console.WriteLine($"   - {f.FileName} ({f.Length / 1024.0:F1} KB) [{f.ContentType}]");
+                        totalSize += f.Length;
+                    }
+                    Console.WriteLine($"   Total Size: {totalSize / 1024.0:F1} KB");
+                }
+                Console.WriteLine(new string('-', 80));
+                
                 _logger.LogInformation(
                     "[UPLOAD_STARTED] Received {FileCount} files, total size {TotalSize} bytes",
                     files?.Count ?? 0,
@@ -331,6 +381,16 @@ namespace SchoolAiChatbotBackend.Controllers
                     submission.WrittenSubmissionId,
                     QueueNames.WrittenSubmissionProcessing);
 
+                // === RESPONSE LOGGING ===
+                Console.WriteLine("📤 UPLOAD WRITTEN - RESPONSE");
+                Console.WriteLine(new string('-', 80));
+                Console.WriteLine($"✅ Submission ID: {submission.WrittenSubmissionId}");
+                Console.WriteLine($"📊 Status: PendingEvaluation (0)");
+                Console.WriteLine($"📁 Files Saved: {files.Count}");
+                Console.WriteLine($"📨 Queued for processing: {QueueNames.WrittenSubmissionProcessing}");
+                Console.WriteLine($"💡 Next: Poll /api/exam/submission-status/{submission.WrittenSubmissionId}");
+                Console.WriteLine(new string('=', 80) + "\n");
+
                 // === RESPONSE ===
 
                 return Ok(new UploadWrittenResponse
@@ -363,6 +423,14 @@ namespace SchoolAiChatbotBackend.Controllers
         {
             try
             {
+                // === REQUEST LOGGING ===
+                Console.WriteLine("\n" + new string('=', 80));
+                Console.WriteLine("📥 SUBMISSION STATUS - REQUEST");
+                Console.WriteLine(new string('=', 80));
+                Console.WriteLine($"⏰ Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                Console.WriteLine($"📌 Submission ID: {writtenSubmissionId}");
+                Console.WriteLine(new string('-', 80));
+                
                 _logger.LogInformation("Checking status for submission {SubmissionId}", writtenSubmissionId);
 
                 var submission = await _examRepository.GetWrittenSubmissionAsync(writtenSubmissionId);
@@ -371,44 +439,156 @@ namespace SchoolAiChatbotBackend.Controllers
                     return NotFound(new { error = "Submission not found" });
                 }
 
-                // Map status to user-friendly message (Status: 0=Uploaded, 1=OCR Complete, 2=Evaluation Complete, 3=OCR Failed, 4=Evaluation Failed)
-                string statusMessage = submission.Status switch
+                // Status Flow: 0=Uploaded, 1=OCR Processing, 2=Evaluating, 3=Results Ready, 4=Error
+                // If EvaluationResultBlobPath is set, treat as completed regardless of status code
+                bool isResultsReady = !string.IsNullOrEmpty(submission.EvaluationResultBlobPath)
+                    || submission.Status == SubmissionStatus.ResultsReady 
+                    || submission.Status == SubmissionStatus.Completed;
+                
+                // Only treat as error if NOT results ready (blob path takes priority)
+                bool isError = !isResultsReady && (submission.Status == SubmissionStatus.Error 
+                    || submission.Status == SubmissionStatus.Failed);
+
+                // Map status to user-friendly message with polling hints
+                string statusMessage;
+                int pollIntervalSeconds;
+                
+                if (isResultsReady)
                 {
-                    SubmissionStatus.Uploaded => "⏳ Uploaded. Waiting for OCR to start...", // 0
-                    SubmissionStatus.OcrComplete => "📄 OCR Complete. AI evaluation starting...", // 1  
-                    SubmissionStatus.EvaluationComplete => "✅ Evaluation completed! Your results are ready.", // 2
-                    SubmissionStatus.OcrFailed => "❌ OCR Failed. Please try uploading clearer images.", // 3
-                    SubmissionStatus.EvaluationFailed => "❌ Evaluation failed. Please contact support.", // 4
-                    _ => "Unknown status"
-                };
+                    statusMessage = "✅ Results Ready!";
+                    pollIntervalSeconds = 0; // No more polling needed
+                }
+                else if (isError)
+                {
+                    statusMessage = "❌ Error occurred";
+                    pollIntervalSeconds = 0; // No more polling needed
+                }
+                else
+                {
+                    (statusMessage, pollIntervalSeconds) = submission.Status switch
+                    {
+                        SubmissionStatus.Uploaded => ("⏳ Uploaded - Processing will start soon", 5), // Poll in 5s
+                        SubmissionStatus.OcrProcessing => ("📄 Reading your answer sheet...", 3), // Poll in 3s
+                        SubmissionStatus.Evaluating => ("🤖 Evaluating your answers...", 5), // Poll in 5s
+                        _ => ("Processing...", 5)
+                    };
+                }
 
                 var response = new SubmissionStatusResponse
                 {
                     WrittenSubmissionId = writtenSubmissionId,
-                    Status = ((int)submission.Status).ToString(), // Return numeric status (0-4)
+                    // Return Status=3 (Results Ready) if blob path exists, regardless of DB status
+                    Status = isResultsReady ? "3" : ((int)submission.Status).ToString(),
                     StatusMessage = statusMessage,
+                    PollIntervalSeconds = pollIntervalSeconds,
                     SubmittedAt = submission.SubmittedAt,
                     EvaluatedAt = submission.EvaluatedAt,
-                    IsComplete = submission.Status == SubmissionStatus.EvaluationComplete, // Status 2
+                    IsComplete = isResultsReady,
+                    IsError = isError,
+                    ErrorMessage = isError ? submission.ErrorMessage : null,
                     ExamId = submission.ExamId,
                     StudentId = submission.StudentId,
-                    EvaluationResultBlobPath = submission.EvaluationResultBlobPath // From WrittenSubmissions.EvaluationResultBlobPath
+                    EvaluationResultBlobPath = isResultsReady ? submission.EvaluationResultBlobPath : null,
+                    // Summary scores - only include when results are ready
+                    TotalScore = isResultsReady ? submission.TotalScore : null,
+                    MaxPossibleScore = isResultsReady ? submission.MaxPossibleScore : null,
+                    Percentage = isResultsReady ? submission.Percentage : null,
+                    Grade = isResultsReady ? submission.Grade : null
                 };
 
-                // If evaluation is completed (Status = 2), include the full results
-                if (submission.Status == SubmissionStatus.EvaluationComplete)
+                // If results are ready (Status=3 or has blob path), read full results from blob storage
+                if (isResultsReady)
                 {
-                    try
+                    if (!string.IsNullOrEmpty(submission.EvaluationResultBlobPath))
                     {
-                        var examResult = await GetConsolidatedResultInternal(submission.ExamId, submission.StudentId);
-                        response.Result = examResult;
+                        try
+                        {
+                            // Remove container prefix from blob path if present (stored path may include it)
+                            var blobPath = submission.EvaluationResultBlobPath;
+                            const string containerPrefix = "evaluation-results/";
+                            if (blobPath.StartsWith(containerPrefix, StringComparison.OrdinalIgnoreCase))
+                            {
+                                blobPath = blobPath.Substring(containerPrefix.Length);
+                            }
+                            
+                            var blobJson = await _fileStorageService.ReadJsonFromBlobAsync(
+                                blobPath,
+                                "evaluation-results");
+                            
+                            if (!string.IsNullOrEmpty(blobJson))
+                            {
+                                // Parse blob JSON dynamically - the blob structure is the authoritative format
+                                using var jsonDoc = System.Text.Json.JsonDocument.Parse(blobJson);
+                                var root = jsonDoc.RootElement;
+                                
+                                // Try to get scores from blob if not in DB
+                                if (response.TotalScore == null || response.TotalScore == 0)
+                                {
+                                    if (root.TryGetProperty("totalScore", out var totalScoreProp))
+                                        response.TotalScore = totalScoreProp.GetDecimal();
+                                    if (root.TryGetProperty("maxPossibleScore", out var maxScoreProp))
+                                        response.MaxPossibleScore = maxScoreProp.GetDecimal();
+                                    if (root.TryGetProperty("percentage", out var pctProp))
+                                        response.Percentage = pctProp.GetDecimal();
+                                    if (root.TryGetProperty("grade", out var gradeProp))
+                                        response.Grade = gradeProp.GetString();
+                                }
+                                
+                                // Deserialize as object to return the full blob structure
+                                var jsonOptions = new System.Text.Json.JsonSerializerOptions 
+                                { 
+                                    PropertyNameCaseInsensitive = true 
+                                };
+                                response.Result = System.Text.Json.JsonSerializer.Deserialize<object>(blobJson, jsonOptions);
+                                
+                                // === CONSOLE LOG: STATUS ENDPOINT RETURNING RESULTS ===
+                                Console.WriteLine("\n" + new string('=', 80));
+                                Console.WriteLine("✅ STATUS ENDPOINT - RESULTS READY");
+                                Console.WriteLine(new string('=', 80));
+                                Console.WriteLine($"📌 Submission ID: {writtenSubmissionId}");
+                                Console.WriteLine($"📚 Exam ID: {submission.ExamId}");
+                                Console.WriteLine($"👤 Student ID: {submission.StudentId}");
+                                Console.WriteLine($"📊 Score: {response.TotalScore}/{response.MaxPossibleScore} ({response.Percentage:F2}%)");
+                                Console.WriteLine($"🎓 Grade: {response.Grade}");
+                                Console.WriteLine(new string('-', 80));
+                                Console.WriteLine("📄 BLOB JSON PREVIEW (first 500 chars):");
+                                Console.WriteLine(blobJson.Length > 500 ? blobJson.Substring(0, 500) + "..." : blobJson);
+                                Console.WriteLine(new string('=', 80) + "\n");
+                                
+                                _logger.LogInformation("Loaded evaluation results from blob storage for {SubmissionId}", writtenSubmissionId);
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Blob storage returned empty content for {SubmissionId}", writtenSubmissionId);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error reading evaluation results from blob for {SubmissionId}", writtenSubmissionId);
+                        }
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        _logger.LogError(ex, "Error fetching results for completed submission {SubmissionId}", writtenSubmissionId);
-                        // Continue without results - client can fetch separately
+                        _logger.LogWarning("EvaluationResultBlobPath is empty for completed submission {SubmissionId}", writtenSubmissionId);
                     }
                 }
+
+                // === RESPONSE LOGGING ===
+                Console.WriteLine("📤 SUBMISSION STATUS - RESPONSE");
+                Console.WriteLine(new string('-', 80));
+                Console.WriteLine($"📌 Submission ID: {response.WrittenSubmissionId}");
+                Console.WriteLine($"📊 Status: {response.Status} - {response.StatusMessage}");
+                Console.WriteLine($"✅ IsComplete: {response.IsComplete} | ❌ IsError: {response.IsError}");
+                Console.WriteLine($"⏱️ Poll Interval: {response.PollIntervalSeconds}s");
+                if (response.IsComplete)
+                {
+                    Console.WriteLine($"📈 Score: {response.TotalScore}/{response.MaxPossibleScore} ({response.Percentage:F2}%)");
+                    Console.WriteLine($"🎓 Grade: {response.Grade}");
+                    Console.WriteLine($"📁 Has Result Data: {response.Result != null}");
+                }
+                if (response.IsError)
+                    Console.WriteLine($"⚠️ Error: {response.ErrorMessage}");
+                Console.WriteLine(new string('=', 80) + "\n");
 
                 return Ok(response);
             }
@@ -442,6 +622,128 @@ namespace SchoolAiChatbotBackend.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching exam result");
+                return StatusCode(500, new { error = "Internal server error" });
+            }
+        }
+
+        /// <summary>
+        /// Get evaluation result from blob storage for a submission
+        /// This reads the complete evaluation JSON stored by the Azure Function
+        /// Status must be 3 (Results Ready) to return data
+        /// </summary>
+        /// <param name="writtenSubmissionId">Written submission ID</param>
+        /// <returns>Complete evaluation result JSON from blob storage</returns>
+        [HttpGet("evaluation-result/{writtenSubmissionId}")]
+        [ProducesResponseType(typeof(object), 200)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> GetEvaluationResultFromBlob(string writtenSubmissionId)
+        {
+            try
+            {
+                _logger.LogInformation("Fetching evaluation result from blob for submission {SubmissionId}", writtenSubmissionId);
+
+                // Get submission to find the blob path
+                var submission = await _examRepository.GetWrittenSubmissionAsync(writtenSubmissionId);
+                if (submission == null)
+                {
+                    return NotFound(new { error = "Submission not found" });
+                }
+
+                // Status 3 = Results Ready (or has blob path which means results are ready)
+                bool isResultsReady = submission.Status == SubmissionStatus.ResultsReady 
+                    || submission.Status == SubmissionStatus.Completed
+                    || !string.IsNullOrEmpty(submission.EvaluationResultBlobPath);
+
+                // Check if results are ready
+                if (!isResultsReady)
+                {
+                    return BadRequest(new { 
+                        error = "Results not ready", 
+                        status = (int)submission.Status,
+                        statusMessage = submission.Status switch
+                        {
+                            SubmissionStatus.Uploaded => "Uploaded - Processing will start soon",
+                            SubmissionStatus.OcrProcessing => "Reading your answer sheet...",
+                            SubmissionStatus.Evaluating => "Evaluating your answers...",
+                            SubmissionStatus.Error => "Error occurred",
+                            _ => "Processing..."
+                        }
+                    });
+                }
+
+                // Check if blob path exists
+                if (string.IsNullOrEmpty(submission.EvaluationResultBlobPath))
+                {
+                    return NotFound(new { error = "Evaluation result blob path not found" });
+                }
+
+                // Remove container prefix from blob path if present (stored path may include it)
+                var blobPath = submission.EvaluationResultBlobPath;
+                const string containerPrefix = "evaluation-results/";
+                if (blobPath.StartsWith(containerPrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    blobPath = blobPath.Substring(containerPrefix.Length);
+                }
+
+                // Read JSON from blob storage
+                var jsonContent = await _fileStorageService.ReadJsonFromBlobAsync(
+                    blobPath,
+                    "evaluation-results");
+
+                if (string.IsNullOrEmpty(jsonContent))
+                {
+                    return NotFound(new { error = "Evaluation result not found in blob storage" });
+                }
+
+                // Parse and return the JSON
+                var evaluationResult = System.Text.Json.JsonSerializer.Deserialize<object>(jsonContent);
+                
+                // === DETAILED CONSOLE LOGGING FOR EVALUATION RESULT ===
+                Console.WriteLine("\n" + new string('=', 80));
+                Console.WriteLine("📋 EVALUATION RESULT RETURNED");
+                Console.WriteLine(new string('=', 80));
+                Console.WriteLine($"📌 Submission ID: {writtenSubmissionId}");
+                Console.WriteLine($"📚 Exam ID: {submission.ExamId}");
+                Console.WriteLine($"👤 Student ID: {submission.StudentId}");
+                Console.WriteLine($"⏰ Evaluated At: {submission.EvaluatedAt}");
+                Console.WriteLine($"📁 Blob Path: {submission.EvaluationResultBlobPath}");
+                Console.WriteLine(new string('-', 80));
+                Console.WriteLine("📊 SCORE SUMMARY:");
+                Console.WriteLine($"   Total Score: {submission.TotalScore}/{submission.MaxPossibleScore}");
+                Console.WriteLine($"   Percentage: {submission.Percentage:F2}%");
+                Console.WriteLine($"   Grade: {submission.Grade}");
+                Console.WriteLine(new string('-', 80));
+                Console.WriteLine("📄 FULL EVALUATION JSON:");
+                Console.WriteLine(jsonContent);
+                Console.WriteLine(new string('=', 80) + "\n");
+                
+                _logger.LogInformation(
+                    "[EVALUATION_RESULT] Returned for SubmissionId={SubmissionId} ExamId={ExamId} StudentId={StudentId} Score={Score}/{Max} ({Pct}%)",
+                    writtenSubmissionId, submission.ExamId, submission.StudentId, 
+                    submission.TotalScore, submission.MaxPossibleScore, submission.Percentage);
+                
+                return Ok(new
+                {
+                    writtenSubmissionId = writtenSubmissionId,
+                    examId = submission.ExamId,
+                    studentId = submission.StudentId,
+                    evaluatedAt = submission.EvaluatedAt,
+                    blobPath = submission.EvaluationResultBlobPath,
+                    // Summary from WrittenSubmissions table
+                    summary = new
+                    {
+                        totalScore = submission.TotalScore,
+                        maxPossibleScore = submission.MaxPossibleScore,
+                        percentage = submission.Percentage,
+                        grade = submission.Grade
+                    },
+                    // Full evaluation result from blob
+                    evaluationResult = evaluationResult
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching evaluation result from blob for submission {SubmissionId}", writtenSubmissionId);
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }

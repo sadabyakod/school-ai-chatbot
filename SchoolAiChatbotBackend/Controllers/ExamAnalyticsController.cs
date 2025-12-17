@@ -533,14 +533,14 @@ namespace SchoolAiChatbotBackend.Controllers
 
         private SubmissionStatusType ConvertSubmissionStatus(Models.SubmissionStatus status)
         {
-            // Use numeric values to avoid duplicate enum case issues
+            // Status Flow: 0=Uploaded, 1=OCR Processing, 2=Evaluating, 3=Results Ready, 4=Error
             return (int)status switch
             {
-                0 => SubmissionStatusType.PendingEvaluation,  // Uploaded/PendingEvaluation
-                1 => SubmissionStatusType.Evaluating,         // OcrComplete/OcrProcessing/Evaluating
-                2 => SubmissionStatusType.Completed,          // EvaluationComplete/Completed
-                3 => SubmissionStatusType.Failed,             // OcrFailed
-                4 => SubmissionStatusType.Failed,             // EvaluationFailed/Failed
+                0 => SubmissionStatusType.PendingEvaluation,  // Uploaded - waiting for processing
+                1 => SubmissionStatusType.Evaluating,         // OCR Processing
+                2 => SubmissionStatusType.Evaluating,         // Evaluating answers
+                3 => SubmissionStatusType.Completed,          // Results Ready
+                4 => SubmissionStatusType.Failed,             // Error
                 _ => SubmissionStatusType.NotStarted
             };
         }

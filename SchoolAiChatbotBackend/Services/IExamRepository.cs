@@ -19,6 +19,17 @@ namespace SchoolAiChatbotBackend.Services
         Task<WrittenSubmission?> GetWrittenSubmissionByExamAndStudentAsync(string examId, string studentId);
         Task UpdateWrittenSubmissionStatusAsync(string writtenSubmissionId, SubmissionStatus status);
         Task UpdateWrittenSubmissionOcrTextAsync(string writtenSubmissionId, string ocrText);
+        
+        /// <summary>
+        /// Complete evaluation with final results - updates TotalScore, MaxPossibleScore, Percentage, Grade, 
+        /// EvaluationResultBlobPath and sets Status to EvaluationComplete (2)
+        /// </summary>
+        Task CompleteEvaluationWithResultsAsync(
+            string writtenSubmissionId, 
+            decimal totalScore, 
+            decimal maxPossibleScore, 
+            string evaluationResultBlobPath,
+            long? evaluationTimeMs = null);
 
         // Subjective Evaluations
         Task SaveSubjectiveEvaluationsAsync(string writtenSubmissionId, List<SubjectiveEvaluationResult> evaluations);

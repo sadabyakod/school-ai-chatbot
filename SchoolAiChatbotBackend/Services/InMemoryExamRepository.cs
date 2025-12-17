@@ -109,6 +109,55 @@ namespace SchoolAiChatbotBackend.Services
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// Complete evaluation with final results - updates TotalScore, MaxPossibleScore, Percentage, Grade,
+        /// EvaluationResultBlobPath and sets Status to EvaluationComplete (2)
+        /// </summary>
+        public Task CompleteEvaluationWithResultsAsync(
+            string writtenSubmissionId,
+            decimal totalScore,
+            decimal maxPossibleScore,
+            string evaluationResultBlobPath,
+            long? evaluationTimeMs = null)
+        {
+            if (_writtenSubmissions.TryGetValue(writtenSubmissionId, out var submission))
+            {
+                var percentage = maxPossibleScore > 0
+                    ? Math.Round((totalScore / maxPossibleScore) * 100, 2)
+                    : 0;
+                var grade = percentage switch
+                {
+                    >= 90 => "A+",
+                    >= 80 => "A",
+                    >= 70 => "B+",
+                    >= 60 => "B",
+                    >= 50 => "C",
+                    >= 40 => "D",
+                    >= 35 => "E",
+                    _ => "F"
+                };
+
+                submission.TotalScore = totalScore;
+                submission.MaxPossibleScore = maxPossibleScore;
+                submission.Percentage = percentage;
+                submission.Grade = grade;
+                submission.EvaluationResultBlobPath = evaluationResultBlobPath;
+                submission.Status = SubmissionStatus.EvaluationComplete;
+                submission.EvaluatedAt = DateTime.UtcNow;
+                submission.EvaluationProcessingTimeMs = evaluationTimeMs;
+
+                _logger.LogInformation(
+                    "Completed evaluation for submission {SubmissionId}: Score={Score}/{Max} ({Percentage}%) Grade={Grade}",
+                    writtenSubmissionId,
+                    totalScore,
+                    maxPossibleScore,
+                    percentage,
+                    grade);
+            }
+
+            return Task.CompletedTask;
+        }
+
         // Subjective Evaluations
         public Task SaveSubjectiveEvaluationsAsync(string writtenSubmissionId, List<SubjectiveEvaluationResult> evaluations)
         {

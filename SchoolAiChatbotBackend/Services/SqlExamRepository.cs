@@ -197,6 +197,74 @@ namespace SchoolAiChatbotBackend.Services
             }
         }
 
+        /// <summary>
+        /// Complete evaluation with final results - updates TotalScore, MaxPossibleScore, Percentage, Grade,
+        /// EvaluationResultBlobPath and sets Status to EvaluationComplete (2)
+        /// </summary>
+        public async Task CompleteEvaluationWithResultsAsync(
+            string writtenSubmissionId,
+            decimal totalScore,
+            decimal maxPossibleScore,
+            string evaluationResultBlobPath,
+            long? evaluationTimeMs = null)
+        {
+            if (!Guid.TryParse(writtenSubmissionId, out var guid))
+            {
+                _logger.LogWarning("[SQL] Invalid GUID format for completing evaluation: {SubmissionId}", writtenSubmissionId);
+                return;
+            }
+
+            var submission = await _dbContext.WrittenSubmissions.FindAsync(guid);
+            if (submission != null)
+            {
+                // Calculate percentage and grade
+                var percentage = maxPossibleScore > 0 
+                    ? Math.Round((totalScore / maxPossibleScore) * 100, 2) 
+                    : 0;
+                var grade = CalculateGrade((double)percentage);
+
+                // Update all evaluation result fields
+                submission.TotalScore = totalScore;
+                submission.MaxPossibleScore = maxPossibleScore;
+                submission.Percentage = percentage;
+                submission.Grade = grade;
+                submission.EvaluationResultBlobPath = evaluationResultBlobPath;
+                submission.Status = SubmissionStatus.EvaluationComplete; // Status = 2
+                submission.EvaluatedAt = DateTime.UtcNow;
+                submission.EvaluationProcessingTimeMs = evaluationTimeMs;
+
+                await _dbContext.SaveChangesAsync();
+
+                _logger.LogInformation(
+                    "[SQL] Completed evaluation for submission {SubmissionId}: Score={Score}/{Max} ({Percentage}%) Grade={Grade}, BlobPath={BlobPath}",
+                    writtenSubmissionId,
+                    totalScore,
+                    maxPossibleScore,
+                    percentage,
+                    grade,
+                    evaluationResultBlobPath);
+            }
+            else
+            {
+                _logger.LogWarning("[SQL] Submission not found for completing evaluation: {SubmissionId}", writtenSubmissionId);
+            }
+        }
+
+        private static string CalculateGrade(double percentage)
+        {
+            return percentage switch
+            {
+                >= 90 => "A+",
+                >= 80 => "A",
+                >= 70 => "B+",
+                >= 60 => "B",
+                >= 50 => "C",
+                >= 40 => "D",
+                >= 35 => "E",
+                _ => "F"
+            };
+        }
+
         public async Task<List<WrittenSubmission>> GetAllWrittenSubmissionsByExamAsync(string examId)
         {
             return await _dbContext.WrittenSubmissions

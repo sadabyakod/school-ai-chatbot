@@ -52,6 +52,15 @@ namespace SchoolAiChatbotBackend.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            // === REQUEST LOGGING ===
+            Console.WriteLine("\n" + new string('=', 80));
+            Console.WriteLine("📥 EXAM GENERATE - REQUEST RECEIVED");
+            Console.WriteLine(new string('=', 80));
+            Console.WriteLine($"⏰ Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            Console.WriteLine($"📚 Subject: {request.Subject}");
+            Console.WriteLine($"🎓 Grade: {request.Grade}");
+            Console.WriteLine(new string('-', 80));
+
             _logger.LogInformation(
                 "Generating Karnataka 2nd PUC exam: Subject={Subject}, Grade={Grade}",
                 request.Subject, request.Grade);
@@ -77,6 +86,23 @@ namespace SchoolAiChatbotBackend.Controllers
                 _logger.LogInformation(
                     "Exam generated successfully: ExamId={ExamId}, Questions={QuestionCount}, TotalMarks={TotalMarks}",
                     examPaper.ExamId, examPaper.Questions?.Count ?? 0, examPaper.TotalMarks);
+
+                // === RESPONSE LOGGING ===
+                Console.WriteLine("📤 EXAM GENERATE - RESPONSE");
+                Console.WriteLine(new string('-', 80));
+                Console.WriteLine($"✅ Exam ID: {examPaper.ExamId}");
+                Console.WriteLine($"📚 Subject: {examPaper.Subject}");
+                Console.WriteLine($"🎓 Grade: {examPaper.Grade}");
+                Console.WriteLine($"📝 Total Questions: {examPaper.QuestionCount}");
+                Console.WriteLine($"📊 Total Marks: {examPaper.TotalMarks}");
+                Console.WriteLine($"⏱️ Duration: {examPaper.Duration} mins");
+                if (examPaper.Parts != null)
+                {
+                    Console.WriteLine($"📋 Parts:");
+                    foreach (var part in examPaper.Parts)
+                        Console.WriteLine($"   - {part.PartName}: {part.TotalQuestions} questions ({part.MarksPerQuestion} marks each)");
+                }
+                Console.WriteLine(new string('=', 80) + "\n");
 
                 return Ok(examPaper);
             }
