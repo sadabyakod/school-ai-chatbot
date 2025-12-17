@@ -316,12 +316,12 @@ namespace SchoolAiChatbotBackend.Controllers
 
                 var queueMessage = new WrittenSubmissionQueueMessage
                 {
-                    WrittenSubmissionId = submission.WrittenSubmissionId,
+                    WrittenSubmissionId = Guid.Parse(submission.WrittenSubmissionId),
                     ExamId = examId,
                     StudentId = studentId,
                     FilePaths = filePaths,
                     SubmittedAt = DateTime.UtcNow,
-                    Priority = "normal",
+                    Priority = 1, // 1 = normal priority
                     RetryCount = 0
                 };
                 await _queueService.EnqueueAsync(QueueNames.WrittenSubmissionProcessing, queueMessage);
