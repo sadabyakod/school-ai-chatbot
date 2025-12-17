@@ -19,7 +19,7 @@ namespace SchoolAiChatbotBackend.Services
     public interface IOpenAIService
     {
         Task<string> GetChatCompletionAsync(string prompt, string language = "en");
-        Task<string> GetExamGenerationAsync(string prompt);
+        Task<string> GetExamGenerationAsync(string prompt, bool fastMode = true);
         Task<string> EvaluateAnswerAsync(string question, string correctAnswer, string studentAnswer, int maxMarks);
         Task<string> EvaluateAnswerFromImageAsync(string question, string correctAnswer, byte[] imageData, string mimeType, int maxMarks);
         Task<string> EvaluateSubjectiveAnswerAsync(string systemPrompt, string userPrompt);
@@ -156,10 +156,19 @@ namespace SchoolAiChatbotBackend.Services
         /// Get exam paper generation from OpenAI with higher token limit
         /// Specifically designed for Karnataka 2nd PUC style exam generation
         /// </summary>
-        public async Task<string> GetExamGenerationAsync(string prompt)
+        /// <param name="prompt">The exam generation prompt</param>
+        /// <param name="fastMode">If true, uses GPT-3.5-turbo for faster generation (~15-30s vs ~60-90s)</param>
+        public async Task<string> GetExamGenerationAsync(string prompt, bool fastMode = true)
         {
             try
             {
+                // Use faster model in fast mode
+                var modelToUse = fastMode ? "gpt-35-turbo" : _chatDeployment; // Azure uses gpt-35-turbo
+                var standardModelToUse = fastMode ? "gpt-3.5-turbo" : "gpt-4"; // Standard OpenAI naming
+                
+                _logger.LogInformation("Generating exam with model: {Model} (FastMode: {FastMode})", 
+                    _useAzureOpenAI ? modelToUse : standardModelToUse, fastMode);
+                
                 var requestBody = new
                 {
                     messages = new[]
@@ -167,7 +176,7 @@ namespace SchoolAiChatbotBackend.Services
                         new { role = "system", content = "You are an exam paper generator for Karnataka 2nd PUC board exams. You MUST output ONLY valid JSON with no additional text, comments, or markdown formatting. Respond with a single JSON object only." },
                         new { role = "user", content = prompt }
                     },
-                    max_tokens = 8000,
+                    max_tokens = fastMode ? 4000 : 8000, // Reduced tokens for faster response
                     temperature = 0.3,
                     response_format = new { type = "json_object" }
                 };
@@ -175,7 +184,9 @@ namespace SchoolAiChatbotBackend.Services
                 string url;
                 if (_useAzureOpenAI)
                 {
-                    url = $"{_endpoint}/openai/deployments/{_chatDeployment}/chat/completions?api-version=2024-08-01-preview";
+                    // Try fast model first, fall back to default if not available
+                    var deployment = fastMode ? "gpt-35-turbo" : _chatDeployment;
+                    url = $"{_endpoint}/openai/deployments/{deployment}/chat/completions?api-version=2024-08-01-preview";
                 }
                 else
                 {

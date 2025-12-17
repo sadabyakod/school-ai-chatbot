@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Caching.Memory;
 using SchoolAiChatbotBackend.Services;
 using SchoolAiChatbotBackend.DTOs;
 using System;
@@ -10,6 +11,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.ComponentModel.DataAnnotations;
 
 namespace SchoolAiChatbotBackend.Controllers
@@ -23,17 +25,26 @@ namespace SchoolAiChatbotBackend.Controllers
         private readonly IOpenAIService _openAIService;
         private readonly ISubjectiveRubricService _rubricService;
         private readonly IExamStorageService _examStorageService;
+        private readonly IMemoryCache _cache;
         private readonly ILogger<ExamGeneratorController> _logger;
+        
+        // Track generation progress for streaming
+        private static readonly ConcurrentDictionary<string, ExamGenerationProgress> _generationProgress = new();
+        
+        // Cache expiration (24 hours)
+        private static readonly TimeSpan CacheExpiration = TimeSpan.FromHours(24);
 
         public ExamGeneratorController(
             IOpenAIService openAIService,
             ISubjectiveRubricService rubricService,
             IExamStorageService examStorageService,
+            IMemoryCache cache,
             ILogger<ExamGeneratorController> logger)
         {
             _openAIService = openAIService;
             _rubricService = rubricService;
             _examStorageService = examStorageService;
+            _cache = cache;
             _logger = logger;
         }
 
@@ -59,19 +70,45 @@ namespace SchoolAiChatbotBackend.Controllers
             Console.WriteLine($"⏰ Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
             Console.WriteLine($"📚 Subject: {request.Subject}");
             Console.WriteLine($"🎓 Grade: {request.Grade}");
+            Console.WriteLine($"🔄 Use Cache: {request.UseCache} | Fast Mode: {request.FastMode}");
             Console.WriteLine(new string('-', 80));
 
             _logger.LogInformation(
-                "Generating Karnataka 2nd PUC exam: Subject={Subject}, Grade={Grade}",
-                request.Subject, request.Grade);
+                "Generating Karnataka 2nd PUC exam: Subject={Subject}, Grade={Grade}, UseCache={UseCache}, FastMode={FastMode}",
+                request.Subject, request.Grade, request.UseCache, request.FastMode);
 
             try
             {
+                // Check cache first if caching is enabled
+                var cacheKey = $"exam_{request.Subject}_{request.Grade}".ToLowerInvariant().Replace(" ", "_");
+                
+                if (request.UseCache && _cache.TryGetValue(cacheKey, out GeneratedExamResponse? cachedExam) && cachedExam != null)
+                {
+                    Console.WriteLine($"✅ CACHE HIT - Returning cached exam: {cachedExam.ExamId}");
+                    _logger.LogInformation("Cache hit for {CacheKey}, returning cached exam {ExamId}", cacheKey, cachedExam.ExamId);
+                    
+                    // Clone and update the exam ID to make it unique for this request
+                    var clonedExam = CloneExam(cachedExam);
+                    clonedExam.ExamId = $"{cachedExam.ExamId}_cached_{DateTime.UtcNow:HHmmss}";
+                    clonedExam.CreatedAt = DateTime.UtcNow.ToString("o");
+                    
+                    // Store the cloned exam
+                    _examStorageService.StoreExam(clonedExam);
+                    
+                    return Ok(new { 
+                        exam = clonedExam, 
+                        cached = true, 
+                        generationTime = "0s (cached)" 
+                    });
+                }
+                
+                var startTime = DateTime.UtcNow;
+                
                 // Build the AI prompt
                 var prompt = BuildExamGenerationPrompt(request);
 
-                // Call OpenAI to generate the exam with higher token limit
-                var aiResponse = await _openAIService.GetExamGenerationAsync(prompt);
+                // Call OpenAI to generate the exam (uses fast mode if enabled)
+                var aiResponse = await _openAIService.GetExamGenerationAsync(prompt, request.FastMode);
 
                 // Parse and validate the JSON response
                 var examPaper = ParseExamResponse(aiResponse, request);
@@ -104,7 +141,22 @@ namespace SchoolAiChatbotBackend.Controllers
                 }
                 Console.WriteLine(new string('=', 80) + "\n");
 
-                return Ok(examPaper);
+                // Cache the exam for future requests
+                var cacheOptions = new MemoryCacheEntryOptions()
+                    .SetAbsoluteExpiration(CacheExpiration)
+                    .SetSlidingExpiration(TimeSpan.FromHours(6));
+                _cache.Set(cacheKey, examPaper, cacheOptions);
+                _logger.LogInformation("Exam cached with key {CacheKey}", cacheKey);
+                
+                var generationTime = (DateTime.UtcNow - startTime).TotalSeconds;
+                Console.WriteLine($"⏱️ Total Generation Time: {generationTime:F1}s");
+
+                return Ok(new {
+                    exam = examPaper,
+                    cached = false,
+                    generationTime = $"{generationTime:F1}s",
+                    fastMode = request.FastMode
+                });
             }
             catch (JsonException ex)
             {
@@ -126,6 +178,167 @@ namespace SchoolAiChatbotBackend.Controllers
                     details = ex.Message
                 });
             }
+        }
+        
+        /// <summary>
+        /// Clone an exam for cache return
+        /// </summary>
+        private GeneratedExamResponse CloneExam(GeneratedExamResponse original)
+        {
+            var json = JsonSerializer.Serialize(original);
+            return JsonSerializer.Deserialize<GeneratedExamResponse>(json) ?? original;
+        }
+        
+        /// <summary>
+        /// Start async exam generation with progress tracking
+        /// POST /api/exam/generate-async
+        /// </summary>
+        /// <remarks>
+        /// Starts exam generation in background and returns a request ID.
+        /// Use GET /api/exam/generate-progress/{requestId} to track progress.
+        /// </remarks>
+        [HttpPost("generate-async")]
+        public IActionResult GenerateExamAsync([FromBody] GenerateExamRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+                
+            var requestId = Guid.NewGuid().ToString("N")[..12];
+            
+            // Check cache first
+            var cacheKey = $"exam_{request.Subject}_{request.Grade}".ToLowerInvariant().Replace(" ", "_");
+            
+            if (request.UseCache && _cache.TryGetValue(cacheKey, out GeneratedExamResponse? cachedExam) && cachedExam != null)
+            {
+                var clonedExam = CloneExam(cachedExam);
+                clonedExam.ExamId = $"{cachedExam.ExamId}_cached_{DateTime.UtcNow:HHmmss}";
+                _examStorageService.StoreExam(clonedExam);
+                
+                return Ok(new {
+                    requestId = requestId,
+                    status = "complete",
+                    cached = true,
+                    exam = clonedExam
+                });
+            }
+            
+            // Initialize progress tracking
+            var progress = new ExamGenerationProgress
+            {
+                RequestId = requestId,
+                Status = "generating",
+                ProgressPercent = 10,
+                Message = "Starting AI exam generation..."
+            };
+            _generationProgress[requestId] = progress;
+            
+            // Start background generation
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    progress.Status = "generating";
+                    progress.ProgressPercent = 20;
+                    progress.Message = $"Generating {request.Subject} exam using AI (Fast Mode: {request.FastMode})...";
+                    
+                    var prompt = BuildExamGenerationPrompt(request);
+                    var aiResponse = await _openAIService.GetExamGenerationAsync(prompt, request.FastMode);
+                    
+                    progress.ProgressPercent = 60;
+                    progress.Status = "parsing";
+                    progress.Message = "Parsing exam structure...";
+                    
+                    var examPaper = ParseExamResponse(aiResponse, request);
+                    
+                    progress.ProgressPercent = 80;
+                    progress.Status = "rubrics";
+                    progress.Message = "Generating marking rubrics...";
+                    
+                    await GenerateAndSaveRubricsAsync(examPaper);
+                    _examStorageService.StoreExam(examPaper);
+                    
+                    // Cache the exam
+                    var cacheOptions = new MemoryCacheEntryOptions()
+                        .SetAbsoluteExpiration(CacheExpiration)
+                        .SetSlidingExpiration(TimeSpan.FromHours(6));
+                    _cache.Set(cacheKey, examPaper, cacheOptions);
+                    
+                    progress.ProgressPercent = 100;
+                    progress.Status = "complete";
+                    progress.Message = "Exam generation complete!";
+                    progress.Result = examPaper;
+                }
+                catch (Exception ex)
+                {
+                    progress.Status = "error";
+                    progress.Error = ex.Message;
+                    progress.Message = "Failed to generate exam";
+                    _logger.LogError(ex, "Async exam generation failed for request {RequestId}", requestId);
+                }
+            });
+            
+            return Accepted(new {
+                requestId = requestId,
+                status = "generating",
+                progressUrl = $"/api/exam/generate-progress/{requestId}",
+                message = "Exam generation started. Poll progress URL for status.",
+                estimatedTime = request.FastMode ? "15-30 seconds" : "60-90 seconds"
+            });
+        }
+        
+        /// <summary>
+        /// Get exam generation progress
+        /// GET /api/exam/generate-progress/{requestId}
+        /// </summary>
+        [HttpGet("generate-progress/{requestId}")]
+        public IActionResult GetGenerationProgress(string requestId)
+        {
+            if (!_generationProgress.TryGetValue(requestId, out var progress))
+            {
+                return NotFound(new { error = "Request not found", requestId });
+            }
+            
+            var elapsedSeconds = (DateTime.UtcNow - progress.StartedAt).TotalSeconds;
+            
+            var response = new
+            {
+                requestId = progress.RequestId,
+                status = progress.Status,
+                progressPercent = progress.ProgressPercent,
+                message = progress.Message,
+                elapsedSeconds = Math.Round(elapsedSeconds, 1),
+                exam = progress.Result,
+                error = progress.Error
+            };
+            
+            // Cleanup completed/errored requests after returning
+            if (progress.Status == "complete" || progress.Status == "error")
+            {
+                _ = Task.Delay(TimeSpan.FromMinutes(5)).ContinueWith(_ => 
+                {
+                    _generationProgress.TryRemove(requestId, out ExamGenerationProgress? _);
+                });
+            }
+            
+            return Ok(response);
+        }
+        
+        /// <summary>
+        /// Clear exam cache (for testing)
+        /// DELETE /api/exam/cache
+        /// </summary>
+        [HttpDelete("cache")]
+        public IActionResult ClearCache([FromQuery] string? subject = null, [FromQuery] string? grade = null)
+        {
+            if (!string.IsNullOrEmpty(subject) && !string.IsNullOrEmpty(grade))
+            {
+                var cacheKey = $"exam_{subject}_{grade}".ToLowerInvariant().Replace(" ", "_");
+                _cache.Remove(cacheKey);
+                return Ok(new { message = $"Cache cleared for {subject} - {grade}", cacheKey });
+            }
+            
+            // Note: IMemoryCache doesn't have a clear all method, so we just return info
+            return Ok(new { message = "Specific cache entries must be cleared by subject/grade" });
         }
 
         /// <summary>
@@ -718,6 +931,31 @@ Generate the complete Karnataka 2nd PUC Mathematics Model Question Paper now:";
         /// </summary>
         [Required]
         public string Grade { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// Use cached exam if available (default: true for faster response)
+        /// </summary>
+        public bool UseCache { get; set; } = true;
+        
+        /// <summary>
+        /// Use faster GPT-3.5-turbo model (faster but may have slightly lower quality)
+        /// Default: true for faster generation (~15-30s vs ~60-90s)
+        /// </summary>
+        public bool FastMode { get; set; } = true;
+    }
+    
+    /// <summary>
+    /// Progress tracking for exam generation
+    /// </summary>
+    public class ExamGenerationProgress
+    {
+        public string RequestId { get; set; } = string.Empty;
+        public string Status { get; set; } = "pending"; // pending, generating, parsing, rubrics, complete, error
+        public int ProgressPercent { get; set; } = 0;
+        public string Message { get; set; } = string.Empty;
+        public DateTime StartedAt { get; set; } = DateTime.UtcNow;
+        public GeneratedExamResponse? Result { get; set; }
+        public string? Error { get; set; }
     }
 
     /// <summary>
