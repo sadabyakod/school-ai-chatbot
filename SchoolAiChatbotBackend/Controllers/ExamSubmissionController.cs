@@ -359,7 +359,8 @@ namespace SchoolAiChatbotBackend.Controllers
                     ExamId = examId,
                     StudentId = studentId,
                     FilePaths = filePaths,
-                    Status = SubmissionStatus.PendingEvaluation
+                    Status = SubmissionStatus.PendingEvaluation,
+                    SubmittedAt = DateTime.UtcNow
                 };
 
                 await _examRepository.SaveWrittenSubmissionAsync(submission);
