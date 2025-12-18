@@ -1191,9 +1191,9 @@ Therefore, the area is 78.5 cm²",
         public string? ExamType { get; set; }
         
         /// <summary>
-        /// Use cached exam if available (default: true for faster response)
+        /// Use cached exam if available (default: false to always generate fresh questions)
         /// </summary>
-        public bool UseCache { get; set; } = true;
+        public bool UseCache { get; set; } = false;
         
         /// <summary>
         /// Use faster model for generation (~15-30s vs ~60-90s)
