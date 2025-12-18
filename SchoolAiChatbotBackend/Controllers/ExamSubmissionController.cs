@@ -753,13 +753,27 @@ namespace SchoolAiChatbotBackend.Controllers
         /// </summary>
         private async Task<ConsolidatedExamResult> GetConsolidatedResultInternal(string examId, string studentId)
         {
-            _logger.LogInformation("Fetching result for exam {ExamId}, student {StudentId}", examId, studentId);
-
-            // Load exam from storage service
-            var exam = _examStorageService.GetExam(examId);
-            if (exam == null)
+            try
             {
-                throw new KeyNotFoundException($"Exam {examId} not found. Please generate the exam first using /api/exam/generate");
+                _logger.LogInformation("Fetching result for exam {ExamId}, student {StudentId}", examId, studentId);
+
+                // Load exam from storage service
+                var exam = _examStorageService.GetExam(examId);
+                if (exam == null)
+                {
+                    _logger.LogWarning("Exam {ExamId} not found in storage", examId);
+                    throw new KeyNotFoundException($"Exam {examId} not found. Please generate the exam first using /api/exam/generate");
+                }
+
+            _logger.LogInformation("Loaded exam {ExamId}: {Subject} - Parts count: {PartCount}", 
+                examId, exam.Subject, exam.Parts?.Count ?? 0);
+            if (exam.Parts != null)
+            {
+                foreach (var part in exam.Parts)
+                {
+                    _logger.LogInformation("  Part {PartName}: {QuestionCount} questions", 
+                        part.PartName, part.Questions?.Count ?? 0);
+                }
             }
 
             // Load MCQ submission (from direct MCQ submission)
@@ -860,37 +874,67 @@ namespace SchoolAiChatbotBackend.Controllers
                 McqResults = mcqResults,
                 SubjectiveScore = subjectiveScore,
                 SubjectiveTotalMarks = subjectiveTotalMarks,
-                SubjectiveResults = subjectiveEvaluations.Select(e => new SubjectiveResultDto
+                SubjectiveResults = subjectiveEvaluations.Select(e =>
                 {
-                    QuestionId = e.QuestionId,
-                    QuestionNumber = e.QuestionNumber,
-                    QuestionText = GetQuestionText(exam, e.QuestionId),
-                    EarnedMarks = e.EarnedMarks,
-                    MaxMarks = e.MaxMarks,
-                    IsFullyCorrect = e.IsFullyCorrect,
-                    ExpectedAnswer = e.ExpectedAnswer,
-                    StudentAnswerEcho = e.StudentAnswerEcho,
-                    StepAnalysis = e.StepAnalysis.Select(s => new StepAnalysisDto
+                    try
                     {
-                        Step = s.Step,
-                        Description = s.Description,
-                        IsCorrect = s.IsCorrect,
-                        MarksAwarded = s.MarksAwarded,
-                        MaxMarksForStep = s.MaxMarksForStep,
-                        Feedback = s.Feedback
-                    }).ToList(),
-                    OverallFeedback = e.OverallFeedback
+                        return new SubjectiveResultDto
+                        {
+                            QuestionId = e.QuestionId,
+                            QuestionNumber = e.QuestionNumber,
+                            QuestionText = GetQuestionText(exam, e.QuestionId) ?? string.Empty,
+                            EarnedMarks = e.EarnedMarks,
+                            MaxMarks = e.MaxMarks,
+                            IsFullyCorrect = e.IsFullyCorrect,
+                            ExpectedAnswer = e.ExpectedAnswer ?? string.Empty,
+                            StudentAnswerEcho = e.StudentAnswerEcho ?? string.Empty,
+                            StepAnalysis = e.StepAnalysis?.Select(s => new StepAnalysisDto
+                            {
+                                Step = s.Step,
+                                Description = s.Description ?? string.Empty,
+                                IsCorrect = s.IsCorrect,
+                                MarksAwarded = s.MarksAwarded,
+                                MaxMarksForStep = s.MaxMarksForStep,
+                                Feedback = s.Feedback ?? string.Empty
+                            }).ToList() ?? new List<StepAnalysisDto>(),
+                            OverallFeedback = e.OverallFeedback ?? string.Empty
+                        };
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error processing subjective result for question {QuestionId}", e.QuestionId);
+                        return new SubjectiveResultDto
+                        {
+                            QuestionId = e.QuestionId,
+                            QuestionNumber = e.QuestionNumber,
+                            QuestionText = "Error loading question",
+                            EarnedMarks = e.EarnedMarks,
+                            MaxMarks = e.MaxMarks,
+                            IsFullyCorrect = e.IsFullyCorrect,
+                            ExpectedAnswer = e.ExpectedAnswer ?? string.Empty,
+                            StudentAnswerEcho = e.StudentAnswerEcho ?? string.Empty,
+                            StepAnalysis = new List<StepAnalysisDto>(),
+                            OverallFeedback = e.OverallFeedback ?? string.Empty
+                        };
+                    }
                 }).ToList(),
                 GrandScore = grandScore,
                 GrandTotalMarks = grandTotalMarks,
                 Percentage = percentage,
                 Grade = grade,
                 Passed = passed,
-                EvaluatedAt = writtenSubmission?.EvaluatedAt?.ToString("yyyy-MM-dd HH:mm:ss")
+                EvaluatedAt = writtenSubmission?.EvaluatedAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")
             };
 
+            _logger.LogInformation("Successfully built consolidated result for {ExamId}/{StudentId}", examId, studentId);
             return result;
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in GetConsolidatedResultInternal for {ExamId}/{StudentId}", examId, studentId);
+            throw;
+        }
+    }
 
         /// <summary>
         /// Store exam for later retrieval (helper method for testing)
@@ -991,14 +1035,49 @@ namespace SchoolAiChatbotBackend.Controllers
 
         private string GetQuestionText(GeneratedExamResponse exam, string questionId)
         {
-            foreach (var part in exam.Parts)
+            if (exam == null)
             {
-                var question = part.Questions.FirstOrDefault(q => q.QuestionId == questionId);
-                if (question != null)
+                _logger.LogWarning("Exam is null when trying to get question text for {QuestionId}", questionId);
+                return string.Empty;
+            }
+
+            // First, try to find in Parts (structured format)
+            if (exam.Parts != null && exam.Parts.Any())
+            {
+                foreach (var part in exam.Parts)
                 {
-                    return question.QuestionText;
+                    if (part.Questions == null) continue;
+                    
+                    var question = part.Questions.FirstOrDefault(q => q.QuestionId == questionId);
+                    if (question != null)
+                    {
+                        _logger.LogDebug("Found question text in Parts for {QuestionId}: {Text}", 
+                            questionId, question.QuestionText?.Substring(0, Math.Min(50, question.QuestionText?.Length ?? 0)) ?? "null");
+                        return question.QuestionText ?? string.Empty;
+                    }
                 }
             }
+
+            // Second, try to find in flat Questions list (legacy format)
+            if (exam.Questions != null && exam.Questions.Any())
+            {
+                var question = exam.Questions.FirstOrDefault(q => q.QuestionId == questionId);
+                if (question != null)
+                {
+                    _logger.LogDebug("Found question text in Questions list for {QuestionId}: {Text}", 
+                        questionId, question.QuestionText?.Substring(0, Math.Min(50, question.QuestionText?.Length ?? 0)) ?? "null");
+                    return question.QuestionText ?? string.Empty;
+                }
+            }
+            
+            // Log available questions for debugging
+            var availableFromParts = exam.Parts?.SelectMany(p => p.Questions?.Select(q => q.QuestionId) ?? Array.Empty<string>()) ?? Array.Empty<string>();
+            var availableFromQuestions = exam.Questions?.Select(q => q.QuestionId) ?? Array.Empty<string>();
+            _logger.LogWarning("Question not found for QuestionId={QuestionId}. Available in Parts: [{PartsQuestions}]. Available in Questions: [{FlatQuestions}]", 
+                questionId, 
+                string.Join(", ", availableFromParts),
+                string.Join(", ", availableFromQuestions));
+            
             return string.Empty;
         }
 

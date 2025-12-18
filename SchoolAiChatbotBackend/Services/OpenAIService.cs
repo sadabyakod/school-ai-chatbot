@@ -175,7 +175,7 @@ namespace SchoolAiChatbotBackend.Services
                         new { role = "system", content = "You are an exam paper generator for Karnataka 2nd PUC board exams. You MUST output ONLY valid JSON with no additional text, comments, or markdown formatting. Respond with a single JSON object only." },
                         new { role = "user", content = prompt }
                     },
-                    max_tokens = fastMode ? 4000 : 8000, // Reduced tokens for faster response
+                    max_tokens = fastMode ? 12000 : 16000, // Increased tokens to ensure complete JSON generation
                     temperature = 0.3,
                     response_format = new { type = "json_object" }
                 };

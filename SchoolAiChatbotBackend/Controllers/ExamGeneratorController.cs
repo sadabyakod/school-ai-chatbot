@@ -50,7 +50,7 @@ namespace SchoolAiChatbotBackend.Controllers
 
         /// <summary>
         /// Generate a Karnataka 2nd PUC style exam paper using AI
-        /// POST /api/exam/generate
+        /// POST /api/exam/generate or /api/exam-generator/generate-exam
         /// </summary>
         /// <remarks>
         /// Generates ORIGINAL MODEL QUESTION PAPERS following Karnataka State Government 2nd PUC Mathematics exam style.
@@ -58,6 +58,7 @@ namespace SchoolAiChatbotBackend.Controllers
         /// Follows the official Karnataka 2nd PUC model paper format with 1-mark to 5-mark questions.
         /// </remarks>
         [HttpPost("generate")]
+        [HttpPost("/api/exam-generator/generate-exam")] // Alternate route for mobile app
         public async Task<IActionResult> GenerateExam([FromBody] GenerateExamRequest request)
         {
             if (!ModelState.IsValid)
@@ -98,23 +99,14 @@ namespace SchoolAiChatbotBackend.Controllers
                     // Store the cloned exam
                     _examStorageService.StoreExam(clonedExam);
                     
-                    return Ok(new { 
-                        exam = clonedExam, 
-                        cached = true, 
-                        generationTime = "0s (cached)" 
-                    });
+                    // Return flat structure for UI compatibility
+                    return Ok(clonedExam);
                 }
                 
                 var startTime = DateTime.UtcNow;
                 
-                // Build the AI prompt
-                var prompt = BuildExamGenerationPrompt(request);
-
-                // Call OpenAI to generate the exam (uses fast mode if enabled)
-                var aiResponse = await _openAIService.GetExamGenerationAsync(prompt, request.FastMode);
-
-                // Parse and validate the JSON response
-                var examPaper = ParseExamResponse(aiResponse, request);
+                // === TESTING MODE: Generate simple hardcoded exam ===
+                var examPaper = GenerateSimpleTestExam(request);
 
                 // Generate and save rubrics for all subjective questions
                 await GenerateAndSaveRubricsAsync(examPaper);
@@ -154,12 +146,8 @@ namespace SchoolAiChatbotBackend.Controllers
                 var generationTime = (DateTime.UtcNow - startTime).TotalSeconds;
                 Console.WriteLine($"⏱️ Total Generation Time: {generationTime:F1}s");
 
-                return Ok(new {
-                    exam = examPaper,
-                    cached = false,
-                    generationTime = $"{generationTime:F1}s",
-                    fastMode = request.FastMode
-                });
+                // Return flat structure for UI compatibility
+                return Ok(examPaper);
             }
             catch (JsonException ex)
             {
@@ -755,6 +743,152 @@ IMPORTANT RULES:
    - No comments, no markdown, no extra text, no trailing commas
 
 Generate the complete Karnataka 2nd PUC Mathematics Model Question Paper now:";
+        }
+
+        /// <summary>
+        /// Generate a simple test exam with 2 MCQ and 3 subjective questions for testing purposes
+        /// Includes scenarios: correct answer, wrong answer, not attempted
+        /// </summary>
+        private GeneratedExamResponse GenerateSimpleTestExam(GenerateExamRequest request)
+        {
+            var examId = $"TEST-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString().Substring(0, 8).ToUpper()}";
+            
+            return new GeneratedExamResponse
+            {
+                ExamId = examId,
+                Subject = request.Subject,
+                Grade = request.Grade,
+                Chapter = "Test Chapter",
+                Difficulty = "Medium",
+                ExamType = "Test",
+                TotalMarks = 32,
+                Duration = 45,
+                Instructions = new List<string>
+                {
+                    "Answer ALL questions",
+                    "This is a test exam with 2 MCQs and 3 subjective questions"
+                },
+                Parts = new List<ExamPart>
+                {
+                    new ExamPart
+                    {
+                        PartName = "Part A",
+                        PartDescription = "Multiple Choice Questions",
+                        QuestionType = "MCQ",
+                        MarksPerQuestion = 1,
+                        TotalQuestions = 2,
+                        QuestionsToAnswer = 2,
+                        Questions = new List<PartQuestion>
+                        {
+                            new PartQuestion
+                            {
+                                QuestionId = "A1",
+                                QuestionNumber = 1,
+                                QuestionText = "What is 2 + 2?",
+                                Options = new List<string>
+                                {
+                                    "A) 3",
+                                    "B) 4",
+                                    "C) 5",
+                                    "D) 6"
+                                },
+                                CorrectAnswer = "B) 4",
+                                Topic = "Basic Arithmetic"
+                            },
+                            new PartQuestion
+                            {
+                                QuestionId = "A2",
+                                QuestionNumber = 2,
+                                QuestionText = "What is the value of π (pi) approximately?",
+                                Options = new List<string>
+                                {
+                                    "A) 3.14",
+                                    "B) 2.71",
+                                    "C) 1.41",
+                                    "D) 4.20"
+                                },
+                                CorrectAnswer = "A) 3.14",
+                                Topic = "Mathematics Constants"
+                            }
+                        }
+                    },
+                    new ExamPart
+                    {
+                        PartName = "Part B",
+                        PartDescription = "Subjective Questions",
+                        QuestionType = "Short Answer (10 marks)",
+                        MarksPerQuestion = 10,
+                        TotalQuestions = 3,
+                        QuestionsToAnswer = 3,
+                        Questions = new List<PartQuestion>
+                        {
+                            new PartQuestion
+                            {
+                                QuestionId = "B1",
+                                QuestionNumber = 3,
+                                QuestionText = "Explain the Pythagorean theorem and provide an example calculation for a right triangle with sides 3 and 4.",
+                                Options = new List<string>(),
+                                CorrectAnswer = @"The Pythagorean theorem states that in a right triangle, the square of the hypotenuse (c) equals the sum of squares of the other two sides (a and b): a² + b² = c²
+
+Example with sides 3 and 4:
+Step 1: Apply the formula: 3² + 4² = c²
+Step 2: Calculate: 9 + 16 = c²
+Step 3: Simplify: 25 = c²
+Step 4: Solve for c: c = √25 = 5
+
+Therefore, the hypotenuse is 5 units.",
+                                Topic = "Geometry - Pythagorean Theorem"
+                            },
+                            new PartQuestion
+                            {
+                                QuestionId = "B2",
+                                QuestionNumber = 4,
+                                QuestionText = "Solve the quadratic equation: x² - 5x + 6 = 0. Show all steps.",
+                                Options = new List<string>(),
+                                CorrectAnswer = @"To solve x² - 5x + 6 = 0, we can factor or use the quadratic formula.
+
+Method 1: Factoring
+Step 1: Find two numbers that multiply to 6 and add to -5: -2 and -3
+Step 2: Factor: (x - 2)(x - 3) = 0
+Step 3: Solve: x - 2 = 0 or x - 3 = 0
+Step 4: Solutions: x = 2 or x = 3
+
+Method 2: Quadratic Formula
+x = (-b ± √(b² - 4ac)) / 2a where a=1, b=-5, c=6
+x = (5 ± √(25 - 24)) / 2
+x = (5 ± 1) / 2
+x = 3 or x = 2
+
+Therefore, x = 2 or x = 3",
+                                Topic = "Algebra - Quadratic Equations"
+                            },
+                            new PartQuestion
+                            {
+                                QuestionId = "B3",
+                                QuestionNumber = 5,
+                                QuestionText = "Calculate the area of a circle with radius 5 cm. Use π = 3.14. Show your work.",
+                                Options = new List<string>(),
+                                CorrectAnswer = @"To find the area of a circle, use the formula A = πr²
+
+Given:
+- Radius (r) = 5 cm
+- π = 3.14
+
+Step 1: Identify the formula: A = πr²
+Step 2: Substitute values: A = 3.14 × 5²
+Step 3: Calculate 5²: A = 3.14 × 25
+Step 4: Multiply: A = 78.5
+
+Therefore, the area is 78.5 cm²",
+                                Topic = "Geometry - Circle Area"
+                            }
+                        }
+                    }
+                },
+                Questions = new List<GeneratedQuestion>(),
+                QuestionCount = 5,
+                CreatedAt = DateTime.UtcNow.ToString("o")
+            };
         }
 
         private GeneratedExamResponse ParseExamResponse(string aiResponse, GenerateExamRequest request)

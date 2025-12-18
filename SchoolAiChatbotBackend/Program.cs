@@ -162,6 +162,9 @@ namespace SchoolAiChatbotBackend
 
                 builder.Services.AddAuthorization();
 
+                // Add Memory Cache
+                builder.Services.AddMemoryCache();
+
                 // Register HttpClient for OpenAIService with extended timeout for exam generation
                 builder.Services.AddHttpClient<IOpenAIService, OpenAIService>()
                     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler())
