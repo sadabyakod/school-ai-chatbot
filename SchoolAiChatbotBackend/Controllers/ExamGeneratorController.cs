@@ -717,7 +717,15 @@ IMPORTANT RULES:
 
 4) NON-MCQ FORMAT (Parts B, C, D, E):
    - options MUST be an empty array []
-   - correctAnswer MUST contain the complete model answer/solution
+   - correctAnswer MUST contain a DETAILED model answer/solution with ALL steps
+   - Model answers MUST be proportional to marks:
+     * 2 marks: Brief answer with 2-3 key steps/points
+     * 3 marks: Clear explanation with 3-4 detailed steps/points
+     * 5 marks: Comprehensive solution with 5-7 detailed steps, formulas, and reasoning
+     * 10 marks: Thorough answer with multiple sub-sections, all steps shown, complete derivations
+   - Include ALL intermediate calculations, formulas, and explanations
+   - For mathematical problems: Show step-by-step work with clear labeling
+   - For theory questions: Provide complete definitions, explanations, and examples
 
 5) PART E SUB-PARTS:
    - Each Part E question MUST have a ""subParts"" array with 2 sub-questions
