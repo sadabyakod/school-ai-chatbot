@@ -345,8 +345,24 @@ namespace SchoolAiChatbotBackend.Controllers
                 foreach (var file in files)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    var path = await _fileStorageService.SaveFileAsync(file, examId, studentId);
-                    filePaths.Add(path);
+                    
+                    _logger.LogInformation("[BLOB_UPLOAD_START] Uploading file {FileName} ({Size} bytes)", 
+                        file.FileName, file.Length);
+                    
+                    try
+                    {
+                        var path = await _fileStorageService.SaveFileAsync(file, examId, studentId);
+                        filePaths.Add(path);
+                        
+                        _logger.LogInformation("[BLOB_UPLOAD_SUCCESS] File uploaded to {Path}", path);
+                        Console.WriteLine($"✅ Uploaded: {file.FileName} → {path}");
+                    }
+                    catch (Exception uploadEx)
+                    {
+                        _logger.LogError(uploadEx, "[BLOB_UPLOAD_ERROR] Failed to upload {FileName}: {Error}", 
+                            file.FileName, uploadEx.Message);
+                        throw new Exception($"Failed to upload file '{file.FileName}': {uploadEx.Message}", uploadEx);
+                    }
                 }
 
                 _logger.LogInformation("[BLOB_UPLOADED] {FileCount} files saved to storage", filePaths.Count);
@@ -411,8 +427,14 @@ namespace SchoolAiChatbotBackend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[UPLOAD_FAILED] Unexpected error");
-                return StatusCode(500, new { error = "Internal server error", correlationId });
+                _logger.LogError(ex, "[UPLOAD_FAILED] Unexpected error: {Message}", ex.Message);
+                Console.WriteLine($"❌ UPLOAD ERROR: {ex.Message}");
+                Console.WriteLine($"   Stack: {ex.StackTrace}");
+                return StatusCode(500, new { 
+                    error = "Internal server error", 
+                    message = ex.Message,
+                    correlationId 
+                });
             }
         }
 

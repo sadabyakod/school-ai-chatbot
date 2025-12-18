@@ -224,63 +224,82 @@ namespace SchoolAiChatbotBackend.Services
 
         public async Task<string> SaveFileAsync(IFormFile file, string examId, string studentId)
         {
-            if (file == null || file.Length == 0)
+            try
             {
-                throw new ArgumentException("File is empty or null", nameof(file));
-            }
-
-            // Validate file type
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".pdf", ".webp" };
-            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-
-            if (!Array.Exists(allowedExtensions, ext => ext == extension))
-            {
-                throw new ArgumentException($"File type {extension} is not allowed", nameof(file));
-            }
-
-            // Use dedicated answer-sheets container instead of textbooks
-            var containerClient = _blobServiceClient.GetBlobContainerClient(_answerSheetsContainer);
-            await containerClient.CreateIfNotExistsAsync(PublicAccessType.None);
-
-            // Create unique blob name with timestamp (no 'written-answers' prefix since we have dedicated container)
-            var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
-            var uniqueFileName = $"{timestamp}_{Guid.NewGuid():N}{extension}";
-            var blobName = $"{examId}/{studentId}/{uniqueFileName}";
-            var blobClient = containerClient.GetBlobClient(blobName);
-
-            // Set metadata including upload timestamp for retention management
-            var metadata = new Dictionary<string, string>
-            {
-                { "examId", examId },
-                { "studentId", studentId },
-                { "uploadedAt", DateTime.UtcNow.ToString("o") },
-                { "originalFileName", file.FileName },
-                { "retentionDays", _options.RetentionDays.ToString() }
-            };
-
-            // Upload with metadata
-            using var stream = file.OpenReadStream();
-            var uploadOptions = new BlobUploadOptions
-            {
-                Metadata = metadata,
-                HttpHeaders = new BlobHttpHeaders
+                if (file == null || file.Length == 0)
                 {
-                    ContentType = file.ContentType
+                    throw new ArgumentException("File is empty or null", nameof(file));
                 }
-            };
 
-            await blobClient.UploadAsync(stream, uploadOptions);
+                _logger.LogInformation("[AZURE_BLOB] Starting upload: {FileName} ({Size} bytes) for exam {ExamId}, student {StudentId}",
+                    file.FileName, file.Length, examId, studentId);
 
-            _logger.LogInformation(
-                "Uploaded file to Azure Blob: {BlobName} (Size: {Size} bytes, RetentionDays: {Retention})",
-                blobName,
-                file.Length,
-                _options.RetentionDays);
+                // Validate file type
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".pdf", ".webp" };
+                var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
 
-            // Return relative blob path (container/blobName) instead of full URL
-            // This allows Azure Function to easily parse and use it
-            // Format: students-answer-sheets/{examId}/{studentId}/{filename}
-            return $"{_answerSheetsContainer}/{blobName}";
+                if (!Array.Exists(allowedExtensions, ext => ext == extension))
+                {
+                    throw new ArgumentException($"File type {extension} is not allowed", nameof(file));
+                }
+
+                // Use dedicated answer-sheets container instead of textbooks
+                _logger.LogInformation("[AZURE_BLOB] Getting container client for: {Container}", _answerSheetsContainer);
+                var containerClient = _blobServiceClient.GetBlobContainerClient(_answerSheetsContainer);
+                
+                _logger.LogInformation("[AZURE_BLOB] Creating container if not exists: {Container}", _answerSheetsContainer);
+                await containerClient.CreateIfNotExistsAsync(PublicAccessType.None);
+
+                // Create unique blob name with timestamp (no 'written-answers' prefix since we have dedicated container)
+                var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+                var uniqueFileName = $"{timestamp}_{Guid.NewGuid():N}{extension}";
+                var blobName = $"{examId}/{studentId}/{uniqueFileName}";
+                
+                _logger.LogInformation("[AZURE_BLOB] Generated blob name: {BlobName}", blobName);
+                var blobClient = containerClient.GetBlobClient(blobName);
+
+                // Set metadata including upload timestamp for retention management
+                var metadata = new Dictionary<string, string>
+                {
+                    { "examId", examId },
+                    { "studentId", studentId },
+                    { "uploadedAt", DateTime.UtcNow.ToString("o") },
+                    { "originalFileName", file.FileName },
+                    { "retentionDays", _options.RetentionDays.ToString() }
+                };
+
+                // Upload with metadata
+                using var stream = file.OpenReadStream();
+                var uploadOptions = new BlobUploadOptions
+                {
+                    Metadata = metadata,
+                    HttpHeaders = new BlobHttpHeaders
+                    {
+                        ContentType = file.ContentType
+                    }
+                };
+
+                _logger.LogInformation("[AZURE_BLOB] Starting upload to blob storage...");
+                await blobClient.UploadAsync(stream, uploadOptions);
+
+                _logger.LogInformation(
+                    "[AZURE_BLOB] ✅ Upload successful: {BlobName} (Size: {Size} bytes, RetentionDays: {Retention})",
+                    blobName,
+                    file.Length,
+                    _options.RetentionDays);
+
+                // Return relative blob path (container/blobName) instead of full URL
+                // This allows Azure Function to easily parse and use it
+                // Format: students-answer-sheets/{examId}/{studentId}/{filename}
+                var relativePath = $"{_answerSheetsContainer}/{blobName}";
+                _logger.LogInformation("[AZURE_BLOB] Returning path: {Path}", relativePath);
+                return relativePath;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[AZURE_BLOB] ❌ Upload failed: {Error}", ex.Message);
+                throw;
+            }
         }
 
         public async Task<bool> DeleteFileAsync(string blobUrl)
