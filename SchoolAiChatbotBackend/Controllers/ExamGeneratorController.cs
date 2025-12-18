@@ -534,23 +534,23 @@ You MUST return exactly one VALID JSON object following this schema:
   ""chapter"": ""Full Syllabus"",
   ""difficulty"": ""Medium"",
   ""examType"": ""Full Paper"",
-  ""totalMarks"": 100,
+  ""totalMarks"": 80,
   ""duration"": 195,
   ""instructions"": [
-    ""Answer ALL 15 questions in Part A"",
-    ""Answer any SIX questions from Part B"",
-    ""Answer any SIX questions from Part C"",
-    ""Answer any FOUR questions from Part D"",
+    ""Answer ALL 20 questions in Part A (15 MCQ + 5 Fill-in-the-Blanks)"",
+    ""Answer any SIX questions from Part B (out of 11)"",
+    ""Answer any SIX questions from Part C (out of 11)"",
+    ""Answer any FOUR questions from Part D (out of 8)"",
     ""Answer any ONE question from Part E""
   ],
   ""parts"": [
     {{
       ""partName"": ""Part A"",
-      ""partDescription"": ""Answer ALL the following questions"",
-      ""questionType"": ""MCQ"",
+      ""partDescription"": ""Answer ALL the following questions (15 MCQ + 5 Fill-in-the-Blanks)"",
+      ""questionType"": ""MCQ / Fill-in-the-Blanks"",
       ""marksPerQuestion"": 1,
-      ""totalQuestions"": 15,
-      ""questionsToAnswer"": 15,
+      ""totalQuestions"": 20,
+      ""questionsToAnswer"": 20,
       ""questions"": [
         {{
           ""questionId"": ""A1"",
@@ -567,12 +567,12 @@ You MUST return exactly one VALID JSON object following this schema:
       ""partDescription"": ""Answer any SIX of the following questions"",
       ""questionType"": ""Short Answer (2 marks)"",
       ""marksPerQuestion"": 2,
-      ""totalQuestions"": 8,
+      ""totalQuestions"": 11,
       ""questionsToAnswer"": 6,
       ""questions"": [
         {{
           ""questionId"": ""B1"",
-          ""questionNumber"": 16,
+          ""questionNumber"": 21,
           ""questionText"": ""string"",
           ""options"": [],
           ""correctAnswer"": ""Model answer text"",
@@ -585,12 +585,12 @@ You MUST return exactly one VALID JSON object following this schema:
       ""partDescription"": ""Answer any SIX of the following questions"",
       ""questionType"": ""Short Answer (3 marks)"",
       ""marksPerQuestion"": 3,
-      ""totalQuestions"": 8,
+      ""totalQuestions"": 11,
       ""questionsToAnswer"": 6,
       ""questions"": [
         {{
           ""questionId"": ""C1"",
-          ""questionNumber"": 24,
+          ""questionNumber"": 32,
           ""questionText"": ""string"",
           ""options"": [],
           ""correctAnswer"": ""Model answer text"",
@@ -603,12 +603,12 @@ You MUST return exactly one VALID JSON object following this schema:
       ""partDescription"": ""Answer any FOUR of the following questions"",
       ""questionType"": ""Long Answer (5 marks)"",
       ""marksPerQuestion"": 5,
-      ""totalQuestions"": 6,
+      ""totalQuestions"": 8,
       ""questionsToAnswer"": 4,
       ""questions"": [
         {{
           ""questionId"": ""D1"",
-          ""questionNumber"": 32,
+          ""questionNumber"": 43,
           ""questionText"": ""string"",
           ""options"": [],
           ""correctAnswer"": ""Model answer with steps"",
@@ -626,17 +626,17 @@ You MUST return exactly one VALID JSON object following this schema:
       ""questions"": [
         {{
           ""questionId"": ""E1"",
-          ""questionNumber"": 38,
+          ""questionNumber"": 51,
           ""questionText"": ""string"",
           ""subParts"": [
             {{
               ""partLabel"": ""a"",
-              ""questionText"": ""sub-question a (5 marks)"",
+              ""questionText"": ""sub-question a (6 marks)"",
               ""correctAnswer"": ""Model answer for part a""
             }},
             {{
               ""partLabel"": ""b"",
-              ""questionText"": ""sub-question b (5 marks)"",
+              ""questionText"": ""sub-question b (4 marks)"",
               ""correctAnswer"": ""Model answer for part b""
             }}
           ],
@@ -647,7 +647,7 @@ You MUST return exactly one VALID JSON object following this schema:
       ]
     }}
   ],
-  ""questionCount"": 39,
+  ""questionCount"": 52,
   ""createdAt"": ""ISO 8601 string""
 }}
 
@@ -655,72 +655,76 @@ You MUST return exactly one VALID JSON object following this schema:
 KARNATAKA 2nd PUC MATHEMATICS MODEL PAPER FORMAT (EXACT):
 --------------------
 
-TOTAL MARKS: 100 marks
+TOTAL MARKS: 80 marks (Theory Paper)
+INTERNAL ASSESSMENT: 20 marks
 TIME: 3 hours 15 minutes (195 minutes)
 
 STRUCTURE:
-1) PART A - Multiple Choice Questions (MCQ):
-   - 15 questions × 1 mark each = 15 marks
-   - Answer ALL 15 questions
-   - Each question has 4 options (A, B, C, D)
+1) PART A - MCQ & Fill-in-the-Blanks:
+   - 20 questions × 1 mark each = 20 marks (Compulsory)
+   - 15 Multiple Choice Questions (MCQ) with 4 options (A, B, C, D)
+   - 5 Fill-in-the-Blanks questions
    - Topics: Relations & Functions, Inverse Trigonometry, Matrices, Determinants, Continuity, Differentiability, Integrals, Differential Equations, Vectors, 3D Geometry, Linear Programming, Probability
 
 2) PART B - Short Answer Type (2 marks each):
-   - 8 questions given, answer ANY 6 = 12 marks
-   - Questions 16-23
+   - 11 questions given, answer ANY 6 = 12 marks
+   - Questions 21-31
    - Direct calculation / short proof type
    - Topics from all chapters
 
 3) PART C - Short Answer Type (3 marks each):
-   - 8 questions given, answer ANY 6 = 18 marks  
-   - Questions 24-31
+   - 11 questions given, answer ANY 6 = 18 marks  
+   - Questions 32-42
    - Application-based problems, proofs, derivations
    - Topics from all chapters
 
 4) PART D - Long Answer Type (5 marks each):
-   - 6 questions given, answer ANY 4 = 20 marks
-   - Questions 32-37
+   - 8 questions given, answer ANY 4 = 20 marks
+   - Questions 43-50
    - Detailed problem solving, proofs with steps
    - Topics: Matrices (inverse), Calculus (maxima/minima), Integration, Differential Equations, Vectors/3D Geometry, Linear Programming
 
 5) PART E - Long Answer Type (10 marks each):
    - 2 questions given, answer ANY 1 = 10 marks
-   - Questions 38-39
-   - Each question has 2 sub-parts: (a) 5 marks + (b) 5 marks
+   - Questions 51-52
+   - Each question has 2 sub-parts: (a) 6 marks + (b) 4 marks
    - OR choice between 2 full questions
-   - Topics: Integration with graphs, Area under curves, 3D Geometry
+   - Topics: Integration with graphs, Area under curves, 3D Geometry, Linear Programming
 
-TOTAL = 15 + 12 + 18 + 20 + 10 = 75 marks (answering minimum required)
-         15 + 16 + 24 + 30 + 15 = 100 marks maximum
+TOTAL = 20 + 12 + 18 + 20 + 10 = 80 marks (Theory Paper)
 
-NOTE: To reach 100 marks total:
-- Part A: 15 marks (15 MCQ × 1 mark)
-- Part B: 16 marks (8 questions × 2 marks)
-- Part C: 24 marks (8 questions × 3 marks)
-- Part D: 30 marks (6 questions × 5 marks)
-- Part E: 15 marks (2 questions, each with sub-parts totaling up to 15 marks possible)
+NOTE: Marks breakdown:
+- Part A: 20 marks (15 MCQ + 5 Fill-in-blanks, ALL compulsory)
+- Part B: 12 marks (answer 6 out of 11 questions × 2 marks)
+- Part C: 18 marks (answer 6 out of 11 questions × 3 marks)
+- Part D: 20 marks (answer 4 out of 8 questions × 5 marks)
+- Part E: 10 marks (answer 1 out of 2 questions: (a) 6 marks + (b) 4 marks)
+- Internal Assessment: 20 marks (awarded separately)
+- TOTAL: 100 marks (80 Theory + 20 Internal)
+- PASSING: Minimum 35 marks out of 100 (35%)
 
 --------------------
 IMPORTANT RULES:
 --------------------
 
 1) GENERATE EXACTLY THIS STRUCTURE:
-   - Part A: Generate exactly 15 MCQ questions (1 mark each)
-   - Part B: Generate exactly 8 questions (2 marks each), student answers 6
-   - Part C: Generate exactly 8 questions (3 marks each), student answers 6
-   - Part D: Generate exactly 6 questions (5 marks each), student answers 4
+   - Part A: Generate exactly 20 questions (15 MCQ + 5 Fill-in-blanks, 1 mark each)
+   - Part B: Generate exactly 11 questions (2 marks each), student answers 6
+   - Part C: Generate exactly 11 questions (3 marks each), student answers 6
+   - Part D: Generate exactly 8 questions (5 marks each), student answers 4
    - Part E: Generate exactly 2 questions (10 marks each with 2 sub-parts), student answers 1
 
 2) QUESTION NUMBERING:
-   - Part A: Questions 1-15
-   - Part B: Questions 16-23
-   - Part C: Questions 24-31
-   - Part D: Questions 32-37
-   - Part E: Questions 38-39
+   - Part A: Questions 1-20 (1-15 MCQ, 16-20 Fill-in-blanks)
+   - Part B: Questions 21-31
+   - Part C: Questions 32-42
+   - Part D: Questions 43-50
+   - Part E: Questions 51-52
 
-3) MCQ FORMAT (Part A only):
-   - options MUST contain EXACTLY 4 choices formatted as: [""A) ..."", ""B) ..."", ""C) ..."", ""D) ...""]
-   - correctAnswer MUST be the full option text like ""A) answer""
+3) PART A FORMAT:
+   - Questions 1-15 (MCQ): options MUST contain EXACTLY 4 choices formatted as: [""A) ..."", ""B) ..."", ""C) ..."", ""D) ...""]
+     correctAnswer MUST be the full option text like ""A) answer""
+   - Questions 16-20 (Fill-in-blanks): options MUST be empty array [], correctAnswer contains the blank answer
 
 4) NON-MCQ FORMAT (Parts B, C, D, E):
    - options MUST be an empty array []
@@ -728,15 +732,19 @@ IMPORTANT RULES:
    - Model answers MUST be proportional to marks:
      * 2 marks: Brief answer with 2-3 key steps/points
      * 3 marks: Clear explanation with 3-4 detailed steps/points
+     * 4 marks: Detailed solution with 4-5 steps, formulas, and explanations
      * 5 marks: Comprehensive solution with 5-7 detailed steps, formulas, and reasoning
-     * 10 marks: Thorough answer with multiple sub-sections, all steps shown, complete derivations
+     * 6 marks: Thorough solution with 6-8 detailed steps, complete working
+     * 10 marks: Complete answer with multiple sub-sections, all steps shown, complete derivations
    - Include ALL intermediate calculations, formulas, and explanations
    - For mathematical problems: Show step-by-step work with clear labeling
    - For theory questions: Provide complete definitions, explanations, and examples
 
 5) PART E SUB-PARTS:
    - Each Part E question MUST have a ""subParts"" array with 2 sub-questions
-   - Each sub-part is worth 5 marks
+   - Sub-part (a) is worth 6 marks
+   - Sub-part (b) is worth 4 marks
+   - Total per question: 10 marks
 
 6) TOPICS TO COVER (Karnataka 2nd PUC Syllabus):
    - Relations and Functions
@@ -1241,7 +1249,7 @@ Therefore, the area is 78.5 cm²",
         public string ExamType { get; set; } = string.Empty;
 
         [JsonPropertyName("totalMarks")]
-        public int TotalMarks { get; set; } = 100;
+        public int TotalMarks { get; set; } = 80;
 
         [JsonPropertyName("duration")]
         public int Duration { get; set; } = 195;
@@ -1253,7 +1261,7 @@ Therefore, the area is 78.5 cm²",
         public List<ExamPart> Parts { get; set; } = new();
 
         [JsonPropertyName("questionCount")]
-        public int QuestionCount { get; set; } = 39;
+        public int QuestionCount { get; set; } = 52;
 
         [JsonPropertyName("questions")]
         public List<GeneratedQuestion> Questions { get; set; } = new();
