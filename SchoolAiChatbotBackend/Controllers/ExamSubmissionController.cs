@@ -788,8 +788,51 @@ namespace SchoolAiChatbotBackend.Controllers
 
             if (writtenSubmission != null)
             {
-                subjectiveEvaluations = await _examRepository.GetSubjectiveEvaluationsAsync(
-                    writtenSubmission.WrittenSubmissionId);
+                // ALWAYS use blob storage ONLY for evaluation results
+                if (!string.IsNullOrEmpty(writtenSubmission.EvaluationResultBlobPath))
+                {
+                    _logger.LogInformation("Loading subjective results from blob: {BlobPath}", writtenSubmission.EvaluationResultBlobPath);
+                    
+                    // Remove container prefix if present
+                    var blobPath = writtenSubmission.EvaluationResultBlobPath;
+                    const string containerPrefix = "evaluation-results/";
+                    if (blobPath.StartsWith(containerPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        blobPath = blobPath.Substring(containerPrefix.Length);
+                    }
+
+                    // Read evaluation result from blob - NO DATABASE FALLBACK
+                    var jsonContent = await _fileStorageService.ReadJsonFromBlobAsync(blobPath, "evaluation-results");
+                    
+                    if (string.IsNullOrEmpty(jsonContent))
+                    {
+                        _logger.LogError("Blob content is empty for path: {BlobPath}", writtenSubmission.EvaluationResultBlobPath);
+                        throw new InvalidOperationException($"Evaluation result blob is empty. Please re-run evaluation for submission {writtenSubmission.WrittenSubmissionId}");
+                    }
+
+                    // Parse blob JSON to extract subjective evaluations
+                    var blobResult = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(jsonContent);
+                    
+                    // Extract subjectiveResults array from blob JSON
+                    if (!blobResult.TryGetProperty("subjectiveResults", out var subjectiveResultsElement))
+                    {
+                        _logger.LogError("Blob JSON does not contain subjectiveResults property. Blob content: {Content}", jsonContent.Substring(0, Math.Min(500, jsonContent.Length)));
+                        throw new InvalidOperationException($"Invalid evaluation result format in blob. Please re-run evaluation for submission {writtenSubmission.WrittenSubmissionId}");
+                    }
+
+                    subjectiveEvaluations = System.Text.Json.JsonSerializer.Deserialize<List<SubjectiveEvaluationResult>>(
+                        subjectiveResultsElement.GetRawText(),
+                        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                    ) ?? new List<SubjectiveEvaluationResult>();
+                    
+                    _logger.LogInformation("Successfully loaded {Count} subjective results from blob ONLY", subjectiveEvaluations.Count);
+                }
+                else
+                {
+                    // No blob path means evaluation is not complete yet
+                    _logger.LogWarning("No blob path found for WrittenSubmissionId {WrittenSubmissionId}. Evaluation may still be in progress.", writtenSubmission.WrittenSubmissionId);
+                    subjectiveEvaluations = new List<SubjectiveEvaluationResult>();
+                }
             }
 
             // Check if any submission exists
