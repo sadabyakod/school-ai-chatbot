@@ -106,8 +106,10 @@ namespace SchoolAiChatbotBackend.Controllers
                 
                 var startTime = DateTime.UtcNow;
                 
-                // === TESTING MODE: Generate simple hardcoded exam ===
-                var examPaper = GenerateSimpleTestExam(request);
+                // === AI GENERATION: Generate exam using OpenAI ===
+                var prompt = BuildExamGenerationPrompt(request);
+                var aiResponse = await _openAIService.GetExamGenerationAsync(prompt, request.FastMode);
+                var examPaper = ParseExamResponse(aiResponse, request);
 
                 // Generate and save rubrics for all subjective questions
                 await GenerateAndSaveRubricsAsync(examPaper);
