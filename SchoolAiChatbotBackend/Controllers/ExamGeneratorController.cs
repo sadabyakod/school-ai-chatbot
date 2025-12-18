@@ -99,8 +99,9 @@ namespace SchoolAiChatbotBackend.Controllers
                     // Store the cloned exam
                     _examStorageService.StoreExam(clonedExam);
                     
-                    // Return flat structure for UI compatibility
-                    return Ok(clonedExam);
+                    // Return exam WITHOUT model answers (students should not see answers upfront)
+                    var publicExam = StripModelAnswers(clonedExam);
+                    return Ok(publicExam);
                 }
                 
                 var startTime = DateTime.UtcNow;
@@ -146,8 +147,9 @@ namespace SchoolAiChatbotBackend.Controllers
                 var generationTime = (DateTime.UtcNow - startTime).TotalSeconds;
                 Console.WriteLine($"⏱️ Total Generation Time: {generationTime:F1}s");
 
-                // Return flat structure for UI compatibility
-                return Ok(examPaper);
+                // Return exam WITHOUT model answers (students should not see answers upfront)
+                var strippedExam = StripModelAnswers(examPaper);
+                return Ok(strippedExam);
             }
             catch (JsonException ex)
             {
@@ -1050,6 +1052,90 @@ Therefore, the area is 78.5 cm²",
             {
                 _logger.LogInformation("No subjective questions found in exam {ExamId}, no rubrics generated", exam.ExamId);
             }
+        }
+
+        /// <summary>
+        /// Helper method to strip model answers from exam response
+        /// Students should NOT see model answers when exam is generated
+        /// Answers are only shown AFTER evaluation in the results endpoint
+        /// </summary>
+        private GeneratedExamResponse StripModelAnswers(GeneratedExamResponse exam)
+        {
+            // Create a deep copy to avoid modifying the cached/stored version
+            var publicExam = new GeneratedExamResponse
+            {
+                ExamId = exam.ExamId,
+                Subject = exam.Subject,
+                Grade = exam.Grade,
+                Chapter = exam.Chapter,
+                Difficulty = exam.Difficulty,
+                ExamType = exam.ExamType,
+                TotalMarks = exam.TotalMarks,
+                Duration = exam.Duration,
+                Instructions = exam.Instructions,
+                QuestionCount = exam.QuestionCount,
+                CreatedAt = exam.CreatedAt,
+                Parts = new List<ExamPart>(),
+                Questions = new List<GeneratedQuestion>()
+            };
+
+            // Strip correctAnswer from Parts structure
+            if (exam.Parts != null)
+            {
+                foreach (var part in exam.Parts)
+                {
+                    var publicPart = new ExamPart
+                    {
+                        PartName = part.PartName,
+                        PartDescription = part.PartDescription,
+                        QuestionType = part.QuestionType,
+                        MarksPerQuestion = part.MarksPerQuestion,
+                        TotalQuestions = part.TotalQuestions,
+                        QuestionsToAnswer = part.QuestionsToAnswer,
+                        Questions = new List<PartQuestion>()
+                    };
+
+                    foreach (var q in part.Questions)
+                    {
+                        var publicQ = new PartQuestion
+                        {
+                            QuestionId = q.QuestionId,
+                            QuestionNumber = q.QuestionNumber,
+                            QuestionText = q.QuestionText,
+                            Options = q.Options,
+                            CorrectAnswer = string.Empty, // REMOVED - don't show to students
+                            Topic = q.Topic,
+                            SubParts = q.SubParts?.Select(sp => new SubPart
+                            {
+                                PartLabel = sp.PartLabel,
+                                QuestionText = sp.QuestionText,
+                                CorrectAnswer = string.Empty // REMOVED - don't show to students
+                            }).ToList()
+                        };
+                        publicPart.Questions.Add(publicQ);
+                    }
+                    publicExam.Parts.Add(publicPart);
+                }
+            }
+
+            // Strip correctAnswer from flat Questions array (legacy support)
+            if (exam.Questions != null)
+            {
+                foreach (var q in exam.Questions)
+                {
+                    publicExam.Questions.Add(new GeneratedQuestion
+                    {
+                        QuestionId = q.QuestionId,
+                        QuestionText = q.QuestionText,
+                        Options = q.Options,
+                        CorrectAnswer = string.Empty, // REMOVED - don't show to students
+                        Difficulty = q.Difficulty,
+                        Marks = q.Marks
+                    });
+                }
+            }
+
+            return publicExam;
         }
     }
 
