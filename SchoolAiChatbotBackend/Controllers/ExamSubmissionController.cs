@@ -921,11 +921,33 @@ namespace SchoolAiChatbotBackend.Controllers
                 {
                     try
                     {
+                        // Get question text - use multiple strategies to find it
+                        var questionText = GetQuestionText(exam, e.QuestionId);
+                        
+                        // If not found by exact ID, try by question number
+                        if (string.IsNullOrEmpty(questionText) && exam.Parts != null)
+                        {
+                            var allQuestions = exam.Parts.SelectMany(p => p.Questions).ToList();
+                            var questionByNumber = allQuestions.ElementAtOrDefault(e.QuestionNumber - 1);
+                            if (questionByNumber != null)
+                            {
+                                questionText = questionByNumber.QuestionText ?? string.Empty;
+                                _logger.LogInformation("Found question text by number {QuestionNumber} instead of ID {QuestionId}", e.QuestionNumber, e.QuestionId);
+                            }
+                        }
+                        
+                        // Fallback: use expected answer as context if still empty
+                        if (string.IsNullOrEmpty(questionText) && !string.IsNullOrEmpty(e.ExpectedAnswer))
+                        {
+                            questionText = $"[Question {e.QuestionNumber}] (View expected answer for context)";
+                            _logger.LogWarning("Could not find question text for ID={QuestionId} Num={QuestionNumber}, using fallback", e.QuestionId, e.QuestionNumber);
+                        }
+                        
                         return new SubjectiveResultDto
                         {
                             QuestionId = e.QuestionId,
                             QuestionNumber = e.QuestionNumber,
-                            QuestionText = GetQuestionText(exam, e.QuestionId) ?? string.Empty,
+                            QuestionText = questionText ?? string.Empty,
                             EarnedMarks = e.EarnedMarks,
                             MaxMarks = e.MaxMarks,
                             IsFullyCorrect = e.IsFullyCorrect,
