@@ -119,7 +119,10 @@ namespace SchoolAiChatbotBackend.Controllers
                         continue;
                     }
 
-                    var isCorrect = answer.SelectedOption.Equals(question.CorrectAnswer, StringComparison.OrdinalIgnoreCase);
+                    // Normalize both answers for comparison (handle "A)", "A", "option text" formats)
+                    var studentAnswer = NormalizeAnswer(answer.SelectedOption);
+                    var correctAnswer = NormalizeAnswer(question.CorrectAnswer);
+                    var isCorrect = studentAnswer.Equals(correctAnswer, StringComparison.OrdinalIgnoreCase);
                     var marksAwarded = isCorrect ? question.Marks : 0;
 
                     totalScore += marksAwarded;
@@ -1144,6 +1147,30 @@ namespace SchoolAiChatbotBackend.Controllers
                 string.Join(", ", availableFromQuestions));
             
             return string.Empty;
+        }
+
+        private string NormalizeAnswer(string answer)
+        {
+            if (string.IsNullOrWhiteSpace(answer))
+                return string.Empty;
+
+            // Remove whitespace and convert to uppercase
+            answer = answer.Trim().ToUpperInvariant();
+
+            // Extract just the option letter if format is "A) text" or "A. text" or "A text"
+            if (answer.Length >= 2 && char.IsLetter(answer[0]) && (answer[1] == ')' || answer[1] == '.' || answer[1] == ' '))
+            {
+                return answer[0].ToString();
+            }
+
+            // If it's just a single letter, return it
+            if (answer.Length == 1 && char.IsLetter(answer[0]))
+            {
+                return answer;
+            }
+
+            // Otherwise return the full answer for exact matching
+            return answer;
         }
 
         private string CalculateGrade(double percentage)

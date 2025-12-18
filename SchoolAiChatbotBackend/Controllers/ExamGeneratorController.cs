@@ -534,7 +534,7 @@ You MUST return exactly one VALID JSON object following this schema:
   ""chapter"": ""Full Syllabus"",
   ""difficulty"": ""Medium"",
   ""examType"": ""Full Paper"",
-  ""totalMarks"": 80,
+  ""totalMarks"": 100,
   ""duration"": 195,
   ""instructions"": [
     ""Answer ALL 15 questions in Part A"",
@@ -655,7 +655,7 @@ You MUST return exactly one VALID JSON object following this schema:
 KARNATAKA 2nd PUC MATHEMATICS MODEL PAPER FORMAT (EXACT):
 --------------------
 
-TOTAL MARKS: 80 marks
+TOTAL MARKS: 100 marks
 TIME: 3 hours 15 minutes (195 minutes)
 
 STRUCTURE:
@@ -691,7 +691,14 @@ STRUCTURE:
    - Topics: Integration with graphs, Area under curves, 3D Geometry
 
 TOTAL = 15 + 12 + 18 + 20 + 10 = 75 marks (answering minimum required)
-         15 + 12 + 18 + 20 + 15 = 80 marks maximum
+         15 + 16 + 24 + 30 + 15 = 100 marks maximum
+
+NOTE: To reach 100 marks total:
+- Part A: 15 marks (15 MCQ × 1 mark)
+- Part B: 16 marks (8 questions × 2 marks)
+- Part C: 24 marks (8 questions × 3 marks)
+- Part D: 30 marks (6 questions × 5 marks)
+- Part E: 15 marks (2 questions, each with sub-parts totaling up to 15 marks possible)
 
 --------------------
 IMPORTANT RULES:
@@ -1234,7 +1241,7 @@ Therefore, the area is 78.5 cm²",
         public string ExamType { get; set; } = string.Empty;
 
         [JsonPropertyName("totalMarks")]
-        public int TotalMarks { get; set; } = 80;
+        public int TotalMarks { get; set; } = 100;
 
         [JsonPropertyName("duration")]
         public int Duration { get; set; } = 195;
