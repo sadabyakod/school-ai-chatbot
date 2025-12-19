@@ -426,96 +426,16 @@ namespace SchoolAiChatbotBackend.Controllers
                 bool mcqAnswersProvided = !string.IsNullOrEmpty(mcqAnswers);
                 
                 Console.WriteLine($"🔍 MCQ ANSWERS CHECK: Provided={mcqAnswersProvided}, Length={mcqAnswers?.Length ?? 0}");
-                
+
+                // 1) Primary source: mcqAnswers JSON passed from client (web / mobile)
                 if (mcqAnswersProvided)
                 {
                     try
                     {
                         Console.WriteLine($"📝 RAW MCQ ANSWERS JSON: {mcqAnswers}");
                         mcqAnswersList = System.Text.Json.JsonSerializer.Deserialize<List<SchoolAiChatbotBackend.Models.McqAnswerDto>>(mcqAnswers);
-                        _logger.LogInformation("[MCQ_ANSWERS] Parsed {Count} MCQ answers", mcqAnswersList?.Count ?? 0);
-                        Console.WriteLine($"📝 MCQ Answers parsed: {mcqAnswersList?.Count ?? 0} answers");
-                        
-                        if (mcqAnswersList != null && mcqAnswersList.Count > 0)
-                        {
-                            foreach (var ans in mcqAnswersList.Take(5))
-                                Console.WriteLine($"   - Q:{ans.QuestionId} → {ans.SelectedOption}");
-                            if (mcqAnswersList.Count > 5)
-                                Console.WriteLine($"   ... and {mcqAnswersList.Count - 5} more");
-                            
-                            // Evaluate MCQ answers
-                            var exam = _examStorageService.GetExam(examId);
-                            if (exam != null)
-                            {
-                                var mcqQuestions = GetMcqQuestions(exam);
-                                Console.WriteLine($"📚 Found {mcqQuestions.Count} MCQ questions in exam");
-                                
-                                // Create new list with evaluated answers in the required format
-                                var evaluatedAnswers = new List<SchoolAiChatbotBackend.Models.McqAnswerDto>();
-                                int matchedCount = 0;
-                                
-                                foreach (var answer in mcqAnswersList)
-                                {
-                                    var question = mcqQuestions.FirstOrDefault(q => q.QuestionId == answer.QuestionId);
-                                    if (question != null)
-                                    {
-                                        matchedCount++;
-                                        var studentAnswer = NormalizeAnswer(answer.SelectedOption);
-                                        var correctAnswer = NormalizeAnswer(question.CorrectAnswer);
-                                        var isCorrect = studentAnswer.Equals(correctAnswer, StringComparison.OrdinalIgnoreCase);
-                                        var awardedScore = isCorrect ? question.Marks : 0;
-                                        
-                                        mcqScore += awardedScore;
-                                        mcqTotalMarks += question.Marks;
-                                        
-                                        // Create evaluation in the new format
-                                        evaluatedAnswers.Add(new SchoolAiChatbotBackend.Models.McqAnswerDto
-                                        {
-                                            QuestionNumber = question.QuestionNumber,
-                                            QuestionText = question.QuestionText,
-                                            ExtractedAnswer = answer.SelectedOption,
-                                            ModelAnswer = question.CorrectAnswer,
-                                            MaxScore = question.Marks,
-                                            AwardedScore = awardedScore,
-                                            Feedback = isCorrect ? "Correct!" : $"Incorrect. Correct answer is: {question.CorrectAnswer}",
-                                            // Legacy fields for backward compatibility
-                                            QuestionId = question.QuestionId,
-                                            SelectedOption = answer.SelectedOption
-                                        });
-                                    }
-                                    else
-                                    {
-                                        Console.WriteLine($"⚠️ Question not found: {answer.QuestionId}");
-                                        // Store unevaluated answer to preserve data
-                                        evaluatedAnswers.Add(new SchoolAiChatbotBackend.Models.McqAnswerDto
-                                        {
-                                            QuestionNumber = 0,
-                                            QuestionText = "Question not found",
-                                            ExtractedAnswer = answer.SelectedOption,
-                                            ModelAnswer = "",
-                                            MaxScore = 0,
-                                            AwardedScore = 0,
-                                            Feedback = "Question ID not found in exam",
-                                            QuestionId = answer.QuestionId,
-                                            SelectedOption = answer.SelectedOption
-                                        });
-                                    }
-                                }
-                                
-                                Console.WriteLine($"✅ Matched {matchedCount}/{mcqAnswersList.Count} questions");
-                                
-                                // ALWAYS use evaluated list (even if empty or partial) to preserve data
-                                mcqAnswersList = evaluatedAnswers;
-                                
-                                _logger.LogInformation("[MCQ_EVALUATION] Score: {Score}/{Total}, Matched: {Matched}/{Total}", 
-                                    mcqScore, mcqTotalMarks, matchedCount, evaluatedAnswers.Count);
-                                Console.WriteLine($"📊 MCQ Score: {mcqScore}/{mcqTotalMarks}");
-                            }
-                            else
-                            {
-                                Console.WriteLine($"⚠️ Exam not found for evaluation: {examId}");
-                            }
-                        }
+                        _logger.LogInformation("[MCQ_ANSWERS] Parsed {Count} MCQ answers from request JSON", mcqAnswersList?.Count ?? 0);
+                        Console.WriteLine($"📝 MCQ Answers parsed from request: {mcqAnswersList?.Count ?? 0} answers");
                     }
                     catch (Exception jsonEx)
                     {
@@ -523,6 +443,119 @@ namespace SchoolAiChatbotBackend.Controllers
                         Console.WriteLine($"⚠️ MCQ Answers parsing failed: {jsonEx.Message}");
                         Console.WriteLine($"   JSON: {mcqAnswers}");
                         // Don't fail the request, just log the warning and continue without MCQ answers
+                    }
+                }
+
+                // 2) Fallback source: in-memory MCQ submission repository (SubmitMcqAnswers API)
+                if (mcqAnswersList == null || mcqAnswersList.Count == 0)
+                {
+                    try
+                    {
+                        Console.WriteLine("🔍 No usable MCQ list from request. Checking MCQ submissions store...");
+                        var mcqSubmission = await _examRepository.GetMcqSubmissionAsync(examId, studentId);
+                        if (mcqSubmission != null && mcqSubmission.Answers != null && mcqSubmission.Answers.Count > 0)
+                        {
+                            mcqAnswersProvided = true;
+                            mcqAnswersList = mcqSubmission.Answers
+                                .Select(a => new SchoolAiChatbotBackend.Models.McqAnswerDto
+                                {
+                                    QuestionId = a.QuestionId,
+                                    SelectedOption = a.SelectedOption
+                                })
+                                .ToList();
+
+                            _logger.LogInformation("[MCQ_ANSWERS] Loaded {Count} MCQ answers from in-memory submission store", mcqAnswersList.Count);
+                            Console.WriteLine($"🧠 Loaded {mcqAnswersList.Count} MCQ answers from in-memory MCQ submission store");
+                        }
+                        else
+                        {
+                            Console.WriteLine("ℹ️ No MCQ submission found in in-memory store for this exam/student.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "[MCQ_ANSWERS] Error while loading MCQ submission from in-memory store: {Error}", ex.Message);
+                        Console.WriteLine($"⚠️ Error while loading MCQ submission from store: {ex.Message}");
+                    }
+                }
+
+                // 3) If we now have a list, run evaluation against generated exam to enrich with question text and scores
+                if (mcqAnswersList != null && mcqAnswersList.Count > 0)
+                {
+                    try
+                    {
+                        var exam = _examStorageService.GetExam(examId);
+                        if (exam != null)
+                        {
+                            var mcqQuestions = GetMcqQuestions(exam);
+                            Console.WriteLine($"📚 Found {mcqQuestions.Count} MCQ questions in exam for evaluation");
+
+                            var evaluatedAnswers = new List<SchoolAiChatbotBackend.Models.McqAnswerDto>();
+                            int matchedCount = 0;
+
+                            foreach (var answer in mcqAnswersList)
+                            {
+                                var question = mcqQuestions.FirstOrDefault(q => q.QuestionId == answer.QuestionId);
+                                if (question != null)
+                                {
+                                    matchedCount++;
+                                    var studentAnswer = NormalizeAnswer(answer.SelectedOption);
+                                    var correctAnswer = NormalizeAnswer(question.CorrectAnswer);
+                                    var isCorrect = studentAnswer.Equals(correctAnswer, StringComparison.OrdinalIgnoreCase);
+                                    var awardedScore = isCorrect ? question.Marks : 0;
+
+                                    mcqScore += awardedScore;
+                                    mcqTotalMarks += question.Marks;
+
+                                    evaluatedAnswers.Add(new SchoolAiChatbotBackend.Models.McqAnswerDto
+                                    {
+                                        QuestionNumber = question.QuestionNumber,
+                                        QuestionText = question.QuestionText,
+                                        ExtractedAnswer = answer.SelectedOption,
+                                        ModelAnswer = question.CorrectAnswer,
+                                        MaxScore = question.Marks,
+                                        AwardedScore = awardedScore,
+                                        Feedback = isCorrect ? "Correct!" : $"Incorrect. Correct answer is: {question.CorrectAnswer}",
+                                        QuestionId = question.QuestionId,
+                                        SelectedOption = answer.SelectedOption
+                                    });
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"⚠️ Question not found for MCQ answer: {answer.QuestionId}");
+                                    evaluatedAnswers.Add(new SchoolAiChatbotBackend.Models.McqAnswerDto
+                                    {
+                                        QuestionNumber = 0,
+                                        QuestionText = "Question not found",
+                                        ExtractedAnswer = answer.SelectedOption,
+                                        ModelAnswer = string.Empty,
+                                        MaxScore = 0,
+                                        AwardedScore = 0,
+                                        Feedback = "Question ID not found in exam",
+                                        QuestionId = answer.QuestionId,
+                                        SelectedOption = answer.SelectedOption
+                                    });
+                                }
+                            }
+
+                            Console.WriteLine($"✅ Matched {matchedCount}/{mcqAnswersList.Count} MCQ questions during evaluation");
+
+                            // ALWAYS use evaluated list (even if empty or partial) to preserve data
+                            mcqAnswersList = evaluatedAnswers;
+
+                            _logger.LogInformation("[MCQ_EVALUATION] Score: {Score}/{Total}, Matched: {Matched}/{Total}",
+                                mcqScore, mcqTotalMarks, matchedCount, evaluatedAnswers.Count);
+                            Console.WriteLine($"📊 MCQ Score: {mcqScore}/{mcqTotalMarks}");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"⚠️ Exam not found in cache for MCQ evaluation: {examId}");
+                        }
+                    }
+                    catch (Exception evalEx)
+                    {
+                        _logger.LogWarning(evalEx, "[MCQ_EVALUATION] Error during MCQ evaluation: {Error}", evalEx.Message);
+                        Console.WriteLine($"⚠️ Error during MCQ evaluation: {evalEx.Message}");
                     }
                 }
 
