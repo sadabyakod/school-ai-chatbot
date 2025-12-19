@@ -13,11 +13,7 @@ $appName = "app-wlanqwy7vuwmu"
 $resourceGroup = "DefaultResourceGroup-EUS"
 
 # Get connection string from Azure App Service configuration
-$connectionString = az webapp config appsettings list `
-    --name $appName `
-    --resource-group $resourceGroup `
-    --query "[?name=='ConnectionStrings__DefaultConnection'].value" `
-    --output tsv
+$connectionString = az webapp config appsettings list --name $appName --resource-group $resourceGroup --query "[?name=='ConnectionStrings__DefaultConnection'].value" --output tsv
 
 if (-not $connectionString) {
     Write-Host "❌ Failed to retrieve connection string from Azure" -ForegroundColor Red
@@ -45,8 +41,7 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "========================================" -ForegroundColor Green
     Write-Host ""
     Write-Host "Your Azure SQL database is now up to date." -ForegroundColor Green
-}
-else {
+} else {
     Write-Host ""
     Write-Host "========================================" -ForegroundColor Red
     Write-Host "❌ Migration Failed" -ForegroundColor Red

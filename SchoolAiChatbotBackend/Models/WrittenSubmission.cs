@@ -220,19 +220,36 @@ namespace SchoolAiChatbotBackend.Models
     /// <summary>
     /// MCQ answer evaluation for answer sheet submission
     /// Matches the required JSON format: questionEvaluations array
+    /// Supports both camelCase (from mobile) and PascalCase JSON properties
     /// </summary>
     public class McqAnswerDto
     {
+        [System.Text.Json.Serialization.JsonPropertyName("questionNumber")]
         public int QuestionNumber { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("questionText")]
         public string QuestionText { get; set; } = string.Empty;
+        
+        [System.Text.Json.Serialization.JsonPropertyName("extractedAnswer")]
         public string ExtractedAnswer { get; set; } = string.Empty;
+        
+        [System.Text.Json.Serialization.JsonPropertyName("modelAnswer")]
         public string ModelAnswer { get; set; } = string.Empty;
+        
+        [System.Text.Json.Serialization.JsonPropertyName("maxScore")]
         public decimal MaxScore { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("awardedScore")]
         public decimal AwardedScore { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("feedback")]
         public string Feedback { get; set; } = string.Empty;
         
-        // Legacy properties for backward compatibility
+        // Primary properties for mobile app (camelCase JSON)
+        [System.Text.Json.Serialization.JsonPropertyName("questionId")]
         public string QuestionId { get; set; } = string.Empty;
+        
+        [System.Text.Json.Serialization.JsonPropertyName("selectedOption")]
         public string SelectedOption { get; set; } = string.Empty;
     }
 }

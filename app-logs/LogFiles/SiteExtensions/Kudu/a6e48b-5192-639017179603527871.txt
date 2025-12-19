@@ -1,0 +1,20 @@
+2025-12-19T05:12:39  PID[5192] Information Unpacking resources...
+2025-12-19T05:12:39  PID[5192] Information 12-19 05:12:39 Information: Executing Application Insights Profiler agent version 2.6.2201.2106 with arguments: 
+2025-12-19T05:12:39  PID[5192] Information 12-19 05:12:39 Information: Minimum version enabled on machine: 1.0.0
+2025-12-19T05:12:39  PID[5192] Information 12-19 05:12:39 Information: Applying logging level: Information
+2025-12-19T05:12:39  PID[5192] Information 12-19 05:12:39 Information: Instrumentation key: b39f69e3-4601-41ea-ad30-30857fd86dae
+2025-12-19T05:12:39  PID[5192] Information 12-19 05:12:39 Information: Application Insights Profiler endpoint: https://profiler.monitor.azure.com/
+2025-12-19T05:12:39  PID[5192] Information 12-19 05:12:39 Information: Application Insights endpoint: https://centralindia-0.in.applicationinsights.azure.com/v2/track/
+2025-12-19T05:12:39  PID[5192] Information 12-19 05:12:39 Information: Runtime Environment: Antares
+2025-12-19T05:12:39  PID[5192] Information 12-19 05:12:39 Information: Support files: C:\local\Temp\jobs\continuous\ApplicationInsightsProfiler3\kcfsbkut.js4\spsupport
+2025-12-19T05:12:39  PID[5192] Information 12-19 05:12:39 Information: Providing usage data (to opt out set the AppSettings ApplicationInsightsProvideUsageTelemetryData with the value "false"): True
+2025-12-19T05:12:39  PID[5192] Information 12-19 05:12:39 Information: Engine mode: Sampling
+2025-12-19T05:12:39  PID[5192] Information 12-19 05:12:39 Information: Application Insights AppId: a7411207-f970-435e-9023-fea12522b5ba
+2025-12-19T05:12:39  PID[5192] Information 12-19 05:12:39 Information: Press 'Ctrl+C' to exit Application Insights Profiler.
+2025-12-19T05:12:39  PID[5192] Information 12-19 05:12:39 Information: Set up shutdown handler.
+2025-12-19T05:12:39  PID[5192] Information 12-19 05:12:39 Information: Shutdown handler set to watch C:\local\Temp\JobsShutdown\continuous\ApplicationInsightsProfiler3\mpr1ivoi.xer.
+2025-12-19T05:12:39  PID[5192] Information 12-19 05:12:39 Information: Starting main process
+2025-12-19T05:12:39  PID[5192] Information 12-19 05:12:39 Critical: Profiler is not supported on Dynamic, Free or Shared sites. Please upgrade your site to Basic or above.
+2025-12-19T05:12:39  PID[5192] Information 12-19 05:12:39 Information: Agent started to stand by.
+2025-12-19T05:22:33  PID[5192] Verbose     SnapshotHelper::TakeSnapshotTimerCallback
+2025-12-19T05:22:33  PID[5192] Verbose     SnapshotHelper::TakeSnapshotInternal - no new files in CodeGen

@@ -90,7 +90,7 @@ namespace SchoolAiChatbotBackend.Controllers
                     request.StudentId);
 
                 // Load exam from storage service
-                var exam = _examStorageService.GetExam(request.ExamId);
+                var exam = await _examStorageService.GetExamAsync(request.ExamId);
                 if (exam == null)
                 {
                     return NotFound(new { error = $"Exam {request.ExamId} not found. Please generate the exam first using /api/exam/generate" });
@@ -367,7 +367,7 @@ namespace SchoolAiChatbotBackend.Controllers
 
                 // 6. Validate exam exists
                 Console.WriteLine($"🔍 Looking up exam: '{examId}'");
-                var examExists = _examStorageService.ExamExists(examId);
+                var examExists = await _examStorageService.ExamExistsAsync(examId);
                 Console.WriteLine($"🔍 Exam exists: {examExists}");
                 
                 if (!examExists)
@@ -441,9 +441,23 @@ namespace SchoolAiChatbotBackend.Controllers
                     try
                     {
                         Console.WriteLine($"📝 RAW MCQ ANSWERS JSON: {mcqAnswers}");
-                        mcqAnswersList = System.Text.Json.JsonSerializer.Deserialize<List<SchoolAiChatbotBackend.Models.McqAnswerDto>>(mcqAnswers);
+                        
+                        // Use case-insensitive deserialization to handle both camelCase and PascalCase
+                        var jsonOptions = new System.Text.Json.JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        };
+                        mcqAnswersList = System.Text.Json.JsonSerializer.Deserialize<List<SchoolAiChatbotBackend.Models.McqAnswerDto>>(mcqAnswers, jsonOptions);
+                        
                         _logger.LogInformation("[MCQ_ANSWERS] Parsed {Count} MCQ answers from request JSON", mcqAnswersList?.Count ?? 0);
                         Console.WriteLine($"📝 MCQ Answers parsed from request: {mcqAnswersList?.Count ?? 0} answers");
+                        
+                        // Debug: Log first answer to verify parsing
+                        if (mcqAnswersList != null && mcqAnswersList.Count > 0)
+                        {
+                            var first = mcqAnswersList[0];
+                            Console.WriteLine($"   First answer: QuestionId='{first.QuestionId}', SelectedOption='{first.SelectedOption}'");
+                        }
                     }
                     catch (Exception jsonEx)
                     {
@@ -492,7 +506,7 @@ namespace SchoolAiChatbotBackend.Controllers
                 {
                     try
                     {
-                        var exam = _examStorageService.GetExam(examId);
+                        var exam = await _examStorageService.GetExamAsync(examId);
                         if (exam != null)
                         {
                             var mcqQuestions = GetMcqQuestions(exam);
@@ -646,7 +660,7 @@ namespace SchoolAiChatbotBackend.Controllers
                 Console.WriteLine("📤 UPLOAD WRITTEN - RESPONSE");
                 Console.WriteLine(new string('-', 80));
                 Console.WriteLine($"✅ Submission ID: {submission.WrittenSubmissionId}");
-                Console.WriteLine($"📊 Status: PendingEvaluation (0)");
+                Console.WriteLine($"📊 Status: processing");
                 Console.WriteLine($"📁 Files Saved: {files.Count}");
                 Console.WriteLine($"📨 Queued for processing: {QueueNames.WrittenSubmissionProcessing}");
                 Console.WriteLine($"💡 Next: Poll /api/exam/submission-status/{submission.WrittenSubmissionId}");
@@ -656,9 +670,15 @@ namespace SchoolAiChatbotBackend.Controllers
 
                 return Ok(new UploadWrittenResponse
                 {
-                    WrittenSubmissionId = submission.WrittenSubmissionId,
-                    Status = "PendingEvaluation",
-                    Message = "✅ Answer sheet uploaded successfully! Processing will begin shortly. Check status for results."
+                    SubmissionId = submission.WrittenSubmissionId,
+                    ExamId = examId,
+                    StudentId = studentId,
+                    Status = "processing",
+                    FilesUploaded = files.Count,
+                    McqScore = mcqScore > 0 ? (int)mcqScore : null,
+                    McqTotal = mcqTotalMarks > 0 ? (int)mcqTotalMarks : null,
+                    Message = "Submission received successfully. Evaluation in progress.",
+                    CorrelationId = correlationId
                 });
             }
             catch (OperationCanceledException)
@@ -718,35 +738,42 @@ namespace SchoolAiChatbotBackend.Controllers
 
                 // Map status to user-friendly message with polling hints
                 string statusMessage;
+                string statusText;
                 int pollIntervalSeconds;
+                int progress;
                 
                 if (isResultsReady)
                 {
                     statusMessage = "✅ Results Ready!";
+                    statusText = "Evaluation Complete";
                     pollIntervalSeconds = 0; // No more polling needed
+                    progress = 100;
                 }
                 else if (isError)
                 {
                     statusMessage = "❌ Error occurred";
+                    statusText = "Evaluation Failed";
                     pollIntervalSeconds = 0; // No more polling needed
+                    progress = 0;
                 }
                 else
                 {
-                    (statusMessage, pollIntervalSeconds) = submission.Status switch
+                    (statusMessage, statusText, pollIntervalSeconds, progress) = submission.Status switch
                     {
-                        SubmissionStatus.Uploaded => ("⏳ Uploaded - Processing will start soon", 5), // Poll in 5s
-                        SubmissionStatus.OcrProcessing => ("📄 Reading your answer sheet...", 3), // Poll in 3s
-                        SubmissionStatus.Evaluating => ("🤖 Evaluating your answers...", 5), // Poll in 5s
-                        _ => ("Processing...", 5)
+                        SubmissionStatus.Uploaded => ("⏳ Uploaded - Processing will start soon", "Uploaded", 5, 10),
+                        SubmissionStatus.OcrProcessing => ("📄 Reading your answer sheet...", "OCR Processing", 3, 40),
+                        SubmissionStatus.Evaluating => ("🤖 Evaluating your answers...", "Evaluating", 5, 70),
+                        _ => ("Processing...", "Processing", 5, 20)
                     };
                 }
 
                 var response = new SubmissionStatusResponse
                 {
-                    WrittenSubmissionId = writtenSubmissionId,
-                    // Return Status=3 (Results Ready) if blob path exists, regardless of DB status
-                    Status = isResultsReady ? "3" : ((int)submission.Status).ToString(),
-                    StatusMessage = statusMessage,
+                    SubmissionId = writtenSubmissionId,
+                    // Return Status=2 (Evaluation Complete) if blob path exists, regardless of DB status
+                    Status = isResultsReady ? "2" : isError ? (submission.Status == SubmissionStatus.OcrFailed ? "3" : "4") : ((int)submission.Status).ToString(),
+                    StatusText = statusText,
+                    Progress = progress,
                     PollIntervalSeconds = pollIntervalSeconds,
                     SubmittedAt = submission.SubmittedAt,
                     EvaluatedAt = submission.EvaluatedAt,
@@ -1025,7 +1052,7 @@ namespace SchoolAiChatbotBackend.Controllers
                 _logger.LogInformation("Fetching result for exam {ExamId}, student {StudentId}", examId, studentId);
 
                 // Load exam from storage service
-                var exam = _examStorageService.GetExam(examId);
+                var exam = await _examStorageService.GetExamAsync(examId);
                 if (exam == null)
                 {
                     _logger.LogWarning("Exam {ExamId} not found in storage", examId);
@@ -1286,9 +1313,9 @@ namespace SchoolAiChatbotBackend.Controllers
         /// Note: Exams are now automatically stored when generated via /api/exam/generate
         /// </summary>
         [HttpPost("store-exam")]
-        public IActionResult StoreExam([FromBody] GeneratedExamResponse exam)
+        public async Task<IActionResult> StoreExamAsync([FromBody] GeneratedExamResponse exam)
         {
-            _examStorageService.StoreExam(exam);
+            await _examStorageService.StoreExamAsync(exam);
             _logger.LogInformation("Stored exam {ExamId}", exam.ExamId);
             return Ok(new { message = "Exam stored successfully", examId = exam.ExamId });
         }
@@ -1300,9 +1327,9 @@ namespace SchoolAiChatbotBackend.Controllers
         [HttpGet("{examId}")]
         [ProducesResponseType(typeof(GeneratedExamResponse), 200)]
         [ProducesResponseType(404)]
-        public IActionResult GetExam(string examId)
+        public async Task<IActionResult> GetExamAsync(string examId)
         {
-            var exam = _examStorageService.GetExam(examId);
+            var exam = await _examStorageService.GetExamAsync(examId);
             if (exam == null)
             {
                 return NotFound(new { error = $"Exam {examId} not found" });
@@ -1315,9 +1342,9 @@ namespace SchoolAiChatbotBackend.Controllers
         /// </summary>
         [HttpGet("list")]
         [ProducesResponseType(typeof(IEnumerable<string>), 200)]
-        public IActionResult ListExams()
+        public async Task<IActionResult> ListExamsAsync()
         {
-            var examIds = _examStorageService.GetAllExamIds();
+            var examIds = await _examStorageService.GetAllExamIdsAsync();
             return Ok(new { exams = examIds, count = examIds.Count() });
         }
 

@@ -69,28 +69,92 @@ namespace SchoolAiChatbotBackend.DTOs
     /// </summary>
     public class UploadWrittenResponse
     {
-        public string WrittenSubmissionId { get; set; } = string.Empty;
+        /// <summary>
+        /// Submission ID (primary identifier for mobile UI)
+        /// </summary>
+        public string SubmissionId { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// Alias for SubmissionId for backward compatibility
+        /// </summary>
+        public string WrittenSubmissionId { get => SubmissionId; set => SubmissionId = value; }
+        
+        /// <summary>
+        /// The exam ID this submission is for (same as input examId)
+        /// </summary>
+        public string ExamId { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// The student ID who submitted (same as input studentId)
+        /// </summary>
+        public string StudentId { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// Current status: "processing", "uploaded", "completed", "failed"
+        /// </summary>
         public string Status { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// Number of files uploaded
+        /// </summary>
+        public int FilesUploaded { get; set; }
+        
+        /// <summary>
+        /// MCQ score (if MCQ answers were included)
+        /// </summary>
+        public int? McqScore { get; set; }
+        
+        /// <summary>
+        /// Total MCQ marks possible
+        /// </summary>
+        public int? McqTotal { get; set; }
+        
+        /// <summary>
+        /// User-friendly message
+        /// </summary>
         public string Message { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// Correlation ID for tracking/debugging
+        /// </summary>
+        public string CorrelationId { get; set; } = string.Empty;
     }
 
     /// <summary>
     /// Response for submission status check
-    /// Status Flow: 0=Uploaded, 1=OCR Processing, 2=Evaluating, 3=Results Ready, 4=Error
+    /// Status Flow: 0=Uploaded, 1=OCR Complete, 2=Evaluation Complete, 3=OCR Failed, 4=Evaluation Failed
     /// </summary>
     public class SubmissionStatusResponse
     {
-        public string WrittenSubmissionId { get; set; } = string.Empty;
+        /// <summary>
+        /// Submission ID (primary identifier)
+        /// </summary>
+        public string SubmissionId { get; set; } = string.Empty;
         
         /// <summary>
-        /// Status code: 0=Uploaded, 1=OCR Processing, 2=Evaluating, 3=Results Ready, 4=Error
+        /// Alias for backward compatibility
+        /// </summary>
+        public string WrittenSubmissionId { get => SubmissionId; set => SubmissionId = value; }
+        
+        /// <summary>
+        /// Status code: 0=Uploaded, 1=OCR Complete, 2=Evaluation Complete, 3=OCR Failed, 4=Evaluation Failed
         /// </summary>
         public string Status { get; set; } = string.Empty;
         
         /// <summary>
-        /// User-friendly status message
+        /// Human-readable status text
         /// </summary>
-        public string StatusMessage { get; set; } = string.Empty;
+        public string StatusText { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// User-friendly status message (alias for StatusText)
+        /// </summary>
+        public string StatusMessage { get => StatusText; set => StatusText = value; }
+        
+        /// <summary>
+        /// Progress percentage (0-100)
+        /// </summary>
+        public int Progress { get; set; }
         
         /// <summary>
         /// Suggested polling interval in seconds. 0 means stop polling (results ready or error).
