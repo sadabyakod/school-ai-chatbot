@@ -175,7 +175,9 @@ namespace SchoolAiChatbotBackend.Services
                         new { role = "system", content = "You are an exam paper generator. Output ONLY valid JSON, no markdown." },
                         new { role = "user", content = prompt }
                     },
-                    max_tokens = 16000, // Max supported by gpt-4o-mini is 16384
+                    // Keep well below the 16,384 token limit so that
+                    // prompt tokens + completion tokens never exceed the model cap
+                    max_tokens = 4000,
                     temperature = 0.3,
                     response_format = new { type = "json_object" }
                 };
