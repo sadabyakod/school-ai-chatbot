@@ -73,6 +73,11 @@ namespace SchoolAiChatbotBackend.Services
         /// Reads JSON content from blob storage (for evaluation results)
         /// </summary>
         Task<string?> ReadJsonFromBlobAsync(string blobPath, string containerName = "evaluation-results");
+
+        /// <summary>
+        /// Saves JSON content to blob storage (for evaluation results)
+        /// </summary>
+        Task SaveJsonToBlobAsync(string jsonContent, string blobPath, string containerName = "evaluation-results");
     }
 
     public class LocalFileStorageService : IFileStorageService
@@ -102,23 +107,30 @@ namespace SchoolAiChatbotBackend.Services
                 throw new ArgumentException($"File type {extension} is not allowed", nameof(file));
             }
 
+            // Create directory structure: examId/studentId/filename
+            var examDir = Path.Combine(_uploadDirectory, examId);
+            var studentDir = Path.Combine(examDir, studentId);
+            Directory.CreateDirectory(studentDir);
+            
             var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
-            var uniqueFileName = $"{examId}_{studentId}_{timestamp}_{Guid.NewGuid():N}{extension}";
-            var filePath = Path.Combine(_uploadDirectory, uniqueFileName);
+            var uniqueFileName = $"{timestamp}_{Guid.NewGuid():N}{extension}";
+            var fullPath = Path.Combine(studentDir, uniqueFileName);
 
-            using (var stream = new FileStream(filePath, FileMode.Create))
+            using (var stream = new FileStream(fullPath, FileMode.Create))
             {
                 await file.CopyToAsync(stream);
             }
 
+            // Return ONLY the relative path (examId/studentId/filename) for consistency with Azure Blob
+            var relativePath = $"{examId}/{studentId}/{uniqueFileName}";
+            
             _logger.LogInformation(
-                "Saved file {FileName} to {FilePath} for exam {ExamId}, student {StudentId}",
+                "Saved file {FileName} to {FullPath}, returning relative path: {RelativePath}",
                 file.FileName,
-                filePath,
-                examId,
-                studentId);
+                fullPath,
+                relativePath);
 
-            return filePath;
+            return relativePath;
         }
 
         public Task<bool> DeleteFileAsync(string filePath)
@@ -185,6 +197,20 @@ namespace SchoolAiChatbotBackend.Services
             }
             _logger.LogWarning("Local file not found: {Path}", localPath);
             return Task.FromResult<string?>(null);
+        }
+
+        public Task SaveJsonToBlobAsync(string jsonContent, string blobPath, string containerName = "evaluation-results")
+        {
+            // For local storage, save to local uploads directory
+            var localPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads", containerName, blobPath);
+            var directory = Path.GetDirectoryName(localPath);
+            if (!string.IsNullOrEmpty(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+            File.WriteAllText(localPath, jsonContent);
+            _logger.LogInformation("JSON saved to local file: {Path}", localPath);
+            return Task.CompletedTask;
         }
     }
 
@@ -288,12 +314,11 @@ namespace SchoolAiChatbotBackend.Services
                     file.Length,
                     _options.RetentionDays);
 
-                // Return relative blob path (container/blobName) instead of full URL
-                // This allows Azure Function to easily parse and use it
-                // Format: students-answer-sheets/{examId}/{studentId}/{filename}
-                var relativePath = $"{_answerSheetsContainer}/{blobName}";
-                _logger.LogInformation("[AZURE_BLOB] Returning path: {Path}", relativePath);
-                return relativePath;
+                // Return ONLY the blob path (examId/studentId/filename)
+                // DO NOT include container name - container is already known from context
+                // The Azure Function and backend will use: students-answer-sheets/{blobName}
+                _logger.LogInformation("[AZURE_BLOB] Returning blob path (without container): {BlobName}", blobName);
+                return blobName;
             }
             catch (Exception ex)
             {
@@ -513,6 +538,36 @@ namespace SchoolAiChatbotBackend.Services
             {
                 _logger.LogError(ex, "Error reading JSON from blob: Container={Container}, Path={Path}", containerName, blobPath);
                 return null;
+            }
+        }
+
+        public async Task SaveJsonToBlobAsync(string jsonContent, string blobPath, string containerName = "evaluation-results")
+        {
+            try
+            {
+                _logger.LogInformation("Saving JSON to blob: Container={Container}, Path={Path}", containerName, blobPath);
+
+                var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
+                await containerClient.CreateIfNotExistsAsync(PublicAccessType.None);
+
+                var blobClient = containerClient.GetBlobClient(blobPath);
+
+                using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonContent));
+                var uploadOptions = new BlobUploadOptions
+                {
+                    HttpHeaders = new BlobHttpHeaders
+                    {
+                        ContentType = "application/json"
+                    }
+                };
+
+                await blobClient.UploadAsync(stream, uploadOptions);
+                _logger.LogInformation("Successfully saved JSON to blob: {Path}", blobPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving JSON to blob: Container={Container}, Path={Path}", containerName, blobPath);
+                throw;
             }
         }
     }

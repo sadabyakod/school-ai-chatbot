@@ -217,7 +217,12 @@ namespace SchoolAiChatbotBackend
                             answerSheetsContainer));
 
                     // Log configuration (after app is built)
-                    Console.WriteLine($"[INFO] Using Azure Blob Storage - AnswerSheetsContainer: {answerSheetsContainer}, DeleteAfterProcessing: {storageOptions.DeleteAfterProcessing}, OnDemandStorage: {storageOptions.OnDemandStorage}, RetentionDays: {storageOptions.RetentionDays}");
+                    Console.WriteLine($"[INFO] \u2705 Using Azure Blob Storage");
+                    Console.WriteLine($"[INFO]    - Container: {containerName}");
+                    Console.WriteLine($"[INFO]    - AnswerSheetsContainer: {answerSheetsContainer}");
+                    Console.WriteLine($"[INFO]    - DeleteAfterProcessing: {storageOptions.DeleteAfterProcessing}");
+                    Console.WriteLine($"[INFO]    - OnDemandStorage: {storageOptions.OnDemandStorage}");
+                    Console.WriteLine($"[INFO]    - RetentionDays: {storageOptions.RetentionDays}");
 
                     // Register background service for periodic file cleanup
                     if (storageOptions.RetentionDays > 0)
@@ -227,6 +232,8 @@ namespace SchoolAiChatbotBackend
                 }
                 else
                 {
+                    Console.WriteLine($"[WARNING] \u26a0\ufe0f Using Local File Storage (FileStorage__Provider not set to 'AzureBlob')");
+                    Console.WriteLine($"[WARNING]    Files will be stored in: uploads/students-answer-sheets");
                     builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
                 }
 

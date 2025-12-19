@@ -54,26 +54,86 @@ namespace SchoolAiChatbotBackend.Models
         }
 
         /// <summary>
-        /// Status: 0=Uploaded, 1=OcrComplete, 2=EvaluationComplete, 3=OcrFailed, 4=EvaluationFailed
-        /// </summary>
-        public SubmissionStatus Status { get; set; } = SubmissionStatus.Uploaded;
+    /// JSON array of MCQ answers submitted with the answer sheet
+    /// Format: [{"questionId": "Q1", "selectedOption": "A", "isCorrect": true, "marksAwarded": 1}]
+    /// </summary>
+    [Column("McqAnswers", TypeName = "nvarchar(max)")]
+    public string? McqAnswersJson { get; set; }
 
-        // OCR Results
-        [Column(TypeName = "nvarchar(max)")]
-        public string? ExtractedText { get; set; }
+    /// <summary>
+    /// In-memory access to MCQ answers (not mapped to DB)
+    /// Stored in format: { "questionEvaluations": [...] }
+    /// </summary>
+    [NotMapped]
+    public List<McqAnswerDto>? McqAnswers
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(McqAnswersJson))
+                return null;
+            
+            try
+            {
+                // Try to parse as the new format with questionEvaluations wrapper
+                var wrapper = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(McqAnswersJson);
+                if (wrapper.TryGetProperty("questionEvaluations", out var evaluations))
+                {
+                    return System.Text.Json.JsonSerializer.Deserialize<List<McqAnswerDto>>(evaluations.GetRawText());
+                }
+                // Fallback to direct array for backward compatibility
+                return System.Text.Json.JsonSerializer.Deserialize<List<McqAnswerDto>>(McqAnswersJson);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+        set
+        {
+            if (value == null)
+            {
+                McqAnswersJson = null;
+            }
+            else
+            {
+                // Store in the new format with questionEvaluations wrapper
+                var wrapper = new { questionEvaluations = value };
+                McqAnswersJson = System.Text.Json.JsonSerializer.Serialize(wrapper);
+            }
+        }
+    }
 
-        [Column(TypeName = "nvarchar(max)")]
-        public string? ExtractedTextJson { get; set; }
+    /// <summary>
+    /// MCQ score (if MCQ answers were provided with answer sheet)
+    /// </summary>
+    [Column("McqScore", TypeName = "decimal(10,2)")]
+    public decimal? McqScore { get; set; }
 
-        [MaxLength(500)]
-        public string? ExtractedTextBlobPath { get; set; }
+    /// <summary>
+    /// MCQ total marks (if MCQ answers were provided with answer sheet)
+    /// </summary>
+    [Column("McqTotalMarks", TypeName = "decimal(10,2)")]
+    public decimal? McqTotalMarks { get; set; }
 
-        /// <summary>
-        /// Azure Blob Storage path to the evaluation result JSON file
-        /// Populated when Status = Completed (2)
-        /// </summary>
-        [MaxLength(500)]
-        public string? EvaluationResultBlobPath { get; set; }
+    /// <summary>
+    /// Current status of the submission processing
+    /// 0 = Uploaded, 1 = OcrProcessing, 2 = Evaluating, 3 = ResultsReady, 4 = Error
+    /// </summary>
+    [Column("Status")]
+    public SubmissionStatus Status { get; set; } = SubmissionStatus.PendingEvaluation;
+
+    /// <summary>
+    /// Extracted text from OCR processing
+    /// </summary>
+    [Column("ExtractedText", TypeName = "nvarchar(max)")]
+    public string? ExtractedText { get; set; }
+
+    /// <summary>
+    /// Azure Blob Storage path to the evaluation result JSON file
+    /// Populated when Status = Completed (2)
+    /// </summary>
+    [MaxLength(500)]
+    public string? EvaluationResultBlobPath { get; set; }
 
         /// <summary>
         /// Alias for ExtractedText to maintain backward compatibility
@@ -155,5 +215,24 @@ namespace SchoolAiChatbotBackend.Models
         OcrFailed = 4,
         /// <summary>Alias for Error (legacy)</summary>
         EvaluationFailed = 4
+    }
+
+    /// <summary>
+    /// MCQ answer evaluation for answer sheet submission
+    /// Matches the required JSON format: questionEvaluations array
+    /// </summary>
+    public class McqAnswerDto
+    {
+        public int QuestionNumber { get; set; }
+        public string QuestionText { get; set; } = string.Empty;
+        public string ExtractedAnswer { get; set; } = string.Empty;
+        public string ModelAnswer { get; set; } = string.Empty;
+        public decimal MaxScore { get; set; }
+        public decimal AwardedScore { get; set; }
+        public string Feedback { get; set; } = string.Empty;
+        
+        // Legacy properties for backward compatibility
+        public string QuestionId { get; set; } = string.Empty;
+        public string SelectedOption { get; set; } = string.Empty;
     }
 }

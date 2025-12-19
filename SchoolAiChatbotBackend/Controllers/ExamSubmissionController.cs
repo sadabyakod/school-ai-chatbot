@@ -169,6 +169,50 @@ namespace SchoolAiChatbotBackend.Controllers
                     Results = results
                 };
 
+                // Save MCQ results to evaluation-results blob (same format as subjective)
+                try
+                {
+                    var grade = response.Percentage >= 90 ? "A" :
+                               response.Percentage >= 80 ? "B" :
+                               response.Percentage >= 70 ? "C" :
+                               response.Percentage >= 60 ? "D" : "F";
+
+                    var mcqResult = new
+                    {
+                        mcqSubmissionId = submission.McqSubmissionId,
+                        examId = request.ExamId,
+                        studentId = request.StudentId,
+                        totalScore = totalScore,
+                        maxPossibleScore = totalMarks,
+                        percentage = response.Percentage,
+                        grade = grade,
+                        evaluatedAt = DateTime.UtcNow,
+                        questions = results.Select(r => new
+                        {
+                            questionId = r.QuestionId,
+                            selectedOption = r.SelectedOption,
+                            correctAnswer = r.CorrectAnswer,
+                            isCorrect = r.IsCorrect,
+                            marksAwarded = r.MarksAwarded,
+                            feedback = r.IsCorrect ? "Correct answer" : $"Incorrect. Correct answer is: {r.CorrectAnswer}"
+                        }).ToList()
+                    };
+
+                    var resultJson = System.Text.Json.JsonSerializer.Serialize(mcqResult, new System.Text.Json.JsonSerializerOptions
+                    {
+                        WriteIndented = true
+                    });
+
+                    var blobPath = $"mcq-{submission.McqSubmissionId}/evaluation-result.json";
+                    await _fileStorageService.SaveJsonToBlobAsync(resultJson, blobPath, "evaluation-results");
+
+                    _logger.LogInformation("MCQ results saved to blob: {BlobPath}", blobPath);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to save MCQ results to blob storage (non-critical)");
+                }
+
                 _logger.LogInformation(
                     "MCQ submission completed: {Score}/{TotalMarks} ({Percentage}%)",
                     totalScore,
@@ -216,6 +260,7 @@ namespace SchoolAiChatbotBackend.Controllers
             [FromForm] string examId,
             [FromForm] string studentId,
             [FromForm] List<IFormFile> files,
+            [FromForm] string? mcqAnswers = null,
             CancellationToken cancellationToken = default)
         {
             // Generate correlation ID for this request
@@ -239,6 +284,7 @@ namespace SchoolAiChatbotBackend.Controllers
                 Console.WriteLine($"📚 Exam ID: {examId ?? "null"}");
                 Console.WriteLine($"👤 Student ID: {studentId ?? "null"}");
                 Console.WriteLine($"📁 Files Count: {files?.Count ?? 0}");
+                Console.WriteLine($"📝 MCQ Answers: {(string.IsNullOrEmpty(mcqAnswers) ? "None" : "Provided")}");
                 if (files != null)
                 {
                     long totalSize = 0;
@@ -354,8 +400,8 @@ namespace SchoolAiChatbotBackend.Controllers
                         var path = await _fileStorageService.SaveFileAsync(file, examId, studentId);
                         filePaths.Add(path);
                         
-                        _logger.LogInformation("[BLOB_UPLOAD_SUCCESS] File uploaded to {Path}", path);
-                        Console.WriteLine($"✅ Uploaded: {file.FileName} → {path}");
+                        _logger.LogInformation("[BLOB_UPLOAD_SUCCESS] File uploaded to blob path: {Path}", path);
+                        Console.WriteLine($"✅ Uploaded: {file.FileName} → BLOB PATH: {path}");
                     }
                     catch (Exception uploadEx)
                     {
@@ -366,21 +412,161 @@ namespace SchoolAiChatbotBackend.Controllers
                 }
 
                 _logger.LogInformation("[BLOB_UPLOADED] {FileCount} files saved to storage", filePaths.Count);
+                Console.WriteLine($"📦 Total blob paths stored: {filePaths.Count}");
+                foreach (var fp in filePaths)
+                {
+                    Console.WriteLine($"   - {fp}");
+                }
+
+                // === MCQ ANSWERS PARSING & EVALUATION ===
+                
+                List<SchoolAiChatbotBackend.Models.McqAnswerDto>? mcqAnswersList = null;
+                decimal mcqScore = 0;
+                decimal mcqTotalMarks = 0;
+                bool mcqAnswersProvided = !string.IsNullOrEmpty(mcqAnswers);
+                
+                Console.WriteLine($"🔍 MCQ ANSWERS CHECK: Provided={mcqAnswersProvided}, Length={mcqAnswers?.Length ?? 0}");
+                
+                if (mcqAnswersProvided)
+                {
+                    try
+                    {
+                        Console.WriteLine($"📝 RAW MCQ ANSWERS JSON: {mcqAnswers}");
+                        mcqAnswersList = System.Text.Json.JsonSerializer.Deserialize<List<SchoolAiChatbotBackend.Models.McqAnswerDto>>(mcqAnswers);
+                        _logger.LogInformation("[MCQ_ANSWERS] Parsed {Count} MCQ answers", mcqAnswersList?.Count ?? 0);
+                        Console.WriteLine($"📝 MCQ Answers parsed: {mcqAnswersList?.Count ?? 0} answers");
+                        
+                        if (mcqAnswersList != null && mcqAnswersList.Count > 0)
+                        {
+                            foreach (var ans in mcqAnswersList.Take(5))
+                                Console.WriteLine($"   - Q:{ans.QuestionId} → {ans.SelectedOption}");
+                            if (mcqAnswersList.Count > 5)
+                                Console.WriteLine($"   ... and {mcqAnswersList.Count - 5} more");
+                            
+                            // Evaluate MCQ answers
+                            var exam = _examStorageService.GetExam(examId);
+                            if (exam != null)
+                            {
+                                var mcqQuestions = GetMcqQuestions(exam);
+                                Console.WriteLine($"📚 Found {mcqQuestions.Count} MCQ questions in exam");
+                                
+                                // Create new list with evaluated answers in the required format
+                                var evaluatedAnswers = new List<SchoolAiChatbotBackend.Models.McqAnswerDto>();
+                                int matchedCount = 0;
+                                
+                                foreach (var answer in mcqAnswersList)
+                                {
+                                    var question = mcqQuestions.FirstOrDefault(q => q.QuestionId == answer.QuestionId);
+                                    if (question != null)
+                                    {
+                                        matchedCount++;
+                                        var studentAnswer = NormalizeAnswer(answer.SelectedOption);
+                                        var correctAnswer = NormalizeAnswer(question.CorrectAnswer);
+                                        var isCorrect = studentAnswer.Equals(correctAnswer, StringComparison.OrdinalIgnoreCase);
+                                        var awardedScore = isCorrect ? question.Marks : 0;
+                                        
+                                        mcqScore += awardedScore;
+                                        mcqTotalMarks += question.Marks;
+                                        
+                                        // Create evaluation in the new format
+                                        evaluatedAnswers.Add(new SchoolAiChatbotBackend.Models.McqAnswerDto
+                                        {
+                                            QuestionNumber = question.QuestionNumber,
+                                            QuestionText = question.QuestionText,
+                                            ExtractedAnswer = answer.SelectedOption,
+                                            ModelAnswer = question.CorrectAnswer,
+                                            MaxScore = question.Marks,
+                                            AwardedScore = awardedScore,
+                                            Feedback = isCorrect ? "Correct!" : $"Incorrect. Correct answer is: {question.CorrectAnswer}",
+                                            // Legacy fields for backward compatibility
+                                            QuestionId = question.QuestionId,
+                                            SelectedOption = answer.SelectedOption
+                                        });
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine($"⚠️ Question not found: {answer.QuestionId}");
+                                        // Store unevaluated answer to preserve data
+                                        evaluatedAnswers.Add(new SchoolAiChatbotBackend.Models.McqAnswerDto
+                                        {
+                                            QuestionNumber = 0,
+                                            QuestionText = "Question not found",
+                                            ExtractedAnswer = answer.SelectedOption,
+                                            ModelAnswer = "",
+                                            MaxScore = 0,
+                                            AwardedScore = 0,
+                                            Feedback = "Question ID not found in exam",
+                                            QuestionId = answer.QuestionId,
+                                            SelectedOption = answer.SelectedOption
+                                        });
+                                    }
+                                }
+                                
+                                Console.WriteLine($"✅ Matched {matchedCount}/{mcqAnswersList.Count} questions");
+                                
+                                // ALWAYS use evaluated list (even if empty or partial) to preserve data
+                                mcqAnswersList = evaluatedAnswers;
+                                
+                                _logger.LogInformation("[MCQ_EVALUATION] Score: {Score}/{Total}, Matched: {Matched}/{Total}", 
+                                    mcqScore, mcqTotalMarks, matchedCount, evaluatedAnswers.Count);
+                                Console.WriteLine($"📊 MCQ Score: {mcqScore}/{mcqTotalMarks}");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"⚠️ Exam not found for evaluation: {examId}");
+                            }
+                        }
+                    }
+                    catch (Exception jsonEx)
+                    {
+                        _logger.LogWarning(jsonEx, "[MCQ_ANSWERS] Failed to parse MCQ answers JSON: {Error}", jsonEx.Message);
+                        Console.WriteLine($"⚠️ MCQ Answers parsing failed: {jsonEx.Message}");
+                        Console.WriteLine($"   JSON: {mcqAnswers}");
+                        // Don't fail the request, just log the warning and continue without MCQ answers
+                    }
+                }
 
                 // === DATABASE PHASE ===
 
+                // CRITICAL FIX: Save MCQ data if ANY answers were provided, even if evaluation failed
+                // This ensures we never lose submitted data
+                bool saveMcqData = mcqAnswersProvided && mcqAnswersList != null && mcqAnswersList.Count > 0;
+                
                 var submission = new WrittenSubmission
                 {
                     WrittenSubmissionId = Guid.NewGuid().ToString(),
                     ExamId = examId,
                     StudentId = studentId,
                     FilePaths = filePaths,
+                    McqAnswers = mcqAnswersList,  // Always set if we have data
+                    McqScore = saveMcqData ? mcqScore : null,
+                    McqTotalMarks = saveMcqData ? mcqTotalMarks : null,
                     Status = SubmissionStatus.PendingEvaluation,
                     SubmittedAt = DateTime.UtcNow
                 };
 
+                // === DEBUG LOGGING BEFORE DB SAVE ===
+                Console.WriteLine($"💾 DATABASE SAVE - MCQ DATA:");
+                Console.WriteLine($"   MCQ Answers Provided: {mcqAnswersProvided}");
+                Console.WriteLine($"   MCQ Answers List Count: {mcqAnswersList?.Count ?? 0}");
+                Console.WriteLine($"   Save MCQ Data: {saveMcqData}");
+                Console.WriteLine($"   McqScore: {submission.McqScore}");
+                Console.WriteLine($"   McqTotalMarks: {submission.McqTotalMarks}");
+                Console.WriteLine($"   McqAnswersJson: {(submission.McqAnswersJson != null ? $"Length={submission.McqAnswersJson.Length}" : "NULL")}");
+                if (submission.McqAnswersJson != null)
+                {
+                    Console.WriteLine($"   McqAnswersJson Preview: {(submission.McqAnswersJson.Length > 200 ? submission.McqAnswersJson.Substring(0, 200) + "..." : submission.McqAnswersJson)}");
+                }
+
                 await _examRepository.SaveWrittenSubmissionAsync(submission);
-                _logger.LogInformation("[DB_SAVED] Submission {SubmissionId} created", submission.WrittenSubmissionId);
+                _logger.LogInformation(
+                    "[DB_SAVED] Submission {SubmissionId} created - MCQ: {HasMcq}, Score: {McqScore}/{McqTotal}, FilePaths: {FileCount}",
+                    submission.WrittenSubmissionId,
+                    submission.McqAnswersJson != null,
+                    submission.McqScore,
+                    submission.McqTotalMarks,
+                    filePaths.Count);
+                Console.WriteLine($"✅ Saved to database successfully");
 
                 // === QUEUE PHASE ===
 
@@ -1115,6 +1301,8 @@ namespace SchoolAiChatbotBackend.Controllers
                     mcqQuestions.AddRange(part.Questions.Select(q => new McqQuestion
                     {
                         QuestionId = q.QuestionId,
+                        QuestionNumber = q.QuestionNumber,
+                        QuestionText = q.QuestionText,
                         CorrectAnswer = q.CorrectAnswer,
                         Marks = part.MarksPerQuestion
                     }));
@@ -1214,8 +1402,46 @@ namespace SchoolAiChatbotBackend.Controllers
         private class McqQuestion
         {
             public string QuestionId { get; set; } = string.Empty;
+            public int QuestionNumber { get; set; }
+            public string QuestionText { get; set; } = string.Empty;
             public string CorrectAnswer { get; set; } = string.Empty;
             public int Marks { get; set; }
+        }
+
+        /// <summary>
+        /// DEBUG: Check what's stored in MCQ columns
+        /// </summary>
+        [HttpGet("debug/mcq-columns/{examId}/{studentId}")]
+        public async Task<IActionResult> DebugMcqColumns(string examId, string studentId)
+        {
+            try
+            {
+                var submission = await _examRepository.GetWrittenSubmissionByExamAndStudentAsync(examId, studentId);
+                if (submission == null)
+                {
+                    return NotFound(new { error = "Submission not found" });
+                }
+
+                return Ok(new
+                {
+                    submissionId = submission.WrittenSubmissionId,
+                    examId = submission.ExamId,
+                    studentId = submission.StudentId,
+                    mcqAnswersJson = submission.McqAnswersJson,
+                    mcqAnswersJsonLength = submission.McqAnswersJson?.Length ?? 0,
+                    mcqScore = submission.McqScore,
+                    mcqTotalMarks = submission.McqTotalMarks,
+                    mcqAnswersList = submission.McqAnswers,
+                    mcqAnswersListCount = submission.McqAnswers?.Count ?? 0,
+                    filePathsJson = submission.FilePathsJson,
+                    filePaths = submission.FilePaths,
+                    filePathsCount = submission.FilePaths?.Count ?? 0
+                });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { error = ex.Message, stackTrace = ex.StackTrace });
+            }
         }
 
         #region Rubric Management Endpoints
