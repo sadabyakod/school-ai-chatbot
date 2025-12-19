@@ -541,10 +541,18 @@ Return ONLY valid JSON:
         {{
           ""questionId"": ""A1"",
           ""questionNumber"": 1,
-          ""questionText"": ""string"",
-          ""options"": [""A) option1"", ""B) option2"", ""C) option3"", ""D) option4""],
-          ""correctAnswer"": ""A) option1"",
-          ""topic"": ""string""
+          ""questionText"": ""If f(x) = x^2, then f'(x) is:"",
+          ""options"": [""A) x"", ""B) 2x"", ""C) x^2"", ""D) 2x^2""],
+          ""correctAnswer"": ""B) 2x"",
+          ""topic"": ""Derivatives""
+        }},
+        {{
+          ""questionId"": ""A16"",
+          ""questionNumber"": 16,
+          ""questionText"": ""Fill in the blank: The inverse of sin(x) is ____."",
+          ""options"": [],
+          ""correctAnswer"": ""sin⁻¹(x) or arcsin(x)"",
+          ""topic"": ""Inverse Trig""
         }}
       ]
     }},
@@ -644,13 +652,15 @@ C: 11Q×3mk=18 (Q32-42) answer 6
 D: 8Q×5mk=20 (Q43-50) answer 4
 E: 2Q×10mk=10 (Q51-52, each with 2 subparts: a=6mk, b=4mk) answer 1
 
-RULES:
-1. MCQ: options=[""A) ..."", ""B) ..."", ""C) ..."", ""D) ...""], correctAnswer=""A) ..."" (full text)
-2. Fill-blank/Subjective: options=[], correctAnswer=detailed model answer with steps
-3. Answer detail by marks: 2mk=2-3 steps, 3mk=3-4 steps, 5mk=5-7 steps, 6mk=6-8 steps, 10mk=complete derivation
-4. Part E: each Q has subParts array with 2 items (a=6mk, b=4mk)
-5. Topics: Relations, Inverse Trig, Matrices, Determinants, Continuity, Derivatives, Integrals, Diff Eqs, Vectors, 3D Geometry, Linear Programming, Probability
-6. Output: Valid JSON only, no markdown
+CRITICAL RULES - MUST FOLLOW:
+1. MCQ (Q1-15): options=[""A) ..."", ""B) ..."", ""C) ..."", ""D) ...""], correctAnswer MUST be one of the options with FULL TEXT (e.g., ""A) option1"")
+2. Fill-blank (Q16-20): options=[], correctAnswer MUST be the answer word/phrase to fill in the blank
+3. Subjective (Parts B,C,D,E): options=[], correctAnswer MUST contain detailed model answer with solution steps
+4. EVERY question MUST have a non-empty correctAnswer field - this is REQUIRED
+5. Answer detail by marks: 2mk=2-3 steps, 3mk=3-4 steps, 5mk=5-7 steps, 6mk=6-8 steps, 10mk=complete derivation
+6. Part E: each Q has subParts array with 2 items (a=6mk, b=4mk), each subPart MUST have correctAnswer
+7. Topics: Relations, Inverse Trig, Matrices, Determinants, Continuity, Derivatives, Integrals, Diff Eqs, Vectors, 3D Geometry, Linear Programming, Probability
+8. Output: Valid JSON only, no markdown
 
 Generate now:";
         }
