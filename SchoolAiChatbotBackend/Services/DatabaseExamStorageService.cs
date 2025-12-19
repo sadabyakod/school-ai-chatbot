@@ -39,11 +39,17 @@ namespace SchoolAiChatbotBackend.Services
         {
             if (_tableInitialized) return;
 
+            // Use lock for thread-safety but don't set flag until AFTER success
+            bool shouldInitialize = false;
             lock (_initLock)
             {
-                if (_tableInitialized) return;
-                _tableInitialized = true;
+                if (!_tableInitialized)
+                {
+                    shouldInitialize = true;
+                }
             }
+            
+            if (!shouldInitialize) return;
 
             const string createTableSql = @"
                 IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='GeneratedExams' AND xtype='U')
@@ -78,12 +84,17 @@ namespace SchoolAiChatbotBackend.Services
             {
                 await context.Database.ExecuteSqlRawAsync(createTableSql);
                 _logger.LogInformation("GeneratedExams table verified/created successfully");
+                
+                // Only set flag after successful initialization
+                lock (_initLock)
+                {
+                    _tableInitialized = true;
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Note during GeneratedExams table check (may already exist)");
-                // Reset flag so we try again next time if it was a transient error
-                // _tableInitialized = false;
+                _logger.LogWarning(ex, "Note during GeneratedExams table check (may already exist) - will retry on next request");
+                // Don't set flag - will retry on next request
             }
         }
 
@@ -93,22 +104,30 @@ namespace SchoolAiChatbotBackend.Services
             if (exam == null || string.IsNullOrWhiteSpace(exam.ExamId))
             {
                 _logger.LogWarning("Attempted to store null exam or exam with empty ID");
+                Console.WriteLine("⚠️ StoreExamAsync: null exam or empty ID");
                 return;
             }
 
+            Console.WriteLine($"💾 StoreExamAsync: Starting storage for {exam.ExamId}");
+            
             try
             {
                 using var scope = _scopeFactory.CreateScope();
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
+                Console.WriteLine($"💾 StoreExamAsync: Got DbContext, ensuring table exists...");
+                
                 // Ensure table exists before any operation
                 await EnsureTableExistsAsync(context);
+                
+                Console.WriteLine($"💾 StoreExamAsync: Table check complete, checking for existing exam...");
 
                 // Check if exam already exists
                 var existingExam = await context.GeneratedExams
                     .FirstOrDefaultAsync(e => e.ExamId == exam.ExamId);
 
                 var examContentJson = JsonSerializer.Serialize(exam, _jsonOptions);
+                Console.WriteLine($"💾 StoreExamAsync: JSON serialized, size={examContentJson.Length} chars");
 
                 if (existingExam != null)
                 {
@@ -145,6 +164,7 @@ namespace SchoolAiChatbotBackend.Services
                     };
 
                     context.GeneratedExams.Add(generatedExam);
+                    Console.WriteLine($"💾 StoreExamAsync: Added to context, saving...");
 
                     _logger.LogInformation(
                         "Stored new exam {ExamId} - Subject: {Subject}, Chapter: {Chapter}, TotalMarks: {TotalMarks}",
@@ -152,9 +172,12 @@ namespace SchoolAiChatbotBackend.Services
                 }
 
                 await context.SaveChangesAsync();
+                Console.WriteLine($"✅ StoreExamAsync: SaveChangesAsync completed successfully for {exam.ExamId}");
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"❌ StoreExamAsync FAILED for {exam.ExamId}: {ex.Message}");
+                Console.WriteLine($"   Stack: {ex.StackTrace?.Substring(0, Math.Min(500, ex.StackTrace?.Length ?? 0))}");
                 _logger.LogError(ex, "Failed to store exam {ExamId} in database", exam.ExamId);
                 throw;
             }

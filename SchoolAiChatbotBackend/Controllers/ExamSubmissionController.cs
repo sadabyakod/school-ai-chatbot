@@ -366,8 +366,16 @@ namespace SchoolAiChatbotBackend.Controllers
                 }
 
                 // 6. Validate exam exists
-                if (!_examStorageService.ExamExists(examId))
+                Console.WriteLine($"🔍 Looking up exam: '{examId}'");
+                var examExists = _examStorageService.ExamExists(examId);
+                Console.WriteLine($"🔍 Exam exists: {examExists}");
+                
+                if (!examExists)
                 {
+                    // Log all available exams for debugging
+                    var allExamIds = await _examStorageService.GetAllExamIdsAsync();
+                    Console.WriteLine($"📋 Available exams ({allExamIds.Count()}): {string.Join(", ", allExamIds.Take(5))}...");
+                    
                     return NotFound(new { error = $"Exam {examId} not found. Please generate the exam first.", correlationId });
                 }
 
@@ -1289,6 +1297,7 @@ namespace SchoolAiChatbotBackend.Controllers
         /// Get a previously generated exam by its ID
         /// </summary>
         [HttpGet("get/{examId}")]
+        [HttpGet("{examId}")]
         [ProducesResponseType(typeof(GeneratedExamResponse), 200)]
         [ProducesResponseType(404)]
         public IActionResult GetExam(string examId)

@@ -42,6 +42,57 @@ namespace SchoolAiChatbotBackend.Controllers
         }
 
         /// <summary>
+        /// Debug endpoint to test database storage
+        /// </summary>
+        [HttpGet("debug/test-storage")]
+        public async Task<IActionResult> TestStorage()
+        {
+            var testExamId = $"TEST-{DateTime.Now:yyyyMMddHHmmss}";
+            try
+            {
+                // Create a minimal test exam
+                var testExam = new GeneratedExamResponse
+                {
+                    ExamId = testExamId,
+                    Subject = "Test",
+                    Grade = "Test",
+                    TotalMarks = 0,
+                    Duration = 0,
+                    Questions = new List<GeneratedQuestion>()
+                };
+                
+                // Try to store it
+                await _examStorageService.StoreExamAsync(testExam);
+                
+                // Try to retrieve it
+                var retrieved = await _examStorageService.GetExamAsync(testExamId);
+                
+                // Clean up
+                await _examStorageService.RemoveExamAsync(testExamId);
+                
+                return Ok(new
+                {
+                    success = true,
+                    testExamId = testExamId,
+                    stored = true,
+                    retrieved = retrieved != null,
+                    message = "Database storage is working correctly!"
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    testExamId = testExamId,
+                    error = ex.Message,
+                    stackTrace = ex.StackTrace?.Substring(0, Math.Min(1000, ex.StackTrace?.Length ?? 0)),
+                    innerError = ex.InnerException?.Message
+                });
+            }
+        }
+
+        /// <summary>
         /// Generate a Karnataka 2nd PUC style exam paper using AI
         /// POST /api/exam/generate or /api/exam-generator/generate-exam
         /// </summary>
@@ -84,8 +135,23 @@ namespace SchoolAiChatbotBackend.Controllers
                 await GenerateAndSaveRubricsAsync(examPaper);
 
                 // Store the exam for later retrieval (for MCQ submission, written answer upload, etc.)
-                _examStorageService.StoreExam(examPaper);
-                _logger.LogInformation("Exam {ExamId} stored for later retrieval", examPaper.ExamId);
+                string? storageError = null;
+                bool storageSuccess = false;
+                try
+                {
+                    Console.WriteLine($"📝 About to store exam {examPaper.ExamId}...");
+                    await _examStorageService.StoreExamAsync(examPaper);
+                    storageSuccess = true;
+                    Console.WriteLine($"✅ Exam {examPaper.ExamId} stored successfully");
+                    _logger.LogInformation("Exam {ExamId} stored for later retrieval", examPaper.ExamId);
+                }
+                catch (Exception storeEx)
+                {
+                    storageError = $"{storeEx.Message} | Inner: {storeEx.InnerException?.Message}";
+                    Console.WriteLine($"❌ FAILED to store exam {examPaper.ExamId}: {storageError}");
+                    Console.WriteLine($"   StackTrace: {storeEx.StackTrace?.Substring(0, Math.Min(500, storeEx.StackTrace?.Length ?? 0))}");
+                    _logger.LogError(storeEx, "Failed to store exam {ExamId}", examPaper.ExamId);
+                }
 
                 _logger.LogInformation(
                     "Exam generated successfully: ExamId={ExamId}, Questions={QuestionCount}, TotalMarks={TotalMarks}",
@@ -113,6 +179,28 @@ namespace SchoolAiChatbotBackend.Controllers
 
                 // For students, strip answers; for teacher/tools, allow including answers via query flag
                 var finalExam = includeAnswers ? examPaper : StripModelAnswers(examPaper);
+                
+                // Include storage debug info in response during debugging
+                if (!storageSuccess && !string.IsNullOrEmpty(storageError))
+                {
+                    // Return with warning about storage failure (for debugging)
+                    return Ok(new 
+                    {
+                        examId = finalExam.ExamId,
+                        subject = finalExam.Subject,
+                        grade = finalExam.Grade,
+                        chapter = finalExam.Chapter,
+                        difficulty = finalExam.Difficulty,
+                        instructions = finalExam.Instructions,
+                        totalMarks = finalExam.TotalMarks,
+                        duration = finalExam.Duration,
+                        questionCount = finalExam.QuestionCount,
+                        questions = finalExam.Questions,
+                        parts = finalExam.Parts,
+                        _storageWarning = $"Exam was NOT saved to database: {storageError}"
+                    });
+                }
+                
                 return Ok(finalExam);
             }
             catch (JsonException ex)
@@ -186,7 +274,7 @@ namespace SchoolAiChatbotBackend.Controllers
                     progress.Message = "Generating marking rubrics...";
                     
                     await GenerateAndSaveRubricsAsync(examPaper);
-                    _examStorageService.StoreExam(examPaper);
+                    await _examStorageService.StoreExamAsync(examPaper);
                     
                     progress.ProgressPercent = 100;
                     progress.Status = "complete";
