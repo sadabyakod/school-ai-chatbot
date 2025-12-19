@@ -513,151 +513,71 @@ namespace SchoolAiChatbotBackend.Controllers
 
         private string BuildExamGenerationPrompt(GenerateExamRequest request)
         {
-            return $@"Generate a Karnataka 2nd PUC {request.Subject} exam paper in JSON format.
+            return $@"Generate a {request.Subject} practice test with 5 MCQ and 2 subjective questions in JSON format.
 
-Specs: {request.Grade}, Full Syllabus, 80 marks, 195 minutes.
-
-Return ONLY valid JSON:
+Return ONLY valid JSON (no markdown):
 
 {{
-  ""examId"": ""string"",
+  ""examId"": ""EXAM-{DateTime.UtcNow:yyyyMMddHHmmss}"",
   ""subject"": ""{request.Subject}"",
   ""grade"": ""{request.Grade}"",
-  ""chapter"": ""Full Syllabus"",
+  ""chapter"": ""Practice Test"",
   ""difficulty"": ""Medium"",
-  ""examType"": ""Full Paper"",
-  ""totalMarks"": 80,
-  ""duration"": 195,
-  ""instructions"": [""Part A: ALL 20 (15 MCQ + 5 Fill-blanks)"", ""Part B: ANY 6/11"", ""Part C: ANY 6/11"", ""Part D: ANY 4/8"", ""Part E: ANY 1/2""],
+  ""examType"": ""Practice"",
+  ""totalMarks"": 15,
+  ""duration"": 30,
+  ""instructions"": [""Answer all MCQ questions"", ""Answer all subjective questions with steps""],
   ""parts"": [
     {{
       ""partName"": ""Part A"",
-      ""partDescription"": ""Answer ALL the following questions (15 MCQ + 5 Fill-in-the-Blanks)"",
-      ""questionType"": ""MCQ / Fill-in-the-Blanks"",
+      ""partDescription"": ""Multiple Choice Questions (1 mark each)"",
+      ""questionType"": ""MCQ"",
       ""marksPerQuestion"": 1,
-      ""totalQuestions"": 20,
-      ""questionsToAnswer"": 20,
+      ""totalQuestions"": 5,
+      ""questionsToAnswer"": 5,
       ""questions"": [
         {{
           ""questionId"": ""A1"",
           ""questionNumber"": 1,
-          ""questionText"": ""If f(x) = x^2, then f'(x) is:"",
-          ""options"": [""A) x"", ""B) 2x"", ""C) x^2"", ""D) 2x^2""],
-          ""correctAnswer"": ""B) 2x"",
-          ""topic"": ""Derivatives""
-        }},
-        {{
-          ""questionId"": ""A16"",
-          ""questionNumber"": 16,
-          ""questionText"": ""Fill in the blank: The inverse of sin(x) is ____."",
-          ""options"": [],
-          ""correctAnswer"": ""sin⁻¹(x) or arcsin(x)"",
-          ""topic"": ""Inverse Trig""
+          ""questionText"": ""Question text here"",
+          ""options"": [""A) option1"", ""B) option2"", ""C) option3"", ""D) option4""],
+          ""correctAnswer"": ""B) option2"",
+          ""topic"": ""Topic""
         }}
       ]
     }},
     {{
       ""partName"": ""Part B"",
-      ""partDescription"": ""Answer any SIX of the following questions"",
-      ""questionType"": ""Short Answer (2 marks)"",
-      ""marksPerQuestion"": 2,
-      ""totalQuestions"": 11,
-      ""questionsToAnswer"": 6,
+      ""partDescription"": ""Short Answer Questions (5 marks each)"",
+      ""questionType"": ""Short Answer"",
+      ""marksPerQuestion"": 5,
+      ""totalQuestions"": 2,
+      ""questionsToAnswer"": 2,
       ""questions"": [
         {{
           ""questionId"": ""B1"",
-          ""questionNumber"": 21,
-          ""questionText"": ""string"",
+          ""questionNumber"": 6,
+          ""questionText"": ""Question text here"",
           ""options"": [],
-          ""correctAnswer"": ""Model answer text"",
-          ""topic"": ""string""
-        }}
-      ]
-    }},
-    {{
-      ""partName"": ""Part C"",
-      ""partDescription"": ""Answer any SIX of the following questions"",
-      ""questionType"": ""Short Answer (3 marks)"",
-      ""marksPerQuestion"": 3,
-      ""totalQuestions"": 11,
-      ""questionsToAnswer"": 6,
-      ""questions"": [
-        {{
-          ""questionId"": ""C1"",
-          ""questionNumber"": 32,
-          ""questionText"": ""string"",
-          ""options"": [],
-          ""correctAnswer"": ""Model answer text"",
-          ""topic"": ""string""
-        }}
-      ]
-    }},
-    {{
-      ""partName"": ""Part D"",
-      ""partDescription"": ""Answer any FOUR of the following questions"",
-      ""questionType"": ""Long Answer (5 marks)"",
-      ""marksPerQuestion"": 5,
-      ""totalQuestions"": 8,
-      ""questionsToAnswer"": 4,
-      ""questions"": [
-        {{
-          ""questionId"": ""D1"",
-          ""questionNumber"": 43,
-          ""questionText"": ""string"",
-          ""options"": [],
-          ""correctAnswer"": ""Model answer with steps"",
-          ""topic"": ""string""
-        }}
-      ]
-    }},
-    {{
-      ""partName"": ""Part E"",
-      ""partDescription"": ""Answer any ONE of the following questions"",
-      ""questionType"": ""Long Answer (10 marks)"",
-      ""marksPerQuestion"": 10,
-      ""totalQuestions"": 2,
-      ""questionsToAnswer"": 1,
-      ""questions"": [
-        {{
-          ""questionId"": ""E1"",
-          ""questionNumber"": 51,
-          ""questionText"": ""string"",
-          ""subParts"": [
-            {{
-              ""partLabel"": ""a"",
-              ""questionText"": ""sub-question a (6 marks)"",
-              ""correctAnswer"": ""Model answer for part a""
-            }},
-            {{
-              ""partLabel"": ""b"",
-              ""questionText"": ""sub-question b (4 marks)"",
-              ""correctAnswer"": ""Model answer for part b""
-            }}
-          ],
-          ""options"": [],
-          ""correctAnswer"": ""Combined model answer"",
-          ""topic"": ""string""
+          ""correctAnswer"": ""Step 1: ... Step 2: ... Final Answer: ..."",
+          ""topic"": ""Topic""
         }}
       ]
     }}
   ],
-  ""questionCount"": 52,
-  ""createdAt"": ""ISO 8601 string""
+  ""questionCount"": 7,
+  ""createdAt"": ""{DateTime.UtcNow:o}""
 }}
 
-STRUCTURE (80 marks total):
-A: 20Q×1mk=20 (Q1-15:MCQ 4opts, Q16-20:Fill-blank) ALL compulsory
-B: 11Q×2mk=12 (Q21-31) answer 6
-C: 11Q×3mk=18 (Q32-42) answer 6
-D: 8Q×5mk=20 (Q43-50) answer 4
-E: 2Q×10mk=10 (Q51-52, each with 2 subparts: a=6mk, b=4mk) answer 1
+RULES:
+1. Generate exactly 5 MCQ questions (A1-A5) with 4 options each
+2. Generate exactly 2 subjective questions (B1-B2) with detailed answers
+3. MCQ correctAnswer MUST be full option text like ""B) 2x""
+4. Subjective correctAnswer MUST have step-by-step solution
+5. Topics for {request.Subject}: Use relevant topics
+6. Return ONLY the JSON, no other text
 
-CRITICAL RULES - MUST FOLLOW:
-1. MCQ (Q1-15): options=[""A) ..."", ""B) ..."", ""C) ..."", ""D) ...""], correctAnswer MUST be one of the options with FULL TEXT (e.g., ""A) option1"")
-2. Fill-blank (Q16-20): options=[], correctAnswer MUST be the answer word/phrase to fill in the blank
-3. Subjective (Parts B,C,D,E): options=[], correctAnswer MUST contain detailed model answer with solution steps
-4. EVERY question MUST have a non-empty correctAnswer field - this is REQUIRED
-5. Answer detail by marks: 2mk=2-3 steps, 3mk=3-4 steps, 5mk=5-7 steps, 6mk=6-8 steps, 10mk=complete derivation
+Generate now:";
 6. Part E: each Q has subParts array with 2 items (a=6mk, b=4mk), each subPart MUST have correctAnswer
 7. Topics: Relations, Inverse Trig, Matrices, Determinants, Continuity, Derivatives, Integrals, Diff Eqs, Vectors, 3D Geometry, Linear Programming, Probability
 8. Output: Valid JSON only, no markdown
