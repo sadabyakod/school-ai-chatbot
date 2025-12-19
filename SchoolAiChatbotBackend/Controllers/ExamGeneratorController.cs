@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Caching.Memory;
 using SchoolAiChatbotBackend.Services;
 using SchoolAiChatbotBackend.DTOs;
 using System;
@@ -25,26 +24,20 @@ namespace SchoolAiChatbotBackend.Controllers
         private readonly IOpenAIService _openAIService;
         private readonly ISubjectiveRubricService _rubricService;
         private readonly IExamStorageService _examStorageService;
-        private readonly IMemoryCache _cache;
         private readonly ILogger<ExamGeneratorController> _logger;
         
         // Track generation progress for streaming
         private static readonly ConcurrentDictionary<string, ExamGenerationProgress> _generationProgress = new();
-        
-        // Cache expiration (24 hours)
-        private static readonly TimeSpan CacheExpiration = TimeSpan.FromHours(24);
 
         public ExamGeneratorController(
             IOpenAIService openAIService,
             ISubjectiveRubricService rubricService,
             IExamStorageService examStorageService,
-            IMemoryCache cache,
             ILogger<ExamGeneratorController> logger)
         {
             _openAIService = openAIService;
             _rubricService = rubricService;
             _examStorageService = examStorageService;
-            _cache = cache;
             _logger = logger;
         }
 
@@ -80,30 +73,6 @@ namespace SchoolAiChatbotBackend.Controllers
 
             try
             {
-                // Check cache first if caching is enabled
-                var chapter = request.Chapter ?? "all";
-                var difficulty = request.Difficulty ?? "medium";
-                var examType = request.ExamType ?? "full";
-                var cacheKey = $"exam_{request.Subject}_{request.Grade}_{chapter}_{difficulty}_{examType}".ToLowerInvariant().Replace(" ", "_");
-                
-                if (request.UseCache && _cache.TryGetValue(cacheKey, out GeneratedExamResponse? cachedExam) && cachedExam != null)
-                {
-                    Console.WriteLine($"✅ CACHE HIT - Returning cached exam: {cachedExam.ExamId}");
-                    _logger.LogInformation("Cache hit for {CacheKey}, returning cached exam {ExamId}", cacheKey, cachedExam.ExamId);
-                    
-                    // Clone and update the exam ID to make it unique for this request
-                    var clonedExam = CloneExam(cachedExam);
-                    clonedExam.ExamId = $"{cachedExam.ExamId}_cached_{DateTime.UtcNow:HHmmss}";
-                    clonedExam.CreatedAt = DateTime.UtcNow.ToString("o");
-                    
-                    // Store the cloned exam
-                    _examStorageService.StoreExam(clonedExam);
-
-                    // For students, strip answers; for teacher/tools, allow including answers via query flag
-                    var responseExam = includeAnswers ? clonedExam : StripModelAnswers(clonedExam);
-                    return Ok(responseExam);
-                }
-                
                 var startTime = DateTime.UtcNow;
                 
                 // === AI GENERATION: Generate exam using OpenAI ===
@@ -138,13 +107,6 @@ namespace SchoolAiChatbotBackend.Controllers
                         Console.WriteLine($"   - {part.PartName}: {part.TotalQuestions} questions ({part.MarksPerQuestion} marks each)");
                 }
                 Console.WriteLine(new string('=', 80) + "\n");
-
-                // Cache the exam for future requests
-                var cacheOptions = new MemoryCacheEntryOptions()
-                    .SetAbsoluteExpiration(CacheExpiration)
-                    .SetSlidingExpiration(TimeSpan.FromHours(6));
-                _cache.Set(cacheKey, examPaper, cacheOptions);
-                _logger.LogInformation("Exam cached with key {CacheKey}", cacheKey);
                 
                 var generationTime = (DateTime.UtcNow - startTime).TotalSeconds;
                 Console.WriteLine($"⏱️ Total Generation Time: {generationTime:F1}s");
@@ -176,15 +138,6 @@ namespace SchoolAiChatbotBackend.Controllers
         }
         
         /// <summary>
-        /// Clone an exam for cache return
-        /// </summary>
-        private GeneratedExamResponse CloneExam(GeneratedExamResponse original)
-        {
-            var json = JsonSerializer.Serialize(original);
-            return JsonSerializer.Deserialize<GeneratedExamResponse>(json) ?? original;
-        }
-        
-        /// <summary>
         /// Start async exam generation with progress tracking
         /// POST /api/exam/generate-async
         /// </summary>
@@ -199,26 +152,6 @@ namespace SchoolAiChatbotBackend.Controllers
                 return BadRequest(ModelState);
                 
             var requestId = Guid.NewGuid().ToString("N")[..12];
-            
-            // Check cache first
-            var chapter = request.Chapter ?? "all";
-            var difficulty = request.Difficulty ?? "medium";
-            var examType = request.ExamType ?? "full";
-            var cacheKey = $"exam_{request.Subject}_{request.Grade}_{chapter}_{difficulty}_{examType}".ToLowerInvariant().Replace(" ", "_");
-            
-            if (request.UseCache && _cache.TryGetValue(cacheKey, out GeneratedExamResponse? cachedExam) && cachedExam != null)
-            {
-                var clonedExam = CloneExam(cachedExam);
-                clonedExam.ExamId = $"{cachedExam.ExamId}_cached_{DateTime.UtcNow:HHmmss}";
-                _examStorageService.StoreExam(clonedExam);
-                
-                return Ok(new {
-                    requestId = requestId,
-                    status = "complete",
-                    cached = true,
-                    exam = clonedExam
-                });
-            }
             
             // Initialize progress tracking
             var progress = new ExamGenerationProgress
@@ -254,12 +187,6 @@ namespace SchoolAiChatbotBackend.Controllers
                     
                     await GenerateAndSaveRubricsAsync(examPaper);
                     _examStorageService.StoreExam(examPaper);
-                    
-                    // Cache the exam
-                    var cacheOptions = new MemoryCacheEntryOptions()
-                        .SetAbsoluteExpiration(CacheExpiration)
-                        .SetSlidingExpiration(TimeSpan.FromHours(6));
-                    _cache.Set(cacheKey, examPaper, cacheOptions);
                     
                     progress.ProgressPercent = 100;
                     progress.Status = "complete";
@@ -319,24 +246,6 @@ namespace SchoolAiChatbotBackend.Controllers
             }
             
             return Ok(response);
-        }
-        
-        /// <summary>
-        /// Clear exam cache (for testing)
-        /// DELETE /api/exam/cache
-        /// </summary>
-        [HttpDelete("cache")]
-        public IActionResult ClearCache([FromQuery] string? subject = null, [FromQuery] string? grade = null)
-        {
-            if (!string.IsNullOrEmpty(subject) && !string.IsNullOrEmpty(grade))
-            {
-                var cacheKey = $"exam_{subject}_{grade}".ToLowerInvariant().Replace(" ", "_");
-                _cache.Remove(cacheKey);
-                return Ok(new { message = $"Cache cleared for {subject} - {grade}", cacheKey });
-            }
-            
-            // Note: IMemoryCache doesn't have a clear all method, so we just return info
-            return Ok(new { message = "Specific cache entries must be cleared by subject/grade" });
         }
 
         /// <summary>
