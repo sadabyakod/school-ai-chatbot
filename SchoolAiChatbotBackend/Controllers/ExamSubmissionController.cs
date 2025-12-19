@@ -1156,9 +1156,21 @@ namespace SchoolAiChatbotBackend.Controllers
             double subjectiveScore = subjectiveEvaluations.Sum(e => e.EarnedMarks);
             double subjectiveTotalMarks = subjectiveEvaluations.Sum(e => e.MaxMarks);
 
-            // Calculate grand total
-            double grandScore = mcqScore + subjectiveScore;
-            double grandTotalMarks = mcqTotalMarks + subjectiveTotalMarks;
+            // Normalize scores so MCQ = 15 marks max and Subjective = 85 marks max
+            const double mcqSectionMaxMarks = 15.0;
+            const double subjectiveSectionMaxMarks = 85.0;
+
+            double scaledMcqScore = mcqTotalMarks > 0
+                ? (double)mcqScore / mcqTotalMarks * mcqSectionMaxMarks
+                : 0;
+
+            double scaledSubjectiveScore = subjectiveTotalMarks > 0
+                ? subjectiveScore / subjectiveTotalMarks * subjectiveSectionMaxMarks
+                : 0;
+
+            // Calculate grand total using normalized section scores
+            double grandScore = scaledMcqScore + scaledSubjectiveScore;
+            double grandTotalMarks = mcqSectionMaxMarks + subjectiveSectionMaxMarks; // 100
             double percentage = grandTotalMarks > 0 ? Math.Round(grandScore / grandTotalMarks * 100, 2) : 0;
 
             // Calculate grade
@@ -1171,11 +1183,12 @@ namespace SchoolAiChatbotBackend.Controllers
                 ExamId = examId,
                 StudentId = studentId,
                 ExamTitle = $"{exam.Subject} - {exam.Chapter}",
-                McqScore = mcqScore,
-                McqTotalMarks = mcqTotalMarks,
+                // Use normalized section scores and max marks (MCQ 15, Subjective 85)
+                McqScore = (int)Math.Round(scaledMcqScore),
+                McqTotalMarks = (int)mcqSectionMaxMarks,
                 McqResults = mcqResults,
-                SubjectiveScore = subjectiveScore,
-                SubjectiveTotalMarks = subjectiveTotalMarks,
+                SubjectiveScore = Math.Round(scaledSubjectiveScore, 2),
+                SubjectiveTotalMarks = subjectiveSectionMaxMarks,
                 SubjectiveResults = subjectiveEvaluations.Select(e =>
                 {
                     try
@@ -1242,7 +1255,7 @@ namespace SchoolAiChatbotBackend.Controllers
                         };
                     }
                 }).ToList(),
-                GrandScore = grandScore,
+                GrandScore = Math.Round(grandScore, 2),
                 GrandTotalMarks = grandTotalMarks,
                 Percentage = percentage,
                 Grade = grade,

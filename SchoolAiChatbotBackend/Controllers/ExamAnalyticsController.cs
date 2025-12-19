@@ -408,8 +408,21 @@ namespace SchoolAiChatbotBackend.Controllers
             // Calculate overall scores
             int mcqScore = mcqSubmission?.Score ?? 0;
             int mcqTotalMarks = mcqSubmission?.TotalMarks ?? 0;
-            double grandScore = mcqScore + subjectiveScore;
-            double grandTotalMarks = mcqTotalMarks + subjectiveTotalMarks;
+
+            // Normalize scores so MCQ = 15 marks max and Subjective = 85 marks max
+            const double mcqSectionMaxMarks = 15.0;
+            const double subjectiveSectionMaxMarks = 85.0;
+
+            double scaledMcqScore = mcqSubmission != null && mcqTotalMarks > 0
+                ? (double)mcqScore / mcqTotalMarks * mcqSectionMaxMarks
+                : 0;
+
+            double scaledSubjectiveScore = subjectiveTotalMarks > 0
+                ? subjectiveScore / subjectiveTotalMarks * subjectiveSectionMaxMarks
+                : 0;
+
+            double grandScore = scaledMcqScore + scaledSubjectiveScore;
+            double grandTotalMarks = mcqSectionMaxMarks + subjectiveSectionMaxMarks; // 100
             double percentage = grandTotalMarks > 0 ? Math.Round((grandScore / grandTotalMarks) * 100, 2) : 0;
 
             return new ExamSubmissionDetailDto
@@ -422,8 +435,9 @@ namespace SchoolAiChatbotBackend.Controllers
                 Chapter = exam.Chapter,
                 HasMcqSubmission = mcqSubmission != null,
                 McqSubmittedAt = mcqSubmission?.SubmittedAt,
-                McqScore = mcqSubmission?.Score,
-                McqTotalMarks = mcqSubmission?.TotalMarks,
+                // Use normalized section scores and max marks (MCQ 15, Subjective 85)
+                McqScore = mcqSubmission != null ? (int?)Math.Round(scaledMcqScore) : null,
+                McqTotalMarks = mcqSubmission != null ? (int?)mcqSectionMaxMarks : null,
                 McqAnswers = mcqSubmission?.Answers.Select(a => new McqAnswerDetailDto
                 {
                     QuestionId = a.QuestionId,
@@ -436,8 +450,8 @@ namespace SchoolAiChatbotBackend.Controllers
                 WrittenSubmittedAt = writtenSubmission?.SubmittedAt,
                 WrittenSubmissionId = writtenSubmission?.WrittenSubmissionId,
                 WrittenStatus = ConvertSubmissionStatus(writtenSubmission?.Status ?? Models.SubmissionStatus.PendingEvaluation),
-                SubjectiveScore = subjectiveScore,
-                SubjectiveTotalMarks = subjectiveTotalMarks,
+                SubjectiveScore = scaledSubjectiveScore,
+                SubjectiveTotalMarks = subjectiveSectionMaxMarks,
                 SubjectiveEvaluations = subjectiveEvaluations,
                 GrandScore = grandScore,
                 GrandTotalMarks = grandTotalMarks,

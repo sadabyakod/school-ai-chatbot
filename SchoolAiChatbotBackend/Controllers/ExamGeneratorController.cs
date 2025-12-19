@@ -59,7 +59,7 @@ namespace SchoolAiChatbotBackend.Controllers
         /// </remarks>
         [HttpPost("generate")]
         [HttpPost("/api/exam-generator/generate-exam")] // Alternate route for mobile app
-        public async Task<IActionResult> GenerateExam([FromBody] GenerateExamRequest request)
+        public async Task<IActionResult> GenerateExam([FromBody] GenerateExamRequest request, [FromQuery] bool includeAnswers = false)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -98,10 +98,10 @@ namespace SchoolAiChatbotBackend.Controllers
                     
                     // Store the cloned exam
                     _examStorageService.StoreExam(clonedExam);
-                    
-                    // Return exam WITHOUT model answers (students should not see answers upfront)
-                    var publicExam = StripModelAnswers(clonedExam);
-                    return Ok(publicExam);
+
+                    // For students, strip answers; for teacher/tools, allow including answers via query flag
+                    var responseExam = includeAnswers ? clonedExam : StripModelAnswers(clonedExam);
+                    return Ok(responseExam);
                 }
                 
                 var startTime = DateTime.UtcNow;
@@ -149,9 +149,9 @@ namespace SchoolAiChatbotBackend.Controllers
                 var generationTime = (DateTime.UtcNow - startTime).TotalSeconds;
                 Console.WriteLine($"⏱️ Total Generation Time: {generationTime:F1}s");
 
-                // Return exam WITHOUT model answers (students should not see answers upfront)
-                var strippedExam = StripModelAnswers(examPaper);
-                return Ok(strippedExam);
+                // For students, strip answers; for teacher/tools, allow including answers via query flag
+                var finalExam = includeAnswers ? examPaper : StripModelAnswers(examPaper);
+                return Ok(finalExam);
             }
             catch (JsonException ex)
             {
