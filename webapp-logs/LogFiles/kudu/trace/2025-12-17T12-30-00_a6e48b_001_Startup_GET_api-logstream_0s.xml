@@ -1,3 +1,0 @@
-<step title="Startup Request" date="2025-12-17T12:30:00.063" instance="a6e48b" url="/api/logstream/" method="GET" type="request" pid="12100,2,8" ScmType="GitHubAction" >
-  <step title="Cleanup Xml Logs" date="2025-12-17T12:30:00.063" /><!-- duration: 16ms -->
-</step><!-- duration: 16ms -->
