@@ -578,11 +578,6 @@ RULES:
 6. Return ONLY the JSON, no other text
 
 Generate now:";
-6. Part E: each Q has subParts array with 2 items (a=6mk, b=4mk), each subPart MUST have correctAnswer
-7. Topics: Relations, Inverse Trig, Matrices, Determinants, Continuity, Derivatives, Integrals, Diff Eqs, Vectors, 3D Geometry, Linear Programming, Probability
-8. Output: Valid JSON only, no markdown
-
-Generate now:";
         }
 
         /// <summary>
