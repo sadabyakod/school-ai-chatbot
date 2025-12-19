@@ -538,12 +538,26 @@ namespace SchoolAiChatbotBackend.Controllers
                     ExamId = examId,
                     StudentId = studentId,
                     FilePaths = filePaths,
-                    McqAnswers = mcqAnswersList,  // Always set if we have data
                     McqScore = saveMcqData ? mcqScore : null,
                     McqTotalMarks = saveMcqData ? mcqTotalMarks : null,
                     Status = SubmissionStatus.PendingEvaluation,
                     SubmittedAt = DateTime.UtcNow
                 };
+
+                // CRITICAL FIX: Directly set McqAnswersJson to ensure it's always saved
+                // This bypasses the property setter to save raw JSON when parsing succeeded
+                // or save the original raw string as fallback when parsing failed
+                if (mcqAnswersList != null && mcqAnswersList.Count > 0)
+                {
+                    // Use the property setter which wraps in { questionEvaluations: [...] }
+                    submission.McqAnswers = mcqAnswersList;
+                }
+                else if (mcqAnswersProvided && !string.IsNullOrEmpty(mcqAnswers))
+                {
+                    // Fallback: Save raw JSON string directly (parsing might have failed)
+                    submission.McqAnswersJson = mcqAnswers;
+                    Console.WriteLine($"⚠️ Saving raw MCQ JSON as fallback (parsing may have failed)");
+                }
 
                 // === DEBUG LOGGING BEFORE DB SAVE ===
                 Console.WriteLine($"💾 DATABASE SAVE - MCQ DATA:");

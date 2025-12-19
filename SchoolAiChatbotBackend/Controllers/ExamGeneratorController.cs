@@ -513,19 +513,11 @@ namespace SchoolAiChatbotBackend.Controllers
 
         private string BuildExamGenerationPrompt(GenerateExamRequest request)
         {
-            return $@"You are an exam paper generator for a school mobile app.
+            return $@"Generate a Karnataka 2nd PUC {request.Subject} exam paper in JSON format.
 
-Your job is to generate ORIGINAL model question papers that follow the EXACT format and style of
-Karnataka State Government 2nd PUC Mathematics board exams (Model Question Paper 2024-25).
+Specs: {request.Grade}, Full Syllabus, 80 marks, 195 minutes.
 
-Generate an exam with the following specifications:
-- Subject: {request.Subject}
-- Grade: {request.Grade}
-- Syllabus Scope: Full Syllabus (cover all chapters)
-- Overall Difficulty: Medium
-- Exam Type: Full Paper
-
-You MUST return exactly one VALID JSON object following this schema:
+Return ONLY valid JSON:
 
 {{
   ""examId"": ""string"",
@@ -536,13 +528,7 @@ You MUST return exactly one VALID JSON object following this schema:
   ""examType"": ""Full Paper"",
   ""totalMarks"": 80,
   ""duration"": 195,
-  ""instructions"": [
-    ""Answer ALL 20 questions in Part A (15 MCQ + 5 Fill-in-the-Blanks)"",
-    ""Answer any SIX questions from Part B (out of 11)"",
-    ""Answer any SIX questions from Part C (out of 11)"",
-    ""Answer any FOUR questions from Part D (out of 8)"",
-    ""Answer any ONE question from Part E""
-  ],
+  ""instructions"": [""Part A: ALL 20 (15 MCQ + 5 Fill-blanks)"", ""Part B: ANY 6/11"", ""Part C: ANY 6/11"", ""Part D: ANY 4/8"", ""Part E: ANY 1/2""],
   ""parts"": [
     {{
       ""partName"": ""Part A"",
@@ -651,125 +637,22 @@ You MUST return exactly one VALID JSON object following this schema:
   ""createdAt"": ""ISO 8601 string""
 }}
 
---------------------
-KARNATAKA 2nd PUC MATHEMATICS MODEL PAPER FORMAT (EXACT):
---------------------
+STRUCTURE (80 marks total):
+A: 20Q×1mk=20 (Q1-15:MCQ 4opts, Q16-20:Fill-blank) ALL compulsory
+B: 11Q×2mk=12 (Q21-31) answer 6
+C: 11Q×3mk=18 (Q32-42) answer 6
+D: 8Q×5mk=20 (Q43-50) answer 4
+E: 2Q×10mk=10 (Q51-52, each with 2 subparts: a=6mk, b=4mk) answer 1
 
-TOTAL MARKS: 80 marks (Theory Paper)
-INTERNAL ASSESSMENT: 20 marks
-TIME: 3 hours 15 minutes (195 minutes)
+RULES:
+1. MCQ: options=[""A) ..."", ""B) ..."", ""C) ..."", ""D) ...""], correctAnswer=""A) ..."" (full text)
+2. Fill-blank/Subjective: options=[], correctAnswer=detailed model answer with steps
+3. Answer detail by marks: 2mk=2-3 steps, 3mk=3-4 steps, 5mk=5-7 steps, 6mk=6-8 steps, 10mk=complete derivation
+4. Part E: each Q has subParts array with 2 items (a=6mk, b=4mk)
+5. Topics: Relations, Inverse Trig, Matrices, Determinants, Continuity, Derivatives, Integrals, Diff Eqs, Vectors, 3D Geometry, Linear Programming, Probability
+6. Output: Valid JSON only, no markdown
 
-STRUCTURE:
-1) PART A - MCQ & Fill-in-the-Blanks:
-   - 20 questions × 1 mark each = 20 marks (Compulsory)
-   - 15 Multiple Choice Questions (MCQ) with 4 options (A, B, C, D)
-   - 5 Fill-in-the-Blanks questions
-   - Topics: Relations & Functions, Inverse Trigonometry, Matrices, Determinants, Continuity, Differentiability, Integrals, Differential Equations, Vectors, 3D Geometry, Linear Programming, Probability
-
-2) PART B - Short Answer Type (2 marks each):
-   - 11 questions given, answer ANY 6 = 12 marks
-   - Questions 21-31
-   - Direct calculation / short proof type
-   - Topics from all chapters
-
-3) PART C - Short Answer Type (3 marks each):
-   - 11 questions given, answer ANY 6 = 18 marks  
-   - Questions 32-42
-   - Application-based problems, proofs, derivations
-   - Topics from all chapters
-
-4) PART D - Long Answer Type (5 marks each):
-   - 8 questions given, answer ANY 4 = 20 marks
-   - Questions 43-50
-   - Detailed problem solving, proofs with steps
-   - Topics: Matrices (inverse), Calculus (maxima/minima), Integration, Differential Equations, Vectors/3D Geometry, Linear Programming
-
-5) PART E - Long Answer Type (10 marks each):
-   - 2 questions given, answer ANY 1 = 10 marks
-   - Questions 51-52
-   - Each question has 2 sub-parts: (a) 6 marks + (b) 4 marks
-   - OR choice between 2 full questions
-   - Topics: Integration with graphs, Area under curves, 3D Geometry, Linear Programming
-
-TOTAL = 20 + 12 + 18 + 20 + 10 = 80 marks (Theory Paper)
-
-NOTE: Marks breakdown:
-- Part A: 20 marks (15 MCQ + 5 Fill-in-blanks, ALL compulsory)
-- Part B: 12 marks (answer 6 out of 11 questions × 2 marks)
-- Part C: 18 marks (answer 6 out of 11 questions × 3 marks)
-- Part D: 20 marks (answer 4 out of 8 questions × 5 marks)
-- Part E: 10 marks (answer 1 out of 2 questions: (a) 6 marks + (b) 4 marks)
-- Internal Assessment: 20 marks (awarded separately)
-- TOTAL: 100 marks (80 Theory + 20 Internal)
-- PASSING: Minimum 35 marks out of 100 (35%)
-
---------------------
-IMPORTANT RULES:
---------------------
-
-1) GENERATE EXACTLY THIS STRUCTURE:
-   - Part A: Generate exactly 20 questions (15 MCQ + 5 Fill-in-blanks, 1 mark each)
-   - Part B: Generate exactly 11 questions (2 marks each), student answers 6
-   - Part C: Generate exactly 11 questions (3 marks each), student answers 6
-   - Part D: Generate exactly 8 questions (5 marks each), student answers 4
-   - Part E: Generate exactly 2 questions (10 marks each with 2 sub-parts), student answers 1
-
-2) QUESTION NUMBERING:
-   - Part A: Questions 1-20 (1-15 MCQ, 16-20 Fill-in-blanks)
-   - Part B: Questions 21-31
-   - Part C: Questions 32-42
-   - Part D: Questions 43-50
-   - Part E: Questions 51-52
-
-3) PART A FORMAT:
-   - Questions 1-15 (MCQ): options MUST contain EXACTLY 4 choices formatted as: [""A) ..."", ""B) ..."", ""C) ..."", ""D) ...""]
-     correctAnswer MUST be the full option text like ""A) answer""
-   - Questions 16-20 (Fill-in-blanks): options MUST be empty array [], correctAnswer contains the blank answer
-
-4) NON-MCQ FORMAT (Parts B, C, D, E):
-   - options MUST be an empty array []
-   - correctAnswer MUST contain a DETAILED model answer/solution with ALL steps
-   - Model answers MUST be proportional to marks:
-     * 2 marks: Brief answer with 2-3 key steps/points
-     * 3 marks: Clear explanation with 3-4 detailed steps/points
-     * 4 marks: Detailed solution with 4-5 steps, formulas, and explanations
-     * 5 marks: Comprehensive solution with 5-7 detailed steps, formulas, and reasoning
-     * 6 marks: Thorough solution with 6-8 detailed steps, complete working
-     * 10 marks: Complete answer with multiple sub-sections, all steps shown, complete derivations
-   - Include ALL intermediate calculations, formulas, and explanations
-   - For mathematical problems: Show step-by-step work with clear labeling
-   - For theory questions: Provide complete definitions, explanations, and examples
-
-5) PART E SUB-PARTS:
-   - Each Part E question MUST have a ""subParts"" array with 2 sub-questions
-   - Sub-part (a) is worth 6 marks
-   - Sub-part (b) is worth 4 marks
-   - Total per question: 10 marks
-
-6) TOPICS TO COVER (Karnataka 2nd PUC Syllabus):
-   - Relations and Functions
-   - Inverse Trigonometric Functions
-   - Matrices and Determinants
-   - Continuity and Differentiability
-   - Applications of Derivatives
-   - Integrals (Indefinite and Definite)
-   - Applications of Integrals
-   - Differential Equations
-   - Vector Algebra
-   - Three Dimensional Geometry
-   - Linear Programming
-   - Probability
-
-7) SYLLABUS COVERAGE:
-   - Cover ALL topics from the full syllabus
-   - Distribute questions evenly across all chapters
-   - Ensure comprehensive coverage of the entire curriculum
-
-8) JSON-ONLY OUTPUT:
-   - Output MUST be valid JSON only
-   - No comments, no markdown, no extra text, no trailing commas
-
-Generate the complete Karnataka 2nd PUC Mathematics Model Question Paper now:";
+Generate now:";
         }
 
         /// <summary>

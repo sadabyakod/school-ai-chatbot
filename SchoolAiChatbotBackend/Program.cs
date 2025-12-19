@@ -170,8 +170,8 @@ namespace SchoolAiChatbotBackend
                     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler())
                     .ConfigureHttpClient(client =>
                     {
-                        // Set timeout to 5 minutes for complex exam generation (Full PUC papers)
-                        client.Timeout = TimeSpan.FromMinutes(5);
+                        // Set timeout to 10 minutes for complex exam generation (Full PUC papers with 52 questions)
+                        client.Timeout = TimeSpan.FromMinutes(10);
                     });
 
                 // Register core services

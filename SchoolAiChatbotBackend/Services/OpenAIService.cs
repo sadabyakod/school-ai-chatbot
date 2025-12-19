@@ -172,10 +172,10 @@ namespace SchoolAiChatbotBackend.Services
                 {
                     messages = new[]
                     {
-                        new { role = "system", content = "You are an exam paper generator for Karnataka 2nd PUC board exams. You MUST output ONLY valid JSON with no additional text, comments, or markdown formatting. Respond with a single JSON object only." },
+                        new { role = "system", content = "You are an exam paper generator. Output ONLY valid JSON, no markdown." },
                         new { role = "user", content = prompt }
                     },
-                    max_tokens = fastMode ? 16000 : 20000, // High token limit to ensure complete 39-question exam JSON
+                    max_tokens = 16000, // Max supported by gpt-4o-mini is 16384
                     temperature = 0.3,
                     response_format = new { type = "json_object" }
                 };
@@ -199,6 +199,9 @@ namespace SchoolAiChatbotBackend.Services
                         "application/json")
                 };
 
+                // Set a very long timeout specifically for exam generation (10 minutes)
+                using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromMinutes(10));
+
                 if (_useAzureOpenAI)
                 {
                     request.Headers.Add("api-key", _apiKey);
@@ -208,7 +211,7 @@ namespace SchoolAiChatbotBackend.Services
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
                 }
 
-                var response = await _httpClient.SendAsync(request);
+                var response = await _httpClient.SendAsync(request, cts.Token);
                 var responseContent = await response.Content.ReadAsStringAsync();
 
                 if (!response.IsSuccessStatusCode)
