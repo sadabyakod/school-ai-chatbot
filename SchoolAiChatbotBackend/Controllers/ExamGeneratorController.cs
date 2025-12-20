@@ -510,7 +510,7 @@ namespace SchoolAiChatbotBackend.Controllers
 
         private string BuildExamGenerationPrompt(GenerateExamRequest request)
         {
-            return $@"Generate a {request.Subject} practice test with 5 MCQ and 2 subjective questions in JSON format.
+            return $@"Generate a {request.Subject} practice test with 5 MCQ, 2 short-answer (2 marks each), and 2 medium-answer (3 marks each) questions in JSON format.
 
 Return ONLY valid JSON (no markdown):
 
@@ -545,41 +545,65 @@ Return ONLY valid JSON (no markdown):
     }},
     {{
       ""partName"": ""Part B"",
-      ""partDescription"": ""Short Answer Questions (5 marks each)"",
+      ""partDescription"": ""Short Answer Questions (2 marks each)"",
       ""questionType"": ""Short Answer"",
-      ""marksPerQuestion"": 5,
+      ""marksPerQuestion"": 2,
       ""totalQuestions"": 2,
       ""questionsToAnswer"": 2,
       ""questions"": [
         {{
           ""questionId"": ""B1"",
           ""questionNumber"": 6,
-          ""questionText"": ""Question text here"",
+          ""questionText"": ""Question text here (2 marks)"",
           ""options"": [],
           ""correctAnswer"": ""Step 1: ... Step 2: ... Final Answer: ..."",
           ""topic"": ""Topic""
         }}
       ]
+    }},
+    {{
+      ""partName"": ""Part C"",
+      ""partDescription"": ""Medium Answer Questions (3 marks each)"",
+      ""questionType"": ""Medium Answer"",
+      ""marksPerQuestion"": 3,
+      ""totalQuestions"": 2,
+      ""questionsToAnswer"": 2,
+      ""questions"": [
+        {{
+          ""questionId"": ""C1"",
+          ""questionNumber"": 8,
+          ""questionText"": ""Question text here (3 marks)"",
+          ""options"": [],
+          ""correctAnswer"": ""Step 1: ... Step 2: ... Step 3: ... Final Answer: ..."",
+          ""topic"": ""Topic""
+        }}
+      ]
     }}
   ],
-  ""questionCount"": 7,
+  ""questionCount"": 9,
   ""createdAt"": ""{DateTime.UtcNow:o}""
 }}
 
 RULES:
-1. Generate exactly 5 MCQ questions (A1-A5) with 4 options each
-2. Generate exactly 2 subjective questions (B1-B2) with detailed answers
-3. MCQ correctAnswer MUST be full option text like ""B) 2x""
-4. Subjective correctAnswer MUST have step-by-step solution
-5. Topics for {request.Subject}: Use relevant topics
-6. Return ONLY the JSON, no other text
+1. Generate exactly 5 MCQ questions (A1-A5) with 4 options each - 1 mark each
+2. Generate exactly 2 short-answer questions (B1-B2) with 2-step solutions - 2 marks each
+3. Generate exactly 2 medium-answer questions (C1-C2) with 3-step solutions - 3 marks each
+4. QUESTION NUMBERING MUST BE CONTINUOUS across all parts:
+   - Part A (MCQ): questionNumber 1, 2, 3, 4, 5
+   - Part B (Short Answer): questionNumber 6, 7
+   - Part C (Medium Answer): questionNumber 8, 9
+5. MCQ correctAnswer MUST be full option text like ""B) 2x""
+6. Short Answer correctAnswer MUST have 2 steps (1 mark per step)
+7. Medium Answer correctAnswer MUST have 3 steps (1 mark per step)
+8. Topics for {request.Subject}: Use relevant topics
+9. Return ONLY the JSON, no other text
 
 Generate now:";
         }
 
         /// <summary>
-        /// Generate a simple test exam with 2 MCQ and 3 subjective questions for testing purposes
-        /// Includes scenarios: correct answer, wrong answer, not attempted
+        /// Generate a simple test exam with 2 MCQ, 2 short-answer (2 marks), and 2 medium-answer (3 marks) questions
+        /// Includes scenarios: correct answer, partial answer, not attempted
         /// </summary>
         private GeneratedExamResponse GenerateSimpleTestExam(GenerateExamRequest request)
         {
@@ -593,19 +617,19 @@ Generate now:";
                 Chapter = "Test Chapter",
                 Difficulty = "Medium",
                 ExamType = "Test",
-                TotalMarks = 32,
-                Duration = 45,
+                TotalMarks = 12,
+                Duration = 30,
                 Instructions = new List<string>
                 {
                     "Answer ALL questions",
-                    "This is a test exam with 2 MCQs and 3 subjective questions"
+                    "This is a test exam with 2 MCQs, 2 short-answer (2 marks), and 2 medium-answer (3 marks) questions"
                 },
                 Parts = new List<ExamPart>
                 {
                     new ExamPart
                     {
                         PartName = "Part A",
-                        PartDescription = "Multiple Choice Questions",
+                        PartDescription = "Multiple Choice Questions (1 mark each)",
                         QuestionType = "MCQ",
                         MarksPerQuestion = 1,
                         TotalQuestions = 2,
@@ -647,78 +671,80 @@ Generate now:";
                     new ExamPart
                     {
                         PartName = "Part B",
-                        PartDescription = "Subjective Questions",
-                        QuestionType = "Short Answer (10 marks)",
-                        MarksPerQuestion = 10,
-                        TotalQuestions = 3,
-                        QuestionsToAnswer = 3,
+                        PartDescription = "Short Answer Questions (2 marks each)",
+                        QuestionType = "Short Answer",
+                        MarksPerQuestion = 2,
+                        TotalQuestions = 2,
+                        QuestionsToAnswer = 2,
                         Questions = new List<PartQuestion>
                         {
                             new PartQuestion
                             {
                                 QuestionId = "B1",
                                 QuestionNumber = 3,
-                                QuestionText = "Explain the Pythagorean theorem and provide an example calculation for a right triangle with sides 3 and 4.",
+                                QuestionText = "Find the derivative of f(x) = x². Show your work.",
                                 Options = new List<string>(),
-                                CorrectAnswer = @"The Pythagorean theorem states that in a right triangle, the square of the hypotenuse (c) equals the sum of squares of the other two sides (a and b): a² + b² = c²
+                                CorrectAnswer = @"Step 1: Apply the power rule: d/dx(x^n) = n*x^(n-1)
+Step 2: Calculate: f'(x) = 2*x^(2-1) = 2x
 
-Example with sides 3 and 4:
-Step 1: Apply the formula: 3² + 4² = c²
-Step 2: Calculate: 9 + 16 = c²
-Step 3: Simplify: 25 = c²
-Step 4: Solve for c: c = √25 = 5
-
-Therefore, the hypotenuse is 5 units.",
-                                Topic = "Geometry - Pythagorean Theorem"
+Therefore, f'(x) = 2x",
+                                Topic = "Calculus - Differentiation"
                             },
                             new PartQuestion
                             {
                                 QuestionId = "B2",
                                 QuestionNumber = 4,
-                                QuestionText = "Solve the quadratic equation: x² - 5x + 6 = 0. Show all steps.",
+                                QuestionText = "Calculate the area of a rectangle with length 5 cm and width 3 cm.",
                                 Options = new List<string>(),
-                                CorrectAnswer = @"To solve x² - 5x + 6 = 0, we can factor or use the quadratic formula.
+                                CorrectAnswer = @"Step 1: Use the formula: Area = length × width
+Step 2: Calculate: Area = 5 × 3 = 15 cm²
 
-Method 1: Factoring
-Step 1: Find two numbers that multiply to 6 and add to -5: -2 and -3
-Step 2: Factor: (x - 2)(x - 3) = 0
-Step 3: Solve: x - 2 = 0 or x - 3 = 0
-Step 4: Solutions: x = 2 or x = 3
+Therefore, the area is 15 cm²",
+                                Topic = "Geometry - Rectangle Area"
+                            }
+                        }
+                    },
+                    new ExamPart
+                    {
+                        PartName = "Part C",
+                        PartDescription = "Medium Answer Questions (3 marks each)",
+                        QuestionType = "Medium Answer",
+                        MarksPerQuestion = 3,
+                        TotalQuestions = 2,
+                        QuestionsToAnswer = 2,
+                        Questions = new List<PartQuestion>
+                        {
+                            new PartQuestion
+                            {
+                                QuestionId = "C1",
+                                QuestionNumber = 5,
+                                QuestionText = "Solve the equation: 2x + 5 = 11. Show all steps.",
+                                Options = new List<string>(),
+                                CorrectAnswer = @"Step 1: Subtract 5 from both sides: 2x + 5 - 5 = 11 - 5, so 2x = 6
+Step 2: Divide both sides by 2: 2x/2 = 6/2
+Step 3: Simplify: x = 3
 
-Method 2: Quadratic Formula
-x = (-b ± √(b² - 4ac)) / 2a where a=1, b=-5, c=6
-x = (5 ± √(25 - 24)) / 2
-x = (5 ± 1) / 2
-x = 3 or x = 2
-
-Therefore, x = 2 or x = 3",
-                                Topic = "Algebra - Quadratic Equations"
+Therefore, x = 3",
+                                Topic = "Algebra - Linear Equations"
                             },
                             new PartQuestion
                             {
-                                QuestionId = "B3",
-                                QuestionNumber = 5,
-                                QuestionText = "Calculate the area of a circle with radius 5 cm. Use π = 3.14. Show your work.",
+                                QuestionId = "C2",
+                                QuestionNumber = 6,
+                                QuestionText = "Find the hypotenuse of a right triangle with sides 3 and 4 using the Pythagorean theorem.",
                                 Options = new List<string>(),
-                                CorrectAnswer = @"To find the area of a circle, use the formula A = πr²
+                                CorrectAnswer = @"Step 1: Apply the Pythagorean theorem: a² + b² = c²
+Step 2: Substitute values: 3² + 4² = c², so 9 + 16 = c², therefore 25 = c²
+Step 3: Take square root: c = √25 = 5
 
-Given:
-- Radius (r) = 5 cm
-- π = 3.14
-
-Step 1: Identify the formula: A = πr²
-Step 2: Substitute values: A = 3.14 × 5²
-Step 3: Calculate 5²: A = 3.14 × 25
-Step 4: Multiply: A = 78.5
-
-Therefore, the area is 78.5 cm²",
-                                Topic = "Geometry - Circle Area"
+Therefore, the hypotenuse is 5 units",
+                                Topic = "Geometry - Pythagorean Theorem"
                             }
                         }
                     }
                 },
                 Questions = new List<GeneratedQuestion>(),
-                QuestionCount = 5,
+                QuestionCount = 6,
                 CreatedAt = DateTime.UtcNow.ToString("o")
             };
         }

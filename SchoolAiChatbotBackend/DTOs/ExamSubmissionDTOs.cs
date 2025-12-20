@@ -43,10 +43,12 @@ namespace SchoolAiChatbotBackend.DTOs
     public class McqResultDto
     {
         public string QuestionId { get; set; } = string.Empty;
+        public string QuestionText { get; set; } = string.Empty;
         public string SelectedOption { get; set; } = string.Empty;
         public string CorrectAnswer { get; set; } = string.Empty;
         public bool IsCorrect { get; set; }
         public int MarksAwarded { get; set; }
+        public string Feedback { get; set; } = string.Empty;
     }
 
     /// <summary>

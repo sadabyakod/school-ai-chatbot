@@ -111,21 +111,51 @@ namespace SchoolAiChatbotBackend.Controllers
                 _logger.LogInformation("🤖 [LOCAL-EVAL] Starting AI evaluation for {QuestionCount} questions", 
                     subjectiveQuestions.Count);
 
-                // Evaluate each question
-                var evaluations = new List<object>();
-                decimal totalScore = 0;
-                decimal maxScore = 0;
+                // Get MCQ questions and results (if any)
+                var mcqQuestions = GetMcqQuestions(exam);
+                var mcqResults = new List<object>();
+                int mcqScore = 0;
+                int mcqTotalMarks = mcqQuestions.Count; // 1 mark per MCQ
+
+                // For local eval, MCQ answers are extracted from sheet or mocked
+                // Here we just create empty MCQ results as placeholder
+                foreach (var mcq in mcqQuestions)
+                {
+                    var selectedOption = ""; // Would be extracted from OCR
+                    var correctAnswer = mcq.CorrectAnswer ?? "";
+                    var isCorrect = false;
+                    var feedback = string.IsNullOrEmpty(selectedOption) 
+                        ? "Not answered." 
+                        : $"Incorrect. You selected '{selectedOption}'. The correct answer is '{correctAnswer}'.";
+                    
+                    mcqResults.Add(new
+                    {
+                        questionId = mcq.QuestionId,
+                        selectedOption = selectedOption,
+                        correctAnswer = correctAnswer,
+                        isCorrect = isCorrect,
+                        marksAwarded = 0,
+                        feedback = feedback
+                    });
+                }
+
+                // Evaluate subjective questions
+                var subjectiveResults = new List<object>();
+                decimal subjectiveScore = 0;
+                decimal subjectiveTotalMarks = 0;
+                int questionNum = 0;
 
                 foreach (var (question, marks) in subjectiveQuestions)
                 {
-                    maxScore += marks;
+                    questionNum++;
+                    subjectiveTotalMarks += marks;
                     
                     // Create evaluation prompt
                     var systemPrompt = @"You are an expert teacher evaluating a student's answer.
 Provide a detailed evaluation with:
 1. Score out of the maximum marks
 2. Detailed feedback on what was correct and what was missed
-3. Step-by-step breakdown";
+3. Step-by-step breakdown (1 mark per step)";
 
                     var userPrompt = $@"
 Question: {question.QuestionText}
@@ -138,7 +168,7 @@ Evaluate and provide JSON response:
   ""score"": <number>,
   ""feedback"": ""<detailed feedback>"",
   ""breakdown"": [
-    {{""step"": ""Step 1"", ""description"": ""..."", ""marks"": <number>}}
+    {{""step"": 1, ""description"": ""..."", ""marks"": <number>}}
   ]
 }}";
 
@@ -153,18 +183,33 @@ Evaluate and provide JSON response:
                         
                         if (evalResult != null)
                         {
-                            totalScore += evalResult.Score ?? 0;
+                            var earnedMarks = evalResult.Score ?? 0;
+                            subjectiveScore += earnedMarks;
+                            var isFullyCorrect = earnedMarks >= marks;
                             
-                            evaluations.Add(new
+                            // Build step analysis (1 mark per step)
+                            var stepAnalysis = new List<object>();
+                            for (int step = 1; step <= marks; step++)
+                            {
+                                var stepDesc = GetStepDescription(step, (int)marks);
+                                var stepMarks = step <= earnedMarks ? 1.0 : 0.0;
+                                stepAnalysis.Add(new
+                                {
+                                    step = step,
+                                    description = stepDesc,
+                                    isCorrect = stepMarks > 0,
+                                    marksAwarded = stepMarks,
+                                    maxMarksForStep = 1.0,
+                                    feedback = stepMarks > 0 ? "Correct" : "Missing or incorrect"
+                                });
+                            }
+
+                            subjectiveResults.Add(new
                             {
                                 questionId = question.QuestionId,
-                                questionNumber = question.QuestionNumber,
-                                questionText = question.QuestionText,
+                                earnedMarks = earnedMarks,
                                 maxMarks = marks,
-                                studentAnswer = "[Not answered]", // Mock - no OCR in local mode
-                                awardedMarks = evalResult.Score ?? 0,
-                                feedback = evalResult.Feedback ?? "Question not answered.",
-                                breakdown = evalResult.Breakdown ?? new List<EvaluationStep>()
+                                stepAnalysis = stepAnalysis
                             });
                         }
                     }
@@ -172,46 +217,47 @@ Evaluate and provide JSON response:
                     {
                         _logger.LogError(ex, "Error evaluating question {QuestionId}", question.QuestionId);
                         
-                        // Add error evaluation
-                        evaluations.Add(new
+                        // Build step analysis for unanswered (all 0)
+                        var stepAnalysis = new List<object>();
+                        for (int step = 1; step <= marks; step++)
+                        {
+                            stepAnalysis.Add(new
+                            {
+                                step = step,
+                                description = GetStepDescription(step, marks),
+                                isCorrect = false,
+                                marksAwarded = 0.0,
+                                maxMarksForStep = 1.0,
+                                feedback = "Not answered"
+                            });
+                        }
+
+                        subjectiveResults.Add(new
                         {
                             questionId = question.QuestionId,
-                            questionNumber = question.QuestionNumber,
-                            questionText = question.QuestionText,
+                            earnedMarks = 0.0,
                             maxMarks = marks,
-                            studentAnswer = "[Not answered]",
-                            awardedMarks = 0,
-                            feedback = "Question not answered.",
-                            breakdown = new[]
-                            {
-                                new { step = "Step 1", description = "Step 1", marks = 0 },
-                                new { step = "Step 2", description = "Step 2", marks = 0 },
-                                new { step = "Step 3", description = "Step 3", marks = 0 }
-                            }
+                            stepAnalysis = stepAnalysis
                         });
                     }
                 }
 
-                // Calculate grade
-                var percentage = maxScore > 0 ? (totalScore / maxScore) * 100 : 0;
+                // Calculate grand totals
+                decimal grandScore = mcqScore + subjectiveScore;
+                decimal grandTotalMarks = mcqTotalMarks + subjectiveTotalMarks;
+                var percentage = grandTotalMarks > 0 ? (grandScore / grandTotalMarks) * 100 : 0;
                 var grade = percentage >= 90 ? "A+" :
                            percentage >= 80 ? "A" :
                            percentage >= 70 ? "B" :
                            percentage >= 60 ? "C" :
                            percentage >= 50 ? "D" : "F";
+                var passed = percentage >= 35; // Karnataka 2nd PUC pass marks
 
-                // Create result object
+                // Create result object matching expected blob structure (simplified)
                 var result = new
                 {
-                    writtenSubmissionId = submissionId,
-                    examId = submission.ExamId,
-                    studentId = submission.StudentId,
-                    totalScore = totalScore,
-                    maxPossibleScore = maxScore,
-                    percentage = Math.Round(percentage, 2),
-                    grade = grade,
-                    evaluatedAt = DateTime.UtcNow,
-                    questions = evaluations
+                    mcqResults = mcqResults,
+                    subjectiveResults = subjectiveResults
                 };
 
                 // Save result to blob storage
@@ -227,8 +273,8 @@ Evaluate and provide JSON response:
                 submission.Status = SubmissionStatus.ResultsReady;
                 submission.EvaluatedAt = DateTime.UtcNow;
                 submission.EvaluationProcessingTimeMs = (long)(DateTime.UtcNow - submission.EvaluationStartedAt!.Value).TotalMilliseconds;
-                submission.TotalScore = totalScore;
-                submission.MaxPossibleScore = maxScore;
+                submission.TotalScore = subjectiveScore;
+                submission.MaxPossibleScore = subjectiveTotalMarks;
                 submission.Percentage = percentage;
                 submission.Grade = grade;
                 submission.EvaluationResultBlobPath = blobPath;
@@ -236,15 +282,16 @@ Evaluate and provide JSON response:
                 await _examRepository.SaveWrittenSubmissionAsync(submission);
 
                 _logger.LogInformation("✅ [LOCAL-EVAL] Evaluation complete: {Score}/{MaxScore} ({Percentage}%)", 
-                    totalScore, maxScore, percentage);
+                    subjectiveScore, subjectiveTotalMarks, percentage);
 
                 return Ok(new
                 {
                     message = "✅ Evaluation completed successfully!",
                     submissionId = submissionId,
-                    score = $"{totalScore}/{maxScore}",
+                    score = $"{grandScore}/{grandTotalMarks}",
                     percentage = $"{percentage:F2}%",
                     grade = grade,
+                    passed = passed,
                     note = "This is a LOCAL DEVELOPMENT evaluation. In production, Azure Functions handle this automatically."
                 });
             }
@@ -289,6 +336,45 @@ Evaluate and provide JSON response:
             }
             
             return questions;
+        }
+
+        private List<PartQuestion> GetMcqQuestions(GeneratedExamResponse exam)
+        {
+            var questions = new List<PartQuestion>();
+            
+            if (exam.Parts != null)
+            {
+                foreach (var part in exam.Parts)
+                {
+                    // Get MCQ questions
+                    if (part.Questions != null && part.QuestionType.Contains("MCQ", StringComparison.OrdinalIgnoreCase))
+                    {
+                        questions.AddRange(part.Questions);
+                    }
+                }
+            }
+            
+            return questions;
+        }
+
+        private string GetStepDescription(int step, int totalMarks)
+        {
+            // Provide meaningful step descriptions based on step number
+            var descriptions = new Dictionary<int, string>
+            {
+                { 1, "Problem understanding and formula identification" },
+                { 2, "Correct substitution of values" },
+                { 3, "Mathematical computation" },
+                { 4, "Simplification and intermediate steps" },
+                { 5, "Final answer with units" },
+                { 6, "Verification or alternate method" }
+            };
+
+            if (descriptions.TryGetValue(step, out var desc))
+            {
+                return desc;
+            }
+            return $"Step {step} evaluation";
         }
     }
 

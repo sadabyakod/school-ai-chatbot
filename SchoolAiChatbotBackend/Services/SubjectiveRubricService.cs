@@ -114,95 +114,53 @@ namespace SchoolAiChatbotBackend.Services
 
         /// <summary>
         /// Generate a default rubric based on total marks.
-        /// Uses a simple heuristic to split marks across 3 steps:
-        /// - Understanding/Setup (20% of marks)
-        /// - Working/Calculation (50% of marks)
-        /// - Final Answer/Conclusion (30% of marks)
+        /// Simple approach: Number of steps = total marks, each step = 1 mark.
+        /// Example: 2 marks question = 2 steps, each worth 1 mark.
         /// </summary>
         public Task<List<StepRubricItem>> GenerateDefaultRubricAsync(string questionText, string modelAnswer, int totalMarks)
         {
             var steps = new List<StepRubricItem>();
 
-            if (totalMarks <= 2)
-            {
-                // Simple 2-step rubric for small mark questions
-                steps.Add(new StepRubricItem
-                {
-                    StepNumber = 1,
-                    Description = "Correct method/formula identification",
-                    Marks = (int)Math.Ceiling(totalMarks / 2.0)
-                });
-                steps.Add(new StepRubricItem
-                {
-                    StepNumber = 2,
-                    Description = "Correct final answer with proper format",
-                    Marks = totalMarks - steps[0].Marks
-                });
-            }
-            else if (totalMarks <= 5)
-            {
-                // 3-step rubric for medium mark questions
-                var step1Marks = Math.Max(1, (int)Math.Round(totalMarks * 0.2));
-                var step3Marks = Math.Max(1, (int)Math.Round(totalMarks * 0.3));
-                var step2Marks = totalMarks - step1Marks - step3Marks;
+            // Step descriptions based on total marks
+            var stepDescriptions = GetStepDescriptions(totalMarks);
 
-                steps.Add(new StepRubricItem
-                {
-                    StepNumber = 1,
-                    Description = "Identify correct formula/theorem/method",
-                    Marks = step1Marks
-                });
-                steps.Add(new StepRubricItem
-                {
-                    StepNumber = 2,
-                    Description = "Apply method correctly with proper working shown",
-                    Marks = step2Marks
-                });
-                steps.Add(new StepRubricItem
-                {
-                    StepNumber = 3,
-                    Description = "Arrive at correct final answer with proper notation",
-                    Marks = step3Marks
-                });
-            }
-            else
+            // Create one step per mark, each step worth 1 mark
+            for (int i = 1; i <= totalMarks; i++)
             {
-                // 4-step rubric for higher mark questions (5+ marks)
-                var step1Marks = Math.Max(1, (int)Math.Round(totalMarks * 0.15)); // Understanding
-                var step2Marks = Math.Max(1, (int)Math.Round(totalMarks * 0.35)); // Working Part 1
-                var step3Marks = Math.Max(1, (int)Math.Round(totalMarks * 0.30)); // Working Part 2
-                var step4Marks = totalMarks - step1Marks - step2Marks - step3Marks; // Conclusion
-
                 steps.Add(new StepRubricItem
                 {
-                    StepNumber = 1,
-                    Description = "Identify correct concept/formula/theorem with proper statement",
-                    Marks = step1Marks
-                });
-                steps.Add(new StepRubricItem
-                {
-                    StepNumber = 2,
-                    Description = "Initial setup and substitution with correct values",
-                    Marks = step2Marks
-                });
-                steps.Add(new StepRubricItem
-                {
-                    StepNumber = 3,
-                    Description = "Complete calculation/derivation with all intermediate steps",
-                    Marks = step3Marks
-                });
-                steps.Add(new StepRubricItem
-                {
-                    StepNumber = 4,
-                    Description = "Final answer with correct units/notation and conclusion",
-                    Marks = step4Marks
+                    StepNumber = i,
+                    Description = stepDescriptions.Length >= i ? stepDescriptions[i - 1] : $"Step {i} - Correct working",
+                    Marks = 1
                 });
             }
 
-            _logger.LogDebug("Generated default rubric with {StepCount} steps for {TotalMarks} marks",
+            _logger.LogDebug("Generated default rubric with {StepCount} steps for {TotalMarks} marks (1 mark each)",
                 steps.Count, totalMarks);
 
             return Task.FromResult(steps);
+        }
+
+        /// <summary>
+        /// Get step descriptions based on total marks.
+        /// </summary>
+        private string[] GetStepDescriptions(int totalMarks)
+        {
+            return totalMarks switch
+            {
+                1 => new[] { "Correct answer with proper format" },
+                2 => new[] { "Correct method/formula identification", "Correct final answer" },
+                3 => new[] { "Identify correct formula/theorem", "Apply method correctly", "Correct final answer" },
+                4 => new[] { "Identify concept/formula", "Initial setup with correct values", "Complete calculation", "Final answer with proper notation" },
+                5 => new[] { "Identify concept/formula", "Initial setup", "Working step 1", "Working step 2", "Final answer" },
+                _ => Enumerable.Range(1, totalMarks).Select(i => i switch
+                {
+                    1 => "Identify correct concept/formula/theorem",
+                    _ when i == totalMarks => "Final answer with correct units/notation",
+                    _ when i == totalMarks - 1 => "Complete calculation/derivation",
+                    _ => $"Working step {i - 1} - Show intermediate calculation"
+                }).ToArray()
+            };
         }
 
         /// <summary>

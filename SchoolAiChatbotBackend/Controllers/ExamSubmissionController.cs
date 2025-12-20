@@ -169,33 +169,23 @@ namespace SchoolAiChatbotBackend.Controllers
                     Results = results
                 };
 
-                // Save MCQ results to evaluation-results blob (same format as subjective)
+                // Save MCQ results to evaluation-results blob (simplified format)
                 try
                 {
-                    var grade = response.Percentage >= 90 ? "A" :
-                               response.Percentage >= 80 ? "B" :
-                               response.Percentage >= 70 ? "C" :
-                               response.Percentage >= 60 ? "D" : "F";
-
                     var mcqResult = new
                     {
-                        mcqSubmissionId = submission.McqSubmissionId,
-                        examId = request.ExamId,
-                        studentId = request.StudentId,
-                        totalScore = totalScore,
-                        maxPossibleScore = totalMarks,
-                        percentage = response.Percentage,
-                        grade = grade,
-                        evaluatedAt = DateTime.UtcNow,
-                        questions = results.Select(r => new
+                        mcqResults = results.Select(r => new
                         {
                             questionId = r.QuestionId,
                             selectedOption = r.SelectedOption,
                             correctAnswer = r.CorrectAnswer,
                             isCorrect = r.IsCorrect,
                             marksAwarded = r.MarksAwarded,
-                            feedback = r.IsCorrect ? "Correct answer" : $"Incorrect. Correct answer is: {r.CorrectAnswer}"
-                        }).ToList()
+                            feedback = r.IsCorrect 
+                                ? "Correct!" 
+                                : $"Incorrect. You selected '{r.SelectedOption}'. The correct answer is '{r.CorrectAnswer}'."
+                        }).ToList(),
+                        subjectiveResults = new List<object>()
                     };
 
                     var resultJson = System.Text.Json.JsonSerializer.Serialize(mcqResult, new System.Text.Json.JsonSerializerOptions
@@ -1250,6 +1240,23 @@ namespace SchoolAiChatbotBackend.Controllers
                             _logger.LogWarning("Could not find question text for ID={QuestionId} Num={QuestionNumber}, using fallback", e.QuestionId, e.QuestionNumber);
                         }
                         
+                        // Build feedback - include model answer if not fully correct or not attempted
+                        var feedback = e.OverallFeedback ?? string.Empty;
+                        var studentAnswer = e.StudentAnswerEcho ?? string.Empty;
+                        var isNotAttempted = string.IsNullOrWhiteSpace(studentAnswer) || 
+                                             studentAnswer.Equals("[Not answered]", StringComparison.OrdinalIgnoreCase) ||
+                                             studentAnswer.Equals("[Not attempted]", StringComparison.OrdinalIgnoreCase);
+                        
+                        // Add model answer to feedback if not fully correct or not attempted
+                        if (!e.IsFullyCorrect || isNotAttempted)
+                        {
+                            var modelAnswer = e.ExpectedAnswer ?? string.Empty;
+                            if (!string.IsNullOrWhiteSpace(modelAnswer))
+                            {
+                                feedback = $"{feedback}\n\n📚 Model Answer:\n{modelAnswer}";
+                            }
+                        }
+                        
                         return new SubjectiveResultDto
                         {
                             QuestionId = e.QuestionId,
@@ -1269,12 +1276,20 @@ namespace SchoolAiChatbotBackend.Controllers
                                 MaxMarksForStep = s.MaxMarksForStep,
                                 Feedback = s.Feedback ?? string.Empty
                             }).ToList() ?? new List<StepAnalysisDto>(),
-                            OverallFeedback = e.OverallFeedback ?? string.Empty
+                            OverallFeedback = feedback
                         };
                     }
                     catch (Exception ex)
                     {
                         _logger.LogError(ex, "Error processing subjective result for question {QuestionId}", e.QuestionId);
+                        
+                        // Include model answer in error case feedback as well
+                        var errorFeedback = e.OverallFeedback ?? "Error processing evaluation";
+                        if (!e.IsFullyCorrect && !string.IsNullOrWhiteSpace(e.ExpectedAnswer))
+                        {
+                            errorFeedback = $"{errorFeedback}\n\n📚 Model Answer:\n{e.ExpectedAnswer}";
+                        }
+                        
                         return new SubjectiveResultDto
                         {
                             QuestionId = e.QuestionId,
@@ -1286,7 +1301,7 @@ namespace SchoolAiChatbotBackend.Controllers
                             ExpectedAnswer = e.ExpectedAnswer ?? string.Empty,
                             StudentAnswerEcho = e.StudentAnswerEcho ?? string.Empty,
                             StepAnalysis = new List<StepAnalysisDto>(),
-                            OverallFeedback = e.OverallFeedback ?? string.Empty
+                            OverallFeedback = errorFeedback
                         };
                     }
                 }).ToList(),
