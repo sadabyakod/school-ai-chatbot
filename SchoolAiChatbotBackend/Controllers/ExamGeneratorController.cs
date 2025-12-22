@@ -1147,12 +1147,12 @@ Therefore, the hypotenuse is 5 units",
                             {
                                 uploadedBlobPaths.Add(blobPath); // Track for potential rollback
                                 _logger.LogWarning("✅ Created rubric: {BlobUrl}", blobUrl);
-                                debugInfo.Add($"✅ {question.QuestionId}: Created");
+                                debugInfo.Add($"✅ {question.QuestionId}: {blobUrl}");
                             }
                             else
                             {
                                 _logger.LogWarning("ℹ️ Rubric already exists: {BlobUrl}", blobUrl);
-                                debugInfo.Add($"ℹ️ {question.QuestionId}: Existed");
+                                debugInfo.Add($"ℹ️ {question.QuestionId}: Existed at {blobUrl}");
                             }
                         }
                         catch (Exception ex)
