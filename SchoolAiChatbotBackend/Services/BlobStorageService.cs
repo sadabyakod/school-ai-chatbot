@@ -63,10 +63,10 @@ namespace SchoolAiChatbotBackend.Services
             // Also get container name from configuration
             _containerName = configuration["BlobStorage:ContainerName"] ?? "textbooks";
 
-            Console.WriteLine($"🔧 BlobStorageService: Checking configuration...");
-            Console.WriteLine($"   BlobStorage:ConnectionString = {(string.IsNullOrEmpty(configuration["BlobStorage:ConnectionString"]) ? "(empty)" : "(set)")}");
-            Console.WriteLine($"   AzureWebJobsStorage = {(string.IsNullOrEmpty(configuration["AzureWebJobsStorage"]) ? "(empty)" : "(set)")}");
-            Console.WriteLine($"   Final connectionString = {(string.IsNullOrEmpty(connectionString) ? "(empty)" : "(set)")}");
+            _logger.LogWarning("BlobStorageService: Checking configuration...");
+            _logger.LogWarning("BlobStorage:ConnectionString = {Status}", string.IsNullOrEmpty(configuration["BlobStorage:ConnectionString"]) ? "(empty)" : "(set)");
+            _logger.LogWarning("AzureWebJobsStorage = {Status}", string.IsNullOrEmpty(configuration["AzureWebJobsStorage"]) ? "(empty)" : "(set)");
+            _logger.LogWarning("Final connectionString = {Status}", string.IsNullOrEmpty(connectionString) ? "(empty)" : "(set)");
 
             if (!string.IsNullOrWhiteSpace(connectionString) &&
                 !connectionString.Equals("UseDevelopmentStorage=true", StringComparison.OrdinalIgnoreCase))
@@ -75,20 +75,17 @@ namespace SchoolAiChatbotBackend.Services
                 {
                     _blobServiceClient = new BlobServiceClient(connectionString);
                     _isConfigured = true;
-                    Console.WriteLine($"   ✅ Blob Storage configured successfully");
-                    _logger.LogInformation("Blob Storage Service initialized successfully");
+                    _logger.LogWarning("✅ Blob Storage configured successfully");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"   ❌ Blob Storage initialization failed: {ex.Message}");
-                    _logger.LogError(ex, "Failed to initialize Blob Storage Service");
+                    _logger.LogError(ex, "❌ Blob Storage initialization failed: {Message}", ex.Message);
                     _isConfigured = false;
                 }
             }
             else
             {
-                Console.WriteLine($"   ⚠️ Blob Storage NOT configured - rubrics will NOT be stored!");
-                _logger.LogWarning("Blob Storage not configured. Set BlobStorage:ConnectionString in appsettings.json.");
+                _logger.LogWarning("⚠️ Blob Storage NOT configured - rubrics will NOT be stored! Set BlobStorage:ConnectionString");
                 _isConfigured = false;
             }
         }
@@ -353,42 +350,34 @@ namespace SchoolAiChatbotBackend.Services
         /// </summary>
         public async Task<(string BlobUrl, bool WasCreated)> UploadTextIfNotExistsAsync(string content, string blobPath, string? contentType = null, string? containerName = null)
         {
-            Console.WriteLine($"      📦 UploadTextIfNotExistsAsync called: blobPath={blobPath}, container={containerName}");
-            
             if (!_isConfigured || _blobServiceClient == null)
             {
-                Console.WriteLine($"      ⚠️ BLOB STORAGE NOT CONFIGURED - Cannot upload {blobPath}");
-                _logger.LogWarning("Blob storage not configured. Skipping upload for {BlobPath}", blobPath);
+                _logger.LogWarning("⚠️ BLOB STORAGE NOT CONFIGURED - Cannot upload {BlobPath}", blobPath);
                 return ($"local://uploads/{blobPath}", false);
             }
 
             try
             {
                 var targetContainer = containerName ?? _containerName;
-                Console.WriteLine($"      🔗 Uploading to container: {targetContainer}");
+                _logger.LogWarning("📦 Uploading to container: {Container}, path: {BlobPath}", targetContainer, blobPath);
                 var containerClient = _blobServiceClient.GetBlobContainerClient(targetContainer);
                 
-                Console.WriteLine($"      📁 Creating container if not exists...");
                 await containerClient.CreateIfNotExistsAsync(PublicAccessType.None);
 
                 // Normalize path
                 blobPath = blobPath.Trim('/');
-                Console.WriteLine($"      📄 Normalized blob path: {blobPath}");
 
                 var blobClient = containerClient.GetBlobClient(blobPath);
 
                 // IMMUTABILITY: If blob exists, return existing URL without creating new version
-                Console.WriteLine($"      🔍 Checking if blob exists...");
                 var exists = await blobClient.ExistsAsync();
                 if (exists)
                 {
                     var existingUrl = blobClient.Uri.ToString();
-                    Console.WriteLine($"      ℹ️ Blob already exists: {existingUrl}");
-                    _logger.LogInformation("Rubric blob already exists at {BlobPath}, returning existing URL: {BlobUrl}", blobPath, existingUrl);
+                    _logger.LogWarning("ℹ️ Blob already exists: {BlobUrl}", existingUrl);
                     return (existingUrl, false);
                 }
 
-                Console.WriteLine($"      ⬆️ Uploading new blob...");
                 var uploadOptions = new BlobUploadOptions
                 {
                     HttpHeaders = new BlobHttpHeaders
@@ -401,14 +390,12 @@ namespace SchoolAiChatbotBackend.Services
                 await blobClient.UploadAsync(ms, uploadOptions);
 
                 var blobUrl = blobClient.Uri.ToString();
-                Console.WriteLine($"      ✅ Blob uploaded successfully: {blobUrl}");
-                _logger.LogInformation("Created new rubric blob at {BlobPath}: {BlobUrl}", blobPath, blobUrl);
+                _logger.LogWarning("✅ Blob uploaded successfully: {BlobUrl}", blobUrl);
                 return (blobUrl, true);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"      ❌ BLOB UPLOAD ERROR: {ex.Message}");
-                _logger.LogError(ex, "Error uploading text to blob path {BlobPath}", blobPath);
+                _logger.LogError(ex, "❌ BLOB UPLOAD ERROR for {BlobPath}: {Message}", blobPath, ex.Message);
                 throw;
             }
         }

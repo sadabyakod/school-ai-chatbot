@@ -873,12 +873,11 @@ Therefore, the hypotenuse is 5 units",
         {
             if (exam?.Parts == null || exam.Parts.Count == 0)
             {
-                _logger.LogInformation("No parts found in exam {ExamId}, skipping rubric generation", exam?.ExamId);
+                _logger.LogWarning("No parts found in exam {ExamId}, skipping rubric generation", exam?.ExamId);
                 return;
             }
 
-            Console.WriteLine($"\n🔧 RUBRIC GENERATION - Starting for Exam {exam.ExamId}");
-            Console.WriteLine($"   Parts to process: {exam.Parts.Count}");
+            _logger.LogWarning("🔧 RUBRIC GENERATION - Starting for Exam {ExamId}, Parts: {PartCount}", exam.ExamId, exam.Parts.Count);
 
             var rubrics = new List<QuestionRubricDto>();
             var uploadedBlobPaths = new List<string>(); // Track for rollback
@@ -890,12 +889,12 @@ Therefore, the hypotenuse is 5 units",
                 if (part.QuestionType.Contains("MCQ", StringComparison.OrdinalIgnoreCase) ||
                     part.QuestionType.Contains("Multiple Choice", StringComparison.OrdinalIgnoreCase))
                 {
-                    Console.WriteLine($"   ⏭️ Skipping MCQ part: {part.PartName}");
-                    _logger.LogDebug("Skipping MCQ part {PartName} for rubric generation", part.PartName);
+                    _logger.LogWarning("⏭️ Skipping MCQ part: {PartName}", part.PartName);
                     continue;
                 }
 
-                Console.WriteLine($"   📝 Processing subjective part: {part.PartName} ({part.Questions?.Count ?? 0} questions, {part.MarksPerQuestion} marks each)");
+                _logger.LogWarning("📝 Processing subjective part: {PartName} ({QuestionCount} questions, {Marks} marks each)", 
+                    part.PartName, part.Questions?.Count ?? 0, part.MarksPerQuestion);
                 subjectivePartsProcessed++;
                 var marksPerQuestion = part.MarksPerQuestion;
 
@@ -944,7 +943,7 @@ Therefore, the hypotenuse is 5 units",
 
                         // Canonical blob path (no versioning)
                         var blobPath = $"paper-{exam.ExamId}/question-{question.QuestionId}.json";
-                        Console.WriteLine($"      📤 Uploading rubric: {blobPath}");
+                        _logger.LogWarning("📤 Uploading rubric: {BlobPath}", blobPath);
 
                         string? blobUrl = null;
                         bool wasCreated = false;
@@ -957,22 +956,17 @@ Therefore, the hypotenuse is 5 units",
                             if (wasCreated)
                             {
                                 uploadedBlobPaths.Add(blobPath); // Track for potential rollback
-                                Console.WriteLine($"      ✅ Created: {blobUrl}");
-                                _logger.LogInformation("Created new rubric blob for Exam={ExamId}, Question={QuestionId}", 
-                                    exam.ExamId, question.QuestionId);
+                                _logger.LogWarning("✅ Created rubric: {BlobUrl}", blobUrl);
                             }
                             else
                             {
-                                Console.WriteLine($"      ℹ️ Already exists: {blobUrl}");
-                                _logger.LogInformation("Using existing rubric blob for Exam={ExamId}, Question={QuestionId}", 
-                                    exam.ExamId, question.QuestionId);
+                                _logger.LogWarning("ℹ️ Rubric already exists: {BlobUrl}", blobUrl);
                             }
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"      ❌ Failed to upload: {ex.Message}");
-                            _logger.LogError(ex, "Failed to upload rubric blob for Exam={ExamId}, Question={QuestionId}. Skipping this rubric.",
-                                exam.ExamId, question.QuestionId);
+                            _logger.LogError(ex, "❌ Failed to upload rubric for Exam={ExamId}, Question={QuestionId}: {Message}",
+                                exam.ExamId, question.QuestionId, ex.Message);
                             // ATOMICITY: Don't add rubric to batch if blob upload failed
                             continue;
                         }
@@ -1036,12 +1030,11 @@ Therefore, the hypotenuse is 5 units",
                     // Don't throw - exam generation should still succeed
                 }
 
-                Console.WriteLine($"   ✅ RUBRIC GENERATION COMPLETE: {rubrics.Count} rubrics saved to blob + SQL");
+                _logger.LogWarning("✅ RUBRIC GENERATION COMPLETE: {RubricCount} rubrics saved to blob + SQL", rubrics.Count);
             }
             else
             {
-                Console.WriteLine($"   ⚠️ No subjective questions found - no rubrics generated");
-                _logger.LogInformation("No subjective questions found in exam {ExamId}, no rubrics generated", exam.ExamId);
+                _logger.LogWarning("⚠️ No subjective questions found in exam {ExamId} - no rubrics generated", exam.ExamId);
             }
         }
 
