@@ -269,7 +269,22 @@ namespace SchoolAiChatbotBackend.Controllers
                 var examPaper = ParseExamResponse(aiResponse, request);
 
                 // Generate and save rubrics for all subjective questions
-                await GenerateAndSaveRubricsAsync(examPaper);
+                string? rubricError = null;
+                int rubricsGenerated = 0;
+                try
+                {
+                    _logger.LogWarning("🔧 STARTING rubric generation for exam {ExamId}", examPaper.ExamId);
+                    await GenerateAndSaveRubricsAsync(examPaper);
+                    rubricsGenerated = examPaper.Parts?.Where(p => !p.QuestionType.Contains("MCQ", StringComparison.OrdinalIgnoreCase))
+                        .Sum(p => p.Questions?.Count ?? 0) ?? 0;
+                    _logger.LogWarning("✅ COMPLETED rubric generation: {Count} rubrics for exam {ExamId}", rubricsGenerated, examPaper.ExamId);
+                }
+                catch (Exception rubricEx)
+                {
+                    rubricError = $"{rubricEx.Message} | Inner: {rubricEx.InnerException?.Message}";
+                    _logger.LogError(rubricEx, "❌ RUBRIC GENERATION FAILED for exam {ExamId}: {Error}", examPaper.ExamId, rubricError);
+                    // Don't throw - continue with exam generation even if rubrics fail
+                }
 
                 // Store the exam for later retrieval (for MCQ submission, written answer upload, etc.)
                 string? storageError = null;
@@ -334,7 +349,34 @@ namespace SchoolAiChatbotBackend.Controllers
                         questionCount = finalExam.QuestionCount,
                         questions = finalExam.Questions,
                         parts = finalExam.Parts,
-                        _storageWarning = $"Exam was NOT saved to database: {storageError}"
+                        _storageWarning = $"Exam was NOT saved to database: {storageError}",
+                        _rubricInfo = rubricError != null 
+                            ? $"Rubric generation FAILED: {rubricError}" 
+                            : $"Rubrics generated: {rubricsGenerated}"
+                    });
+                }
+                
+                // Add rubric debug info to response temporarily
+                if (rubricError != null || rubricsGenerated > 0)
+                {
+                    return Ok(new 
+                    {
+                        examId = finalExam.ExamId,
+                        subject = finalExam.Subject,
+                        grade = finalExam.Grade,
+                        chapter = finalExam.Chapter,
+                        difficulty = finalExam.Difficulty,
+                        examType = finalExam.ExamType,
+                        instructions = finalExam.Instructions,
+                        totalMarks = finalExam.TotalMarks,
+                        duration = finalExam.Duration,
+                        questionCount = finalExam.QuestionCount,
+                        questions = finalExam.Questions,
+                        parts = finalExam.Parts,
+                        createdAt = finalExam.CreatedAt,
+                        _rubricDebug = rubricError != null 
+                            ? $"❌ FAILED: {rubricError}" 
+                            : $"✅ Generated {rubricsGenerated} rubrics"
                     });
                 }
                 
