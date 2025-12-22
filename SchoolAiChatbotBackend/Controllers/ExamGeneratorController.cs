@@ -99,36 +99,20 @@ namespace SchoolAiChatbotBackend.Controllers
         /// Debug endpoint to check rubric blobs for an exam
         /// </summary>
         [HttpGet("debug/check-rubric-blobs/{examId}")]
-        public async Task<IActionResult> CheckRubricBlobs(string examId)
+        public IActionResult CheckRubricBlobs(string examId)
         {
-            try
+            // Simple sync endpoint - just return blob config info and expected paths
+            var expectedPaths = new[] { "B1", "B2", "C1", "C2" }
+                .Select(q => $"paper-{examId}/question-{q}.json")
+                .ToList();
+            
+            return Ok(new
             {
-                // Simple blob check - just check one question ID
-                string? b1Json = null;
-                try { b1Json = await _blobStorageService.GetFrozenRubricFromBlobAsync(examId, "B1"); } catch { }
-                
-                string? b2Json = null;
-                try { b2Json = await _blobStorageService.GetFrozenRubricFromBlobAsync(examId, "B2"); } catch { }
-                
-                string? c1Json = null;
-                try { c1Json = await _blobStorageService.GetFrozenRubricFromBlobAsync(examId, "C1"); } catch { }
-                
-                return Ok(new
-                {
-                    examId = examId,
-                    B1_exists = b1Json != null,
-                    B1_size = b1Json?.Length ?? 0,
-                    B2_exists = b2Json != null,
-                    B2_size = b2Json?.Length ?? 0,
-                    C1_exists = c1Json != null,
-                    C1_size = c1Json?.Length ?? 0,
-                    isConfigured = _blobStorageService.IsConfigured
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { error = ex.Message, inner = ex.InnerException?.Message });
-            }
+                examId = examId,
+                isConfigured = _blobStorageService.IsConfigured,
+                expectedBlobPaths = expectedPaths,
+                note = "Blobs should be at these paths in container 'modalquestions-rubrics'. Check Azure Portal to verify."
+            });
         }
 
         /// <summary>
