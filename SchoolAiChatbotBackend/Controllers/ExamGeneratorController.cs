@@ -127,6 +127,58 @@ namespace SchoolAiChatbotBackend.Controllers
         }
 
         /// <summary>
+        /// Debug endpoint to test rubric generation and upload for an exam
+        /// </summary>
+        [HttpPost("debug/test-rubric-upload/{examId}")]
+        public async Task<IActionResult> TestRubricUpload(string examId)
+        {
+            try
+            {
+                var testQuestionId = "TEST-Q1";
+                var blobPath = $"paper-{examId}/question-{testQuestionId}.json";
+                var testContent = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    questionId = testQuestionId,
+                    questionText = "Test question for rubric upload",
+                    totalMarks = 2,
+                    rubric = new[] {
+                        new { stepNo = 1, expected = "Step 1", marks = 1 },
+                        new { stepNo = 2, expected = "Step 2", marks = 1 }
+                    },
+                    modelAnswer = "Test model answer",
+                    createdAt = DateTime.UtcNow.ToString("o")
+                });
+
+                var (blobUrl, wasCreated) = await _blobStorageService.UploadTextIfNotExistsAsync(
+                    testContent, blobPath, "application/json", "modalquestions-rubrics");
+
+                // Verify we can read it back
+                var readBack = await _blobStorageService.GetFrozenRubricFromBlobAsync(examId, testQuestionId);
+
+                return Ok(new
+                {
+                    success = true,
+                    examId = examId,
+                    blobPath = blobPath,
+                    blobUrl = blobUrl,
+                    wasCreated = wasCreated,
+                    readBackSuccess = readBack != null,
+                    readBackSize = readBack?.Length ?? 0
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    error = ex.Message,
+                    innerError = ex.InnerException?.Message,
+                    stackTrace = ex.StackTrace?.Substring(0, Math.Min(500, ex.StackTrace?.Length ?? 0))
+                });
+            }
+        }
+
+        /// <summary>
         /// Debug endpoint to test database storage
         /// </summary>
         [HttpGet("debug/test-storage")]
