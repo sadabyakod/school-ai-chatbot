@@ -1129,10 +1129,17 @@ Therefore, the hypotenuse is 5 units",
                             (blobUrl, wasCreated) = await _blobStorageService.UploadTextIfNotExistsAsync(
                                 frozenJson, blobPath, "application/json", "modalquestions-rubrics");
 
+                            _logger.LogWarning("📊 Upload result: URL={BlobUrl}, Created={WasCreated}", blobUrl, wasCreated);
+
                             if (wasCreated)
                             {
                                 uploadedBlobPaths.Add(blobPath); // Track for potential rollback
                                 _logger.LogWarning("✅ Created rubric: {BlobUrl}", blobUrl);
+                            }
+                            else if (blobUrl?.StartsWith("local://") == true)
+                            {
+                                _logger.LogError("❌ BLOB STORAGE FALLBACK - Blob not uploaded! URL: {BlobUrl}", blobUrl);
+                                continue; // Skip this rubric
                             }
                             else
                             {
@@ -1179,6 +1186,8 @@ Therefore, the hypotenuse is 5 units",
             {
                 try
                 {
+                    _logger.LogWarning("💾 Saving {RubricCount} rubrics to SQL (blobs uploaded: {BlobCount})", 
+                        rubrics.Count, uploadedBlobPaths.Count);
                     await _rubricService.SaveRubricsBatchAsync(exam.ExamId, rubrics);
                     _logger.LogInformation(
                         "Generated and saved {RubricCount} rubrics for exam {ExamId} ({PartsProcessed} subjective parts)",
