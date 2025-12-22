@@ -42,6 +42,7 @@ namespace SchoolAiChatbotBackend.Repositories
                         [QuestionId] NVARCHAR(50) NOT NULL,
                         [TotalMarks] INT NOT NULL DEFAULT 0,
                         [StepsJson] NVARCHAR(MAX) NOT NULL,
+                        [RubricBlobPath] NVARCHAR(500) NULL,
                         [QuestionText] NVARCHAR(MAX) NULL,
                         [ModelAnswer] NVARCHAR(MAX) NULL,
                         [CreatedAt] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
@@ -77,16 +78,10 @@ namespace SchoolAiChatbotBackend.Repositories
 
             if (existing != null)
             {
-                // Update existing rubric
-                existing.TotalMarks = rubric.TotalMarks;
-                existing.StepsJson = rubric.StepsJson;
-                existing.ModelAnswer = rubric.ModelAnswer;
-                existing.QuestionText = rubric.QuestionText;
-                existing.CreatedAt = DateTime.UtcNow;
-
-                _context.SubjectiveRubrics.Update(existing);
-                _logger.LogInformation("Updated existing rubric for Exam={ExamId}, Question={QuestionId}",
+                // Preserve immutability: do not overwrite existing rubric steps or blob path.
+                _logger.LogInformation("Rubric already exists for Exam={ExamId}, Question={QuestionId}; skipping update to preserve immutability",
                     rubric.ExamId, rubric.QuestionId);
+                return;
             }
             else
             {
@@ -160,19 +155,31 @@ namespace SchoolAiChatbotBackend.Repositories
 
             var examId = rubrics.First().ExamId;
 
-            // Delete existing rubrics for this exam first
-            await DeleteRubricsForExamAsync(examId);
+            var toInsert = new List<SubjectiveRubric>();
 
-            // Insert all new rubrics
             foreach (var rubric in rubrics)
             {
+                // Skip existing rubrics to preserve immutability
+                var exists = await _context.SubjectiveRubrics
+                    .AnyAsync(r => r.ExamId == rubric.ExamId && r.QuestionId == rubric.QuestionId);
+
+                if (exists)
+                {
+                    _logger.LogInformation("Skipping existing rubric for Exam={ExamId}, Question={QuestionId}", rubric.ExamId, rubric.QuestionId);
+                    continue;
+                }
+
                 rubric.CreatedAt = DateTime.UtcNow;
+                toInsert.Add(rubric);
             }
 
-            await _context.SubjectiveRubrics.AddRangeAsync(rubrics);
-            await _context.SaveChangesAsync();
+            if (toInsert.Any())
+            {
+                await _context.SubjectiveRubrics.AddRangeAsync(toInsert);
+                await _context.SaveChangesAsync();
+            }
 
-            _logger.LogInformation("Batch saved {Count} rubrics for Exam={ExamId}", rubrics.Count, examId);
+            _logger.LogInformation("Batch saved {Count} new rubrics for Exam={ExamId}", toInsert.Count, examId);
         }
     }
 }

@@ -380,5 +380,9 @@ namespace SchoolAiChatbotBackend.DTOs
 
         public string? QuestionText { get; set; }
         public string? ModelAnswer { get; set; }
+        /// <summary>
+        /// Blob storage path/URL to the frozen rubric JSON (modalquestions-rubrics container)
+        /// </summary>
+        public string? RubricBlobPath { get; set; }
     }
 }
