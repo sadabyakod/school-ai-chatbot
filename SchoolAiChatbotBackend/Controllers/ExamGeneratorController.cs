@@ -99,19 +99,30 @@ namespace SchoolAiChatbotBackend.Controllers
         /// Debug endpoint to check rubric blobs for an exam
         /// </summary>
         [HttpGet("debug/check-rubric-blobs/{examId}")]
-        public IActionResult CheckRubricBlobs(string examId)
+        public async Task<IActionResult> CheckRubricBlobs(string examId)
         {
-            // Simple sync endpoint - just return blob config info and expected paths
-            var expectedPaths = new[] { "B1", "B2", "C1", "C2" }
-                .Select(q => $"paper-{examId}/question-{q}.json")
-                .ToList();
+            var questionIds = new[] { "B1", "B2", "C1", "C2", "D1", "D2" };
+            var results = new Dictionary<string, object>();
+            
+            foreach (var qId in questionIds)
+            {
+                var blobPath = $"paper-{examId}/question-{qId}.json";
+                try
+                {
+                    var json = await _blobStorageService.GetFrozenRubricFromBlobAsync(examId, qId);
+                    results[qId] = new { exists = json != null, size = json?.Length ?? 0 };
+                }
+                catch (Exception ex)
+                {
+                    results[qId] = new { exists = false, error = ex.Message };
+                }
+            }
             
             return Ok(new
             {
                 examId = examId,
                 isConfigured = _blobStorageService.IsConfigured,
-                expectedBlobPaths = expectedPaths,
-                note = "Blobs should be at these paths in container 'modalquestions-rubrics'. Check Azure Portal to verify."
+                rubricBlobs = results
             });
         }
 
