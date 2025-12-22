@@ -17,15 +17,16 @@ namespace SchoolAiChatbotBackend
         {
             // Configure Serilog before creating the builder
             Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Information()
+                .MinimumLevel.Warning()  // Set to Warning to see our diagnostic logs
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-                .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
+                .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Warning)
                 .MinimumLevel.Override("System", LogEventLevel.Warning)
+                .MinimumLevel.Override("SchoolAiChatbotBackend", LogEventLevel.Warning) // Ensure our app logs show
                 .Enrich.FromLogContext()
                 .Enrich.WithMachineName()
                 .Enrich.WithThreadId()
                 .WriteTo.Console(
-                    outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}")
+                    outputTemplate: "[{Timestamp:HH:mm:ss}] [{Level:u3}] {Message:lj}{NewLine}{Exception}")
                 .WriteTo.File(
                     path: "logs/app-.log",
                     rollingInterval: RollingInterval.Day,
@@ -35,7 +36,7 @@ namespace SchoolAiChatbotBackend
 
             try
             {
-                Log.Information("Starting School AI Chatbot Backend");
+                Log.Warning("🚀 Starting School AI Chatbot Backend - Application starting up...");
 
                 var builder = WebApplication.CreateBuilder(args);
 
