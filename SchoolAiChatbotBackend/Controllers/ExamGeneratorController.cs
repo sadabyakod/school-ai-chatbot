@@ -45,6 +45,57 @@ namespace SchoolAiChatbotBackend.Controllers
         }
 
         /// <summary>
+        /// Debug endpoint to test blob storage for rubrics
+        /// </summary>
+        [HttpGet("debug/test-blob-storage")]
+        public async Task<IActionResult> TestBlobStorage()
+        {
+            var testId = $"TEST-{DateTime.Now:yyyyMMddHHmmss}";
+            var testBlobPath = $"debug-test/test-{testId}.json";
+            var testContent = System.Text.Json.JsonSerializer.Serialize(new { 
+                testId = testId, 
+                message = "Blob storage test", 
+                timestamp = DateTime.UtcNow.ToString("o") 
+            });
+
+            try
+            {
+                // Test blob upload
+                var (blobUrl, wasCreated) = await _blobStorageService.UploadTextIfNotExistsAsync(
+                    testContent, testBlobPath, "application/json", "modalquestions-rubrics");
+
+                // Try to read it back
+                var readBack = await _blobStorageService.GetFrozenRubricFromBlobAsync("debug-test", $"test-{testId}");
+
+                return Ok(new
+                {
+                    success = true,
+                    testId = testId,
+                    blobPath = testBlobPath,
+                    blobUrl = blobUrl,
+                    wasCreated = wasCreated,
+                    readBackSuccess = readBack != null,
+                    isConfigured = _blobStorageService.IsConfigured,
+                    message = wasCreated ? "✅ Blob storage is working! Rubric uploaded successfully." : 
+                              blobUrl.StartsWith("local://") ? "⚠️ Blob storage NOT configured - using local fallback" :
+                              "ℹ️ Blob already existed"
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    testId = testId,
+                    isConfigured = _blobStorageService.IsConfigured,
+                    error = ex.Message,
+                    innerError = ex.InnerException?.Message,
+                    stackTrace = ex.StackTrace?.Substring(0, Math.Min(500, ex.StackTrace?.Length ?? 0))
+                });
+            }
+        }
+
+        /// <summary>
         /// Debug endpoint to test database storage
         /// </summary>
         [HttpGet("debug/test-storage")]
