@@ -1170,7 +1170,19 @@ Therefore, the hypotenuse is 5 units",
                                 debugInfo.Add($"❌ {question.QuestionId}: FALLBACK (local://)");
                                 continue; // Skip this rubric
                             }
-                            else if (wasCreated)
+                            
+                            // VERIFICATION: Check if blob actually exists after upload claim
+                            _logger.LogWarning("🔍 Verifying blob existence: {BlobPath}", blobPath);
+                            var verifyContent = await _blobStorageService.GetFrozenRubricFromBlobAsync(exam.ExamId, question.QuestionId);
+                            if (verifyContent == null)
+                            {
+                                _logger.LogError("❌❌❌ BLOB UPLOAD LIED! Claimed success but blob doesn't exist: {BlobUrl}", blobUrl);
+                                debugInfo.Add($"❌ {question.QuestionId}: PHANTOM_UPLOAD (claimed {blobUrl} but doesn't exist!)");
+                                continue; // Skip this rubric
+                            }
+                            _logger.LogWarning("✅ Blob existence verified: {Length} bytes", verifyContent.Length);
+                            
+                            if (wasCreated)
                             {
                                 uploadedBlobPaths.Add(blobPath); // Track for potential rollback
                                 _logger.LogWarning("✅ Created rubric: {BlobUrl}", blobUrl);
