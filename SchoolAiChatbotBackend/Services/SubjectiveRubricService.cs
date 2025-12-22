@@ -9,24 +9,72 @@ namespace SchoolAiChatbotBackend.Services
     /// Service for managing subjective question marking rubrics.
     /// Handles serialization/deserialization of step rubrics and provides
     /// default/AI-generated rubric creation.
+    /// EVALUATION: Uses frozen rubrics from blob storage as the ONLY source of truth.
     /// </summary>
     public class SubjectiveRubricService : ISubjectiveRubricService
     {
         private readonly ISubjectiveRubricRepository _repository;
+        private readonly IBlobStorageService _blobStorageService;
         private readonly ILogger<SubjectiveRubricService> _logger;
         private readonly JsonSerializerOptions _jsonOptions;
 
         public SubjectiveRubricService(
             ISubjectiveRubricRepository repository,
+            IBlobStorageService blobStorageService,
             ILogger<SubjectiveRubricService> logger)
         {
             _repository = repository;
+            _blobStorageService = blobStorageService;
             _logger = logger;
             _jsonOptions = new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                 WriteIndented = false
             };
+        }
+
+        /// <summary>
+        /// Load frozen rubric from Azure Blob Storage.
+        /// This is the ONLY source of truth for evaluation.
+        /// DO NOT regenerate rubrics - load from blob only.
+        /// </summary>
+        public async Task<FrozenRubric?> GetFrozenRubricFromBlobAsync(string examId, string questionId)
+        {
+            try
+            {
+                var json = await _blobStorageService.GetFrozenRubricFromBlobAsync(examId, questionId);
+                if (string.IsNullOrEmpty(json))
+                {
+                    _logger.LogWarning("Frozen rubric not found in blob for Exam={ExamId}, Question={QuestionId}", examId, questionId);
+                    return null;
+                }
+
+                var rubric = JsonSerializer.Deserialize<FrozenRubric>(json, _jsonOptions);
+                if (rubric == null)
+                {
+                    _logger.LogError("Failed to deserialize frozen rubric for Exam={ExamId}, Question={QuestionId}", examId, questionId);
+                    return null;
+                }
+
+                // Validate rubric integrity
+                var stepMarksSum = rubric.Rubric.Sum(s => s.Marks);
+                if (stepMarksSum != rubric.TotalMarks)
+                {
+                    _logger.LogError("Frozen rubric integrity violation: Sum({Sum}) != TotalMarks({Total}) for Exam={ExamId}, Question={QuestionId}",
+                        stepMarksSum, rubric.TotalMarks, examId, questionId);
+                    throw new InvalidOperationException($"Rubric integrity violation: step sum {stepMarksSum} != total {rubric.TotalMarks}");
+                }
+
+                _logger.LogInformation("Loaded frozen rubric for Exam={ExamId}, Question={QuestionId} with {StepCount} steps, TotalMarks={Total}",
+                    examId, questionId, rubric.Rubric.Count, rubric.TotalMarks);
+
+                return rubric;
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "Failed to parse frozen rubric JSON for Exam={ExamId}, Question={QuestionId}", examId, questionId);
+                return null;
+            }
         }
 
         public async Task SaveRubricAsync(RubricCreateRequest request)
@@ -50,7 +98,8 @@ namespace SchoolAiChatbotBackend.Services
                 StepsJson = stepsJson,
                 QuestionText = request.QuestionText,
                 ModelAnswer = request.ModelAnswer,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                RubricBlobPath = null
             };
 
             await _repository.SaveRubricAsync(entity);
@@ -104,7 +153,8 @@ namespace SchoolAiChatbotBackend.Services
                     StepsJson = JsonSerializer.Serialize(steps, _jsonOptions),
                     QuestionText = r.QuestionText,
                     ModelAnswer = r.ModelAnswer,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    RubricBlobPath = r.RubricBlobPath
                 };
             }).ToList();
 
@@ -116,9 +166,15 @@ namespace SchoolAiChatbotBackend.Services
         /// Generate a default rubric based on total marks.
         /// Simple approach: Number of steps = total marks, each step = 1 mark.
         /// Example: 2 marks question = 2 steps, each worth 1 mark.
+        /// VALIDATION: Ensures Sum(step.Marks) == TotalMarks (throws if mismatch)
         /// </summary>
         public Task<List<StepRubricItem>> GenerateDefaultRubricAsync(string questionText, string modelAnswer, int totalMarks)
         {
+            if (totalMarks <= 0)
+            {
+                throw new ArgumentException($"TotalMarks must be positive, got: {totalMarks}", nameof(totalMarks));
+            }
+
             var steps = new List<StepRubricItem>();
 
             // Step descriptions based on total marks
@@ -135,10 +191,38 @@ namespace SchoolAiChatbotBackend.Services
                 });
             }
 
-            _logger.LogDebug("Generated default rubric with {StepCount} steps for {TotalMarks} marks (1 mark each)",
-                steps.Count, totalMarks);
+            // CRITICAL VALIDATION: Ensure sum of step marks equals total marks
+            var stepMarksSum = steps.Sum(s => s.Marks);
+            if (stepMarksSum != totalMarks)
+            {
+                throw new InvalidOperationException(
+                    $"Rubric integrity violation: Sum of step marks ({stepMarksSum}) != TotalMarks ({totalMarks}). " +
+                    "This would cause incorrect scoring during evaluation.");
+            }
+
+            _logger.LogDebug("Generated default rubric with {StepCount} steps for {TotalMarks} marks (validated: sum={Sum})",
+                steps.Count, totalMarks, stepMarksSum);
 
             return Task.FromResult(steps);
+        }
+
+        /// <summary>
+        /// Validate that a rubric's step marks sum equals total marks.
+        /// Call this before saving any rubric to ensure exam integrity.
+        /// </summary>
+        public static void ValidateRubricIntegrity(List<StepRubricItem> steps, int totalMarks)
+        {
+            if (steps == null || steps.Count == 0)
+            {
+                throw new ArgumentException("Rubric must have at least one step", nameof(steps));
+            }
+
+            var stepMarksSum = steps.Sum(s => s.Marks);
+            if (stepMarksSum != totalMarks)
+            {
+                throw new InvalidOperationException(
+                    $"Rubric integrity violation: Sum of step marks ({stepMarksSum}) != TotalMarks ({totalMarks})");
+            }
         }
 
         /// <summary>
@@ -228,6 +312,7 @@ namespace SchoolAiChatbotBackend.Services
                 }).ToList(),
                 QuestionText = rubric.QuestionText,
                 ModelAnswer = rubric.ModelAnswer,
+                // Note: RubricBlobPath isn't part of RubricResponseDto currently; include via metadata if needed
                 CreatedAt = rubric.CreatedAt
             };
         }

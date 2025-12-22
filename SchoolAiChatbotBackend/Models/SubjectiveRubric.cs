@@ -4,8 +4,16 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace SchoolAiChatbotBackend.Models
 {
     /// <summary>
-    /// Entity representing a stored marking rubric for a subjective question.
-    /// Each subjective question in an exam has its own rubric with steps and marks.
+    /// Entity representing a stored marking rubric reference for a subjective question.
+    /// Each subjective question in an exam has its own rubric stored in blob storage.
+    /// 
+    /// IMPORTANT: The RubricBlobPath is the ONLY source of truth for rubric content.
+    /// During evaluation, ALWAYS load the frozen rubric from blob storage.
+    /// 
+    /// DEPRECATION NOTICE:
+    /// - StepsJson, ModelAnswer, QuestionText are DEPRECATED and kept only for backward compatibility.
+    /// - New code should NOT use these fields. Use GetFrozenRubricFromBlobAsync() instead.
+    /// - These fields will be removed in a future migration.
     /// </summary>
     [Table("SubjectiveRubrics")]
     public class SubjectiveRubric
@@ -33,10 +41,12 @@ namespace SchoolAiChatbotBackend.Models
         public int TotalMarks { get; set; }
 
         /// <summary>
-        /// JSON serialized List of StepRubricItem
-        /// Example: [{"StepNumber":1,"Description":"Identify formula","Marks":1},...]
+        /// [DEPRECATED] JSON serialized List of StepRubricItem.
+        /// DO NOT USE FOR EVALUATION - use RubricBlobPath instead.
+        /// Kept for backward compatibility only.
         /// </summary>
         [Required]
+        [Obsolete("Use RubricBlobPath and GetFrozenRubricFromBlobAsync() for evaluation")]
         public string StepsJson { get; set; } = "[]";
 
         /// <summary>
@@ -45,13 +55,27 @@ namespace SchoolAiChatbotBackend.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         /// <summary>
-        /// Optional: The expected/model answer for reference
+        /// [DEPRECATED] The expected/model answer.
+        /// DO NOT USE - this is a security risk (solution leakage).
+        /// Kept for backward compatibility only.
         /// </summary>
+        [Obsolete("Use RubricBlobPath - storing model answer in SQL is a security risk")]
         public string? ModelAnswer { get; set; }
 
         /// <summary>
-        /// Optional: Question text for reference
+        /// [DEPRECATED] Question text for reference.
+        /// Use RubricBlobPath instead.
         /// </summary>
+        [Obsolete("Use RubricBlobPath and GetFrozenRubricFromBlobAsync()")]
         public string? QuestionText { get; set; }
+
+        /// <summary>
+        /// Path/URL to the frozen rubric JSON stored in blob storage (modalquestions-rubrics container).
+        /// THIS IS THE CANONICAL SOURCE OF TRUTH FOR EVALUATION.
+        /// Format: paper-{examId}/question-{questionId}.json
+        /// </summary>
+        [Required]
+        [MaxLength(500)]
+        public string RubricBlobPath { get; set; } = string.Empty;
     }
 }

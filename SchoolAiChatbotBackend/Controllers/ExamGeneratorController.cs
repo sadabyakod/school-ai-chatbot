@@ -24,6 +24,7 @@ namespace SchoolAiChatbotBackend.Controllers
         private readonly IOpenAIService _openAIService;
         private readonly ISubjectiveRubricService _rubricService;
         private readonly IExamStorageService _examStorageService;
+        private readonly IBlobStorageService _blobStorageService;
         private readonly ILogger<ExamGeneratorController> _logger;
         
         // Track generation progress for streaming
@@ -33,11 +34,13 @@ namespace SchoolAiChatbotBackend.Controllers
             IOpenAIService openAIService,
             ISubjectiveRubricService rubricService,
             IExamStorageService examStorageService,
+            IBlobStorageService blobStorageService,
             ILogger<ExamGeneratorController> logger)
         {
             _openAIService = openAIService;
             _rubricService = rubricService;
             _examStorageService = examStorageService;
+            _blobStorageService = blobStorageService;
             _logger = logger;
         }
 
@@ -832,6 +835,12 @@ Therefore, the hypotenuse is 5 units",
         /// Generate and save rubrics for all subjective questions in the exam.
         /// This ensures consistent, auditable marking for all subjective questions.
         /// </summary>
+        /// <summary>
+        /// Generate and save rubrics for all subjective questions in the exam.
+        /// ATOMIC OPERATION: If SQL save fails, delete uploaded blobs (rollback).
+        /// IMMUTABILITY: If rubric blob already exists, use existing (no regeneration).
+        /// VALIDATION: Ensures Sum(step.Marks) == TotalMarks before saving.
+        /// </summary>
         private async Task GenerateAndSaveRubricsAsync(GeneratedExamResponse exam)
         {
             if (exam?.Parts == null || exam.Parts.Count == 0)
@@ -841,6 +850,7 @@ Therefore, the hypotenuse is 5 units",
             }
 
             var rubrics = new List<QuestionRubricDto>();
+            var uploadedBlobPaths = new List<string>(); // Track for rollback
             var subjectivePartsProcessed = 0;
 
             foreach (var part in exam.Parts)
@@ -861,24 +871,93 @@ Therefore, the hypotenuse is 5 units",
                     try
                     {
                         // Generate default rubric steps for this question
+                        // VALIDATION: GenerateDefaultRubricAsync now throws if sum != totalMarks
                         var steps = await _rubricService.GenerateDefaultRubricAsync(
                             question.QuestionText,
                             question.CorrectAnswer,
                             marksPerQuestion);
 
-                        rubrics.Add(new QuestionRubricDto
+                        // ADDITIONAL VALIDATION: Verify step marks sum
+                        var stepMarksSum = steps.Sum(s => s.Marks);
+                        if (stepMarksSum != marksPerQuestion)
                         {
-                            QuestionId = question.QuestionId,
-                            TotalMarks = marksPerQuestion,
-                            Steps = steps.Select(s => new StepRubricItemDto
-                            {
-                                StepNumber = s.StepNumber,
-                                Description = s.Description,
-                                Marks = s.Marks
+                            throw new InvalidOperationException(
+                                $"Rubric integrity violation for Q{question.QuestionId}: " +
+                                $"Sum({stepMarksSum}) != TotalMarks({marksPerQuestion})");
+                        }
+
+                        // Build frozen rubric JSON for this question
+                        var frozen = new
+                        {
+                            questionId = question.QuestionId,
+                            questionText = question.QuestionText,
+                            totalMarks = marksPerQuestion,
+                            rubric = steps.Select(s => new {
+                                stepNo = s.StepNumber,
+                                expected = s.Description,
+                                marks = s.Marks
                             }).ToList(),
-                            QuestionText = question.QuestionText,
-                            ModelAnswer = question.CorrectAnswer
-                        });
+                            modelAnswer = question.CorrectAnswer,
+                            createdAt = DateTime.UtcNow.ToString("o")
+                        };
+
+                        var jsonOptions = new System.Text.Json.JsonSerializerOptions
+                        {
+                            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+                            WriteIndented = false
+                        };
+
+                        var frozenJson = System.Text.Json.JsonSerializer.Serialize(frozen, jsonOptions);
+
+                        // Canonical blob path (no versioning)
+                        var blobPath = $"paper-{exam.ExamId}/question-{question.QuestionId}.json";
+
+                        string? blobUrl = null;
+                        bool wasCreated = false;
+                        try
+                        {
+                            // IMMUTABILITY: Use UploadTextIfNotExistsAsync - returns existing if present
+                            (blobUrl, wasCreated) = await _blobStorageService.UploadTextIfNotExistsAsync(
+                                frozenJson, blobPath, "application/json", "modalquestions-rubrics");
+
+                            if (wasCreated)
+                            {
+                                uploadedBlobPaths.Add(blobPath); // Track for potential rollback
+                                _logger.LogInformation("Created new rubric blob for Exam={ExamId}, Question={QuestionId}", 
+                                    exam.ExamId, question.QuestionId);
+                            }
+                            else
+                            {
+                                _logger.LogInformation("Using existing rubric blob for Exam={ExamId}, Question={QuestionId}", 
+                                    exam.ExamId, question.QuestionId);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Failed to upload rubric blob for Exam={ExamId}, Question={QuestionId}. Skipping this rubric.",
+                                exam.ExamId, question.QuestionId);
+                            // ATOMICITY: Don't add rubric to batch if blob upload failed
+                            continue;
+                        }
+
+                        // Only add rubric if blob exists
+                        if (!string.IsNullOrEmpty(blobUrl))
+                        {
+                            rubrics.Add(new QuestionRubricDto
+                            {
+                                QuestionId = question.QuestionId,
+                                TotalMarks = marksPerQuestion,
+                                Steps = steps.Select(s => new StepRubricItemDto
+                                {
+                                    StepNumber = s.StepNumber,
+                                    Description = s.Description,
+                                    Marks = s.Marks
+                                }).ToList(),
+                                QuestionText = question.QuestionText,
+                                ModelAnswer = question.CorrectAnswer,
+                                RubricBlobPath = blobUrl
+                            });
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -900,8 +979,24 @@ Therefore, the hypotenuse is 5 units",
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to save rubrics for exam {ExamId}", exam.ExamId);
-                    // Don't throw - exam generation should still succeed even if rubric save fails
+                    _logger.LogError(ex, "Failed to save rubrics to SQL for exam {ExamId}. Rolling back {BlobCount} uploaded blobs.",
+                        exam.ExamId, uploadedBlobPaths.Count);
+
+                    // ATOMICITY: Rollback - delete uploaded blobs if SQL save fails
+                    foreach (var blobPath in uploadedBlobPaths)
+                    {
+                        try
+                        {
+                            await _blobStorageService.DeleteAsync(blobPath, "modalquestions-rubrics");
+                            _logger.LogInformation("Rolled back blob: {BlobPath}", blobPath);
+                        }
+                        catch (Exception deleteEx)
+                        {
+                            _logger.LogError(deleteEx, "Failed to rollback blob: {BlobPath}", blobPath);
+                        }
+                    }
+
+                    // Don't throw - exam generation should still succeed
                 }
             }
             else

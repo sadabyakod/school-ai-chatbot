@@ -21,6 +21,17 @@ namespace SchoolAiChatbotBackend.Services
         Task<List<BlobInfo>> ListBlobsAsync(string? prefix = null, string? containerName = null);
         Task<Stream?> DownloadBlobAsync(string blobName);
         Task<Stream?> DownloadAsync(string blobName, string? containerName = null);
+        Task<string> UploadTextToExactPathAsync(string content, string blobPath, string? contentType = null, string? containerName = null);
+        /// <summary>
+        /// Upload text to blob ONLY if it doesn't exist. Returns existing blob URL if already present.
+        /// This ensures rubric immutability - one canonical rubric per path.
+        /// </summary>
+        Task<(string BlobUrl, bool WasCreated)> UploadTextIfNotExistsAsync(string content, string blobPath, string? contentType = null, string? containerName = null);
+        /// <summary>
+        /// Load frozen rubric JSON from blob storage. Returns null if not found.
+        /// This is the ONLY source of truth for rubrics during evaluation.
+        /// </summary>
+        Task<string?> GetFrozenRubricFromBlobAsync(string examId, string questionId, string containerName = "modalquestions-rubrics");
         bool IsConfigured { get; }
     }
 
@@ -312,6 +323,111 @@ namespace SchoolAiChatbotBackend.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error downloading blob: {BlobName} from container: {Container}", blobName, containerName);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Upload raw text (JSON) to an exact blob path inside the container.
+        /// WARNING: This method creates versioned blobs if original exists.
+        /// For rubrics, use UploadTextIfNotExistsAsync instead to preserve immutability.
+        /// </summary>
+        public async Task<string> UploadTextToExactPathAsync(string content, string blobPath, string? contentType = null, string? containerName = null)
+        {
+            // Delegate to the immutable version and return URL
+            var (url, _) = await UploadTextIfNotExistsAsync(content, blobPath, contentType, containerName);
+            return url;
+        }
+
+        /// <summary>
+        /// Upload text to blob ONLY if it doesn't exist. Returns existing blob URL if already present.
+        /// This ensures rubric immutability - one canonical rubric per PaperId + QuestionId.
+        /// </summary>
+        public async Task<(string BlobUrl, bool WasCreated)> UploadTextIfNotExistsAsync(string content, string blobPath, string? contentType = null, string? containerName = null)
+        {
+            if (!_isConfigured || _blobServiceClient == null)
+            {
+                _logger.LogWarning("Blob storage not configured. Skipping upload for {BlobPath}", blobPath);
+                return ($"local://uploads/{blobPath}", false);
+            }
+
+            try
+            {
+                var targetContainer = containerName ?? _containerName;
+                var containerClient = _blobServiceClient.GetBlobContainerClient(targetContainer);
+                await containerClient.CreateIfNotExistsAsync(PublicAccessType.None);
+
+                // Normalize path
+                blobPath = blobPath.Trim('/');
+
+                var blobClient = containerClient.GetBlobClient(blobPath);
+
+                // IMMUTABILITY: If blob exists, return existing URL without creating new version
+                var exists = await blobClient.ExistsAsync();
+                if (exists)
+                {
+                    var existingUrl = blobClient.Uri.ToString();
+                    _logger.LogInformation("Rubric blob already exists at {BlobPath}, returning existing URL: {BlobUrl}", blobPath, existingUrl);
+                    return (existingUrl, false);
+                }
+
+                var uploadOptions = new BlobUploadOptions
+                {
+                    HttpHeaders = new BlobHttpHeaders
+                    {
+                        ContentType = contentType ?? "application/json"
+                    }
+                };
+
+                using var ms = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content));
+                await blobClient.UploadAsync(ms, uploadOptions);
+
+                var blobUrl = blobClient.Uri.ToString();
+                _logger.LogInformation("Created new rubric blob at {BlobPath}: {BlobUrl}", blobPath, blobUrl);
+                return (blobUrl, true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error uploading text to blob path {BlobPath}", blobPath);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Load frozen rubric JSON from blob storage. Returns null if not found.
+        /// This is the ONLY source of truth for rubrics during evaluation.
+        /// Blob path: paper-{examId}/question-{questionId}.json
+        /// </summary>
+        public async Task<string?> GetFrozenRubricFromBlobAsync(string examId, string questionId, string containerName = "modalquestions-rubrics")
+        {
+            if (!_isConfigured || _blobServiceClient == null)
+            {
+                _logger.LogWarning("Blob storage not configured. Cannot load frozen rubric for Exam={ExamId}, Question={QuestionId}", examId, questionId);
+                return null;
+            }
+
+            try
+            {
+                var blobPath = $"paper-{examId}/question-{questionId}.json";
+                var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
+                var blobClient = containerClient.GetBlobClient(blobPath);
+
+                var exists = await blobClient.ExistsAsync();
+                if (!exists)
+                {
+                    _logger.LogWarning("Frozen rubric not found at {BlobPath}", blobPath);
+                    return null;
+                }
+
+                var response = await blobClient.DownloadContentAsync();
+                var content = response.Value.Content.ToString();
+
+                _logger.LogInformation("Loaded frozen rubric from {BlobPath} ({Bytes} bytes)", blobPath, content.Length);
+                return content;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading frozen rubric for Exam={ExamId}, Question={QuestionId}", examId, questionId);
                 return null;
             }
         }
