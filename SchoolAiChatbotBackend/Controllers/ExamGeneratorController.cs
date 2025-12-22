@@ -271,17 +271,18 @@ namespace SchoolAiChatbotBackend.Controllers
                 // Generate and save rubrics for all subjective questions
                 string? rubricError = null;
                 int rubricsGenerated = 0;
+                var rubricDebugInfo = new List<string>();
                 try
                 {
                     _logger.LogWarning("🔧 STARTING rubric generation for exam {ExamId}", examPaper.ExamId);
-                    await GenerateAndSaveRubricsAsync(examPaper);
-                    rubricsGenerated = examPaper.Parts?.Where(p => !p.QuestionType.Contains("MCQ", StringComparison.OrdinalIgnoreCase))
-                        .Sum(p => p.Questions?.Count ?? 0) ?? 0;
+                    rubricDebugInfo = await GenerateAndSaveRubricsAsync(examPaper);
+                    rubricsGenerated = rubricDebugInfo.Count(r => r.StartsWith("✅"));
                     _logger.LogWarning("✅ COMPLETED rubric generation: {Count} rubrics for exam {ExamId}", rubricsGenerated, examPaper.ExamId);
                 }
                 catch (Exception rubricEx)
                 {
                     rubricError = $"{rubricEx.Message} | Inner: {rubricEx.InnerException?.Message}";
+                    rubricDebugInfo.Add($"❌ EXCEPTION: {rubricError}");
                     _logger.LogError(rubricEx, "❌ RUBRIC GENERATION FAILED for exam {ExamId}: {Error}", examPaper.ExamId, rubricError);
                     // Don't throw - continue with exam generation even if rubrics fail
                 }
@@ -357,7 +358,7 @@ namespace SchoolAiChatbotBackend.Controllers
                 }
                 
                 // Add rubric debug info to response temporarily
-                if (rubricError != null || rubricsGenerated > 0)
+                if (rubricError != null || rubricsGenerated > 0 || rubricDebugInfo.Count > 0)
                 {
                     return Ok(new 
                     {
@@ -376,7 +377,9 @@ namespace SchoolAiChatbotBackend.Controllers
                         createdAt = finalExam.CreatedAt,
                         _rubricDebug = rubricError != null 
                             ? $"❌ FAILED: {rubricError}" 
-                            : $"✅ Generated {rubricsGenerated} rubrics"
+                            : rubricDebugInfo.Count > 0 
+                                ? string.Join(" | ", rubricDebugInfo)
+                                : $"✅ Generated {rubricsGenerated} rubrics"
                     });
                 }
                 
@@ -1045,12 +1048,15 @@ Therefore, the hypotenuse is 5 units",
         /// IMMUTABILITY: If rubric blob already exists, use existing (no regeneration).
         /// VALIDATION: Ensures Sum(step.Marks) == TotalMarks before saving.
         /// </summary>
-        private async Task GenerateAndSaveRubricsAsync(GeneratedExamResponse exam)
+        private async Task<List<string>> GenerateAndSaveRubricsAsync(GeneratedExamResponse exam)
         {
+            var debugInfo = new List<string>();
+            
             if (exam?.Parts == null || exam.Parts.Count == 0)
             {
                 _logger.LogWarning("No parts found in exam {ExamId}, skipping rubric generation", exam?.ExamId);
-                return;
+                debugInfo.Add("⚠️ No parts in exam");
+                return debugInfo;
             }
 
             _logger.LogWarning("🔧 RUBRIC GENERATION - Starting for Exam {ExamId}, Parts: {PartCount}", exam.ExamId, exam.Parts.Count);
@@ -1131,25 +1137,29 @@ Therefore, the hypotenuse is 5 units",
 
                             _logger.LogWarning("📊 Upload result: URL={BlobUrl}, Created={WasCreated}", blobUrl, wasCreated);
 
-                            if (wasCreated)
+                            if (blobUrl?.StartsWith("local://") == true)
+                            {
+                                _logger.LogError("❌ BLOB STORAGE FALLBACK - Blob not uploaded! URL: {BlobUrl}", blobUrl);
+                                debugInfo.Add($"❌ {question.QuestionId}: FALLBACK (local://)");
+                                continue; // Skip this rubric
+                            }
+                            else if (wasCreated)
                             {
                                 uploadedBlobPaths.Add(blobPath); // Track for potential rollback
                                 _logger.LogWarning("✅ Created rubric: {BlobUrl}", blobUrl);
-                            }
-                            else if (blobUrl?.StartsWith("local://") == true)
-                            {
-                                _logger.LogError("❌ BLOB STORAGE FALLBACK - Blob not uploaded! URL: {BlobUrl}", blobUrl);
-                                continue; // Skip this rubric
+                                debugInfo.Add($"✅ {question.QuestionId}: Created");
                             }
                             else
                             {
                                 _logger.LogWarning("ℹ️ Rubric already exists: {BlobUrl}", blobUrl);
+                                debugInfo.Add($"ℹ️ {question.QuestionId}: Existed");
                             }
                         }
                         catch (Exception ex)
                         {
                             _logger.LogError(ex, "❌ Failed to upload rubric for Exam={ExamId}, Question={QuestionId}: {Message}",
                                 exam.ExamId, question.QuestionId, ex.Message);
+                            debugInfo.Add($"❌ {question.QuestionId}: UPLOAD_ERROR ({ex.Message})");
                             // ATOMICITY: Don't add rubric to batch if blob upload failed
                             continue;
                         }
@@ -1177,6 +1187,7 @@ Therefore, the hypotenuse is 5 units",
                     {
                         _logger.LogWarning(ex, "Failed to generate rubric for question {QuestionId} in exam {ExamId}",
                             question.QuestionId, exam.ExamId);
+                        debugInfo.Add($"❌ {question.QuestionId}: RUBRIC_ERROR ({ex.Message})");
                         // Continue with other questions even if one fails
                     }
                 }
@@ -1220,7 +1231,10 @@ Therefore, the hypotenuse is 5 units",
             else
             {
                 _logger.LogWarning("⚠️ No subjective questions found in exam {ExamId} - no rubrics generated", exam.ExamId);
+                debugInfo.Add("⚠️ No subjective questions");
             }
+
+            return debugInfo;
         }
 
         /// <summary>
