@@ -127,6 +127,33 @@ namespace SchoolAiChatbotBackend.Controllers
         }
 
         /// <summary>
+        /// Debug endpoint to list recent blobs in modalquestions-rubrics container
+        /// </summary>
+        [HttpGet("debug/list-blobs")]
+        public async Task<IActionResult> ListRecentBlobs([FromQuery] string? prefix = null)
+        {
+            try
+            {
+                var blobs = await _blobStorageService.ListBlobsAsync(prefix, "modalquestions-rubrics");
+                var recentBlobs = blobs.OrderByDescending(b => b.LastModified).Take(20).ToList();
+                return Ok(new
+                {
+                    success = true,
+                    count = recentBlobs.Count,
+                    blobs = recentBlobs
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    error = ex.Message
+                });
+            }
+        }
+
+        /// <summary>
         /// Debug endpoint to test rubric generation and upload for an exam
         /// </summary>
         [HttpPost("debug/test-rubric-upload/{examId}")]
