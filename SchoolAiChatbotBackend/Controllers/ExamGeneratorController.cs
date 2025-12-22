@@ -96,6 +96,41 @@ namespace SchoolAiChatbotBackend.Controllers
         }
 
         /// <summary>
+        /// Debug endpoint to check rubric blobs for an exam
+        /// </summary>
+        [HttpGet("debug/check-rubric-blobs/{examId}")]
+        public async Task<IActionResult> CheckRubricBlobs(string examId)
+        {
+            var results = new List<object>();
+            var questionIds = new[] { "B-1", "B-2", "C-1", "C-2", "D-1", "D-2", "Q-1", "Q-2", "Q-3" };
+            
+            foreach (var qId in questionIds)
+            {
+                try
+                {
+                    var json = await _blobStorageService.GetFrozenRubricFromBlobAsync(examId, qId);
+                    if (json != null)
+                    {
+                        results.Add(new { questionId = qId, exists = true, sizeBytes = json.Length });
+                    }
+                }
+                catch { }
+            }
+            
+            // Also check SQL rubrics
+            var sqlRubrics = await _rubricService.GetRubricsForExamAsync(examId);
+            
+            return Ok(new
+            {
+                examId = examId,
+                blobRubricsFound = results.Count,
+                blobRubrics = results,
+                sqlRubricsFound = sqlRubrics?.Count ?? 0,
+                sqlRubrics = sqlRubrics?.Select(r => new { r.QuestionId, r.TotalMarks })
+            });
+        }
+
+        /// <summary>
         /// Debug endpoint to test database storage
         /// </summary>
         [HttpGet("debug/test-storage")]
