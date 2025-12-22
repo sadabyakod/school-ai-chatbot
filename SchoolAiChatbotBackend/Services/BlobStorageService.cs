@@ -63,6 +63,11 @@ namespace SchoolAiChatbotBackend.Services
             // Also get container name from configuration
             _containerName = configuration["BlobStorage:ContainerName"] ?? "textbooks";
 
+            Console.WriteLine($"🔧 BlobStorageService: Checking configuration...");
+            Console.WriteLine($"   BlobStorage:ConnectionString = {(string.IsNullOrEmpty(configuration["BlobStorage:ConnectionString"]) ? "(empty)" : "(set)")}");
+            Console.WriteLine($"   AzureWebJobsStorage = {(string.IsNullOrEmpty(configuration["AzureWebJobsStorage"]) ? "(empty)" : "(set)")}");
+            Console.WriteLine($"   Final connectionString = {(string.IsNullOrEmpty(connectionString) ? "(empty)" : "(set)")}");
+
             if (!string.IsNullOrWhiteSpace(connectionString) &&
                 !connectionString.Equals("UseDevelopmentStorage=true", StringComparison.OrdinalIgnoreCase))
             {
@@ -70,16 +75,19 @@ namespace SchoolAiChatbotBackend.Services
                 {
                     _blobServiceClient = new BlobServiceClient(connectionString);
                     _isConfigured = true;
+                    Console.WriteLine($"   ✅ Blob Storage configured successfully");
                     _logger.LogInformation("Blob Storage Service initialized successfully");
                 }
                 catch (Exception ex)
                 {
+                    Console.WriteLine($"   ❌ Blob Storage initialization failed: {ex.Message}");
                     _logger.LogError(ex, "Failed to initialize Blob Storage Service");
                     _isConfigured = false;
                 }
             }
             else
             {
+                Console.WriteLine($"   ⚠️ Blob Storage NOT configured - rubrics will NOT be stored!");
                 _logger.LogWarning("Blob Storage not configured. Set BlobStorage:ConnectionString in appsettings.json.");
                 _isConfigured = false;
             }
@@ -347,6 +355,7 @@ namespace SchoolAiChatbotBackend.Services
         {
             if (!_isConfigured || _blobServiceClient == null)
             {
+                Console.WriteLine($"      ⚠️ BLOB STORAGE NOT CONFIGURED - Cannot upload {blobPath}");
                 _logger.LogWarning("Blob storage not configured. Skipping upload for {BlobPath}", blobPath);
                 return ($"local://uploads/{blobPath}", false);
             }
@@ -354,6 +363,7 @@ namespace SchoolAiChatbotBackend.Services
             try
             {
                 var targetContainer = containerName ?? _containerName;
+                Console.WriteLine($"      🔗 Uploading to container: {targetContainer}");
                 var containerClient = _blobServiceClient.GetBlobContainerClient(targetContainer);
                 await containerClient.CreateIfNotExistsAsync(PublicAccessType.None);
 
