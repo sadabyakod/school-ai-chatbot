@@ -101,33 +101,63 @@ namespace SchoolAiChatbotBackend.Controllers
         [HttpGet("debug/check-rubric-blobs/{examId}")]
         public async Task<IActionResult> CheckRubricBlobs(string examId)
         {
-            var results = new List<object>();
-            var questionIds = new[] { "B-1", "B-2", "C-1", "C-2", "D-1", "D-2", "Q-1", "Q-2", "Q-3" };
-            
-            foreach (var qId in questionIds)
+            try
             {
-                try
+                var results = new List<object>();
+                var questionIds = new[] { "B-1", "B-2", "C-1", "C-2", "D-1", "D-2", "Q-1", "Q-2", "Q-3", "B1", "B2", "C1", "C2" };
+                
+                foreach (var qId in questionIds)
                 {
-                    var json = await _blobStorageService.GetFrozenRubricFromBlobAsync(examId, qId);
-                    if (json != null)
+                    try
                     {
-                        results.Add(new { questionId = qId, exists = true, sizeBytes = json.Length });
+                        var json = await _blobStorageService.GetFrozenRubricFromBlobAsync(examId, qId);
+                        if (json != null)
+                        {
+                            results.Add(new { questionId = qId, exists = true, sizeBytes = json.Length });
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        results.Add(new { questionId = qId, error = ex.Message });
                     }
                 }
-                catch { }
+                
+                // Also check SQL rubrics
+                int sqlCount = 0;
+                var sqlRubricsList = new List<object>();
+                try 
+                {
+                    var sqlRubrics = await _rubricService.GetRubricsForExamAsync(examId);
+                    sqlCount = sqlRubrics?.Count ?? 0;
+                    if (sqlRubrics != null)
+                    {
+                        sqlRubricsList = sqlRubrics.Select(r => new { r.QuestionId, r.TotalMarks } as object).ToList();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return Ok(new
+                    {
+                        examId = examId,
+                        blobRubricsFound = results.Count,
+                        blobRubrics = results,
+                        sqlError = ex.Message
+                    });
+                }
+                
+                return Ok(new
+                {
+                    examId = examId,
+                    blobRubricsFound = results.Count(r => r.GetType().GetProperty("exists") != null),
+                    blobRubrics = results,
+                    sqlRubricsFound = sqlCount,
+                    sqlRubrics = sqlRubricsList
+                });
             }
-            
-            // Also check SQL rubrics
-            var sqlRubrics = await _rubricService.GetRubricsForExamAsync(examId);
-            
-            return Ok(new
+            catch (Exception ex)
             {
-                examId = examId,
-                blobRubricsFound = results.Count,
-                blobRubrics = results,
-                sqlRubricsFound = sqlRubrics?.Count ?? 0,
-                sqlRubrics = sqlRubrics?.Select(r => new { r.QuestionId, r.TotalMarks })
-            });
+                return StatusCode(500, new { error = ex.Message, stackTrace = ex.StackTrace?.Substring(0, Math.Min(500, ex.StackTrace?.Length ?? 0)) });
+            }
         }
 
         /// <summary>
