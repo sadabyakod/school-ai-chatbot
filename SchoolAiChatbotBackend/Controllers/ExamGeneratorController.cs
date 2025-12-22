@@ -803,15 +803,36 @@ Therefore, the hypotenuse is 5 units",
             if (string.IsNullOrEmpty(exam.CreatedAt))
                 exam.CreatedAt = DateTime.UtcNow.ToString("o");
 
-            // Calculate totalMarks from parts if available
+            // Calculate totalMarks from parts if available and ASSIGN QuestionIds
             if (exam.Parts != null && exam.Parts.Count > 0)
             {
                 var calculatedTotal = 0;
                 var totalQuestions = 0;
+                var globalQuestionNumber = 1;
+                
                 foreach (var part in exam.Parts)
                 {
                     calculatedTotal += part.MarksPerQuestion * part.QuestionsToAnswer;
-                    totalQuestions += part.Questions?.Count ?? 0;
+                    
+                    // CRITICAL: Assign QuestionId if missing (AI may not return it)
+                    if (part.Questions != null)
+                    {
+                        foreach (var q in part.Questions)
+                        {
+                            if (string.IsNullOrEmpty(q.QuestionId))
+                            {
+                                // Generate unique QuestionId: PartName-QuestionNumber (e.g., "A-1", "B-5")
+                                q.QuestionId = $"{part.PartName.Replace("Part ", "").Replace("PART ", "")}-{q.QuestionNumber}";
+                            }
+                            // Fallback if QuestionNumber is also missing
+                            if (q.QuestionNumber <= 0)
+                            {
+                                q.QuestionNumber = globalQuestionNumber;
+                            }
+                            globalQuestionNumber++;
+                        }
+                        totalQuestions += part.Questions.Count;
+                    }
                 }
                 exam.TotalMarks = calculatedTotal;
                 exam.QuestionCount = totalQuestions;
@@ -820,9 +841,16 @@ Therefore, the hypotenuse is 5 units",
             else if (exam.Questions != null && exam.Questions.Count > 0)
             {
                 var calculatedTotal = 0;
+                var questionNumber = 1;
                 foreach (var q in exam.Questions)
                 {
                     calculatedTotal += q.Marks;
+                    // CRITICAL: Assign QuestionId if missing
+                    if (string.IsNullOrEmpty(q.QuestionId))
+                    {
+                        q.QuestionId = $"Q-{questionNumber}";
+                    }
+                    questionNumber++;
                 }
                 exam.TotalMarks = calculatedTotal;
                 exam.QuestionCount = exam.Questions.Count;
@@ -849,6 +877,9 @@ Therefore, the hypotenuse is 5 units",
                 return;
             }
 
+            Console.WriteLine($"\n🔧 RUBRIC GENERATION - Starting for Exam {exam.ExamId}");
+            Console.WriteLine($"   Parts to process: {exam.Parts.Count}");
+
             var rubrics = new List<QuestionRubricDto>();
             var uploadedBlobPaths = new List<string>(); // Track for rollback
             var subjectivePartsProcessed = 0;
@@ -859,10 +890,12 @@ Therefore, the hypotenuse is 5 units",
                 if (part.QuestionType.Contains("MCQ", StringComparison.OrdinalIgnoreCase) ||
                     part.QuestionType.Contains("Multiple Choice", StringComparison.OrdinalIgnoreCase))
                 {
+                    Console.WriteLine($"   ⏭️ Skipping MCQ part: {part.PartName}");
                     _logger.LogDebug("Skipping MCQ part {PartName} for rubric generation", part.PartName);
                     continue;
                 }
 
+                Console.WriteLine($"   📝 Processing subjective part: {part.PartName} ({part.Questions?.Count ?? 0} questions, {part.MarksPerQuestion} marks each)");
                 subjectivePartsProcessed++;
                 var marksPerQuestion = part.MarksPerQuestion;
 
@@ -911,6 +944,7 @@ Therefore, the hypotenuse is 5 units",
 
                         // Canonical blob path (no versioning)
                         var blobPath = $"paper-{exam.ExamId}/question-{question.QuestionId}.json";
+                        Console.WriteLine($"      📤 Uploading rubric: {blobPath}");
 
                         string? blobUrl = null;
                         bool wasCreated = false;
@@ -923,17 +957,20 @@ Therefore, the hypotenuse is 5 units",
                             if (wasCreated)
                             {
                                 uploadedBlobPaths.Add(blobPath); // Track for potential rollback
+                                Console.WriteLine($"      ✅ Created: {blobUrl}");
                                 _logger.LogInformation("Created new rubric blob for Exam={ExamId}, Question={QuestionId}", 
                                     exam.ExamId, question.QuestionId);
                             }
                             else
                             {
+                                Console.WriteLine($"      ℹ️ Already exists: {blobUrl}");
                                 _logger.LogInformation("Using existing rubric blob for Exam={ExamId}, Question={QuestionId}", 
                                     exam.ExamId, question.QuestionId);
                             }
                         }
                         catch (Exception ex)
                         {
+                            Console.WriteLine($"      ❌ Failed to upload: {ex.Message}");
                             _logger.LogError(ex, "Failed to upload rubric blob for Exam={ExamId}, Question={QuestionId}. Skipping this rubric.",
                                 exam.ExamId, question.QuestionId);
                             // ATOMICITY: Don't add rubric to batch if blob upload failed
@@ -998,9 +1035,12 @@ Therefore, the hypotenuse is 5 units",
 
                     // Don't throw - exam generation should still succeed
                 }
+
+                Console.WriteLine($"   ✅ RUBRIC GENERATION COMPLETE: {rubrics.Count} rubrics saved to blob + SQL");
             }
             else
             {
+                Console.WriteLine($"   ⚠️ No subjective questions found - no rubrics generated");
                 _logger.LogInformation("No subjective questions found in exam {ExamId}, no rubrics generated", exam.ExamId);
             }
         }
