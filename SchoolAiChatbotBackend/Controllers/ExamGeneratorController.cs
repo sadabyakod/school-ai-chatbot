@@ -103,60 +103,31 @@ namespace SchoolAiChatbotBackend.Controllers
         {
             try
             {
-                var results = new List<object>();
-                var questionIds = new[] { "B-1", "B-2", "C-1", "C-2", "D-1", "D-2", "Q-1", "Q-2", "Q-3", "B1", "B2", "C1", "C2" };
+                // Simple blob check - just check one question ID
+                string? b1Json = null;
+                try { b1Json = await _blobStorageService.GetFrozenRubricFromBlobAsync(examId, "B1"); } catch { }
                 
-                foreach (var qId in questionIds)
-                {
-                    try
-                    {
-                        var json = await _blobStorageService.GetFrozenRubricFromBlobAsync(examId, qId);
-                        if (json != null)
-                        {
-                            results.Add(new { questionId = qId, exists = true, sizeBytes = json.Length });
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        results.Add(new { questionId = qId, error = ex.Message });
-                    }
-                }
+                string? b2Json = null;
+                try { b2Json = await _blobStorageService.GetFrozenRubricFromBlobAsync(examId, "B2"); } catch { }
                 
-                // Also check SQL rubrics
-                int sqlCount = 0;
-                var sqlRubricsList = new List<object>();
-                try 
-                {
-                    var sqlRubrics = await _rubricService.GetRubricsForExamAsync(examId);
-                    sqlCount = sqlRubrics?.Count ?? 0;
-                    if (sqlRubrics != null)
-                    {
-                        sqlRubricsList = sqlRubrics.Select(r => new { r.QuestionId, r.TotalMarks } as object).ToList();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    return Ok(new
-                    {
-                        examId = examId,
-                        blobRubricsFound = results.Count,
-                        blobRubrics = results,
-                        sqlError = ex.Message
-                    });
-                }
+                string? c1Json = null;
+                try { c1Json = await _blobStorageService.GetFrozenRubricFromBlobAsync(examId, "C1"); } catch { }
                 
                 return Ok(new
                 {
                     examId = examId,
-                    blobRubricsFound = results.Count(r => r.GetType().GetProperty("exists") != null),
-                    blobRubrics = results,
-                    sqlRubricsFound = sqlCount,
-                    sqlRubrics = sqlRubricsList
+                    B1_exists = b1Json != null,
+                    B1_size = b1Json?.Length ?? 0,
+                    B2_exists = b2Json != null,
+                    B2_size = b2Json?.Length ?? 0,
+                    C1_exists = c1Json != null,
+                    C1_size = c1Json?.Length ?? 0,
+                    isConfigured = _blobStorageService.IsConfigured
                 });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { error = ex.Message, stackTrace = ex.StackTrace?.Substring(0, Math.Min(500, ex.StackTrace?.Length ?? 0)) });
+                return StatusCode(500, new { error = ex.Message, inner = ex.InnerException?.Message });
             }
         }
 
