@@ -353,6 +353,8 @@ namespace SchoolAiChatbotBackend.Services
         /// </summary>
         public async Task<(string BlobUrl, bool WasCreated)> UploadTextIfNotExistsAsync(string content, string blobPath, string? contentType = null, string? containerName = null)
         {
+            Console.WriteLine($"      📦 UploadTextIfNotExistsAsync called: blobPath={blobPath}, container={containerName}");
+            
             if (!_isConfigured || _blobServiceClient == null)
             {
                 Console.WriteLine($"      ⚠️ BLOB STORAGE NOT CONFIGURED - Cannot upload {blobPath}");
@@ -365,22 +367,28 @@ namespace SchoolAiChatbotBackend.Services
                 var targetContainer = containerName ?? _containerName;
                 Console.WriteLine($"      🔗 Uploading to container: {targetContainer}");
                 var containerClient = _blobServiceClient.GetBlobContainerClient(targetContainer);
+                
+                Console.WriteLine($"      📁 Creating container if not exists...");
                 await containerClient.CreateIfNotExistsAsync(PublicAccessType.None);
 
                 // Normalize path
                 blobPath = blobPath.Trim('/');
+                Console.WriteLine($"      📄 Normalized blob path: {blobPath}");
 
                 var blobClient = containerClient.GetBlobClient(blobPath);
 
                 // IMMUTABILITY: If blob exists, return existing URL without creating new version
+                Console.WriteLine($"      🔍 Checking if blob exists...");
                 var exists = await blobClient.ExistsAsync();
                 if (exists)
                 {
                     var existingUrl = blobClient.Uri.ToString();
+                    Console.WriteLine($"      ℹ️ Blob already exists: {existingUrl}");
                     _logger.LogInformation("Rubric blob already exists at {BlobPath}, returning existing URL: {BlobUrl}", blobPath, existingUrl);
                     return (existingUrl, false);
                 }
 
+                Console.WriteLine($"      ⬆️ Uploading new blob...");
                 var uploadOptions = new BlobUploadOptions
                 {
                     HttpHeaders = new BlobHttpHeaders
@@ -393,11 +401,13 @@ namespace SchoolAiChatbotBackend.Services
                 await blobClient.UploadAsync(ms, uploadOptions);
 
                 var blobUrl = blobClient.Uri.ToString();
+                Console.WriteLine($"      ✅ Blob uploaded successfully: {blobUrl}");
                 _logger.LogInformation("Created new rubric blob at {BlobPath}: {BlobUrl}", blobPath, blobUrl);
                 return (blobUrl, true);
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"      ❌ BLOB UPLOAD ERROR: {ex.Message}");
                 _logger.LogError(ex, "Error uploading text to blob path {BlobPath}", blobPath);
                 throw;
             }
